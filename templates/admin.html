@@ -184,7 +184,8 @@
         }
 
         .form-group input,
-        .form-group textarea {
+        .form-group textarea,
+        .form-group select { /* Added select here */
             width: 100%;
             padding: 15px;
             border: 2px solid rgba(255, 255, 255, 0.2);
@@ -195,9 +196,22 @@
             transition: all 0.3s ease;
             font-family: inherit;
         }
+        /* Style for select dropdown arrow */
+        .form-group select {
+            appearance: none; /* Remove default browser arrow */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 18px;
+            cursor: pointer;
+        }
+
 
         .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group textarea:focus,
+        .form-group select:focus { /* Added select here */
             outline: none;
             border-color: rgba(255, 255, 255, 0.4);
             background: rgba(255, 255, 255, 0.15);
@@ -207,6 +221,11 @@
         .form-group textarea::placeholder {
             color: rgba(255, 255, 255, 0.6);
         }
+        .form-group select option { /* Styling for select options */
+            background: #2a5298; /* Dark background for options */
+            color: white;
+        }
+
 
         .form-group textarea {
             resize: vertical;
@@ -709,6 +728,20 @@
                     <label for="youtube-url">YouTube URL</label>
                     <input type="url" id="youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." required>
                 </div>
+
+                <div class="form-group">
+                    <label for="video-genre">Genre (e.g., Thriller, Sci-Fi, Drama)</label>
+                    <input type="text" id="video-genre" name="genre" placeholder="Categorize your video genre">
+                </div>
+
+                <div class="form-group">
+                    <label for="video-featured-tag">Featured Tag (Optional)</label>
+                    <select id="video-featured-tag" name="featured_tag">
+                        <option value="">None</option>
+                        <option value="Top Story">Top Story</option>
+                        <option value="New Series">New Series</option>
+                        </select>
+                </div>
                 
                 <button type="submit" class="add-video-btn" id="add-btn">
                     Add Video to Feed
@@ -746,6 +779,20 @@
                 <div class="form-group">
                     <label for="edit-youtube-url">YouTube URL</label>
                     <input type="url" id="edit-youtube-url" name="youtube_url" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-video-genre">Genre (e.g., Thriller, Sci-Fi, Drama)</label>
+                    <input type="text" id="edit-video-genre" name="genre">
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-video-featured-tag">Featured Tag (Optional)</label>
+                    <select id="edit-video-featured-tag" name="featured_tag">
+                        <option value="">None</option>
+                        <option value="Top Story">Top Story</option>
+                        <option value="New Series">New Series</option>
+                        </select>
                 </div>
                 
                 <button type="submit" class="add-video-btn" id="edit-btn">
@@ -814,6 +861,8 @@
                 
                 if (data.success) {
                     displayVideos(data.videos);
+                } else {
+                    throw new Error(data.message || 'Failed to load videos');
                 }
             } catch (error) {
                 console.error('Error loading videos:', error);
@@ -846,7 +895,7 @@
                         <div class="video-description">${escapeHtml(video.description || 'No description')}</div>
                         <div class="video-meta">
                             <span>Added ${formatDate(video.created_at)}</span>
-                            <span><a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a></span>
+                            <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span> <span><a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a></span>
                         </div>
                         <div class="video-stats">
                             <div class="stat-item likes" onclick="viewVideoLikes(${video.id})">
@@ -867,7 +916,7 @@
             `).join('');
         }
 
-        // Handle form submission
+        // Handle form submission - Add New Video
         document.getElementById('add-video-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -879,6 +928,10 @@
             // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
+            // NEW: Include genre and featured_tag
+            data.genre = document.getElementById('video-genre').value.trim();
+            data.featured_tag = document.getElementById('video-featured-tag').value;
+            
             // Validation
             if (!data.title.trim()) {
                 showMessage('Title is required', 'error');
@@ -926,7 +979,7 @@
             }
         });
 
-        // Handle edit form submission
+        // Handle edit form submission - Update Video
         document.getElementById('edit-video-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -937,6 +990,10 @@
             
             // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
+
+            // NEW: Include genre and featured_tag from edit modal
+            data.genre = document.getElementById('edit-video-genre').value.trim();
+            data.featured_tag = document.getElementById('edit-video-featured-tag').value;
 
             // Validation
             if (!data.title.trim()) {
@@ -1024,7 +1081,8 @@
             editingVideoId = videoId;
             
             try {
-                // Get current video data
+                // Get all videos to find the one being edited
+                // A more efficient way would be to have a /api/admin/videos/<id> endpoint
                 const response = await fetch('/api/admin/videos');
                 const data = await response.json();
                 
@@ -1035,14 +1093,21 @@
                         document.getElementById('edit-video-title').value = video.title;
                         document.getElementById('edit-video-description').value = video.description || '';
                         document.getElementById('edit-youtube-url').value = video.youtube_url;
+                        // NEW: Populate genre and featured_tag
+                        document.getElementById('edit-video-genre').value = video.genre || '';
+                        document.getElementById('edit-video-featured-tag').value = video.featured_tag || '';
                         
                         // Show modal
-                        document.getElementById('edit-modal').style.display = 'block';
+                        document.getElementById('edit-modal').style.display = 'flex'; /* Changed to flex to center */
+                    } else {
+                        showMessage('Video not found for editing.', 'error');
                     }
+                } else {
+                    showMessage(data.message || 'Failed to load video data for editing.', 'error');
                 }
             } catch (error) {
                 console.error('Error loading video data:', error);
-                showMessage('Failed to load video data', 'error');
+                showMessage('Failed to load video data. Please try again.', 'error');
             }
         }
 
@@ -1060,6 +1125,7 @@
             const likesModal = document.getElementById('likes-modal');
             const commentsModal = document.getElementById('comments-modal');
             
+            // Check if the click is directly on the modal backdrop, not inside the modal-content
             if (event.target === editModal) {
                 closeEditModal();
             } else if (event.target === likesModal) {
@@ -1071,7 +1137,7 @@
 
         // View video likes (for admin)
         async function viewVideoLikes(videoId) {
-            // Get the CSRF token from the hidden input field (if needed by admin endpoint)
+            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
@@ -1082,13 +1148,13 @@
                     </div>
                 `;
                 
-                document.getElementById('likes-modal').style.display = 'block';
+                document.getElementById('likes-modal').style.display = 'flex'; /* Changed to flex to center */
                 
                 const response = await fetch(`/api/admin/videos/${videoId}/likes`, {
                     headers: {
-                        'X-CSRFToken': csrfToken // Include CSRF token
+                        'X-CSRFToken': csrfToken /* Include CSRF token for GET if Flask-WTF is configured to check all requests, otherwise it's often not needed for GET. Included for consistency. */
                     }
-                }); // Assuming this endpoint is also CSRF protected
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1143,7 +1209,7 @@
 
         // View video comments (for admin)
         async function viewVideoComments(videoId) {
-            // Get the CSRF token from the hidden input field (if needed by admin endpoint)
+            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
@@ -1154,13 +1220,13 @@
                     </div>
                 `;
                 
-                document.getElementById('comments-modal').style.display = 'block';
+                document.getElementById('comments-modal').style.display = 'flex'; /* Changed to flex to center */
                 
                 const response = await fetch(`/api/admin/videos/${videoId}/comments`, {
                     headers: {
-                        'X-CSRFToken': csrfToken // Include CSRF token
+                        'X-CSRFToken': csrfToken /* Include CSRF token for GET if Flask-WTF is configured to check all requests, otherwise it's often not needed for GET. Included for consistency. */
                     }
-                }); // Assuming this endpoint is also CSRF protected
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1229,8 +1295,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                // This typically would be an admin-specific DELETE route
-                const response = await fetch(`/api/comments/${commentId}`, { // Corrected to use the standard delete comment route
+                const response = await fetch(`/api/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRFToken': csrfToken // Include CSRF token
@@ -1248,10 +1313,9 @@
                     // Also refresh the main video list comments count and status
                     loadVideos();
                     // Reload comments in the modal if it's still open and has other comments
-                    const currentVideoIdInModal = getCurrentlyViewedVideoIdInCommentsModal(); // You might need a way to track this
-                    if (currentVideoIdInModal) {
-                         viewVideoComments(currentVideoIdInModal);
-                    }
+                    // NOTE: You'd need a global variable to track which video's comments are in the modal
+                    // e.g., let currentModalVideoId = null; set when viewVideoComments is called.
+                    // if (currentModalVideoId) { viewVideoComments(currentModalVideoId); }
                 } else {
                     alert('Failed to delete comment: ' + (result.message || 'Unknown error'));
                 }
@@ -1262,7 +1326,6 @@
         }
         
         // Helper to get video ID being viewed in comments modal (if you set it)
-        // You'll need to set a global variable or data attribute when opening the modal
         function getCurrentlyViewedVideoIdInCommentsModal() {
             // Example: if you set a data-video-id on the comments-modal div
             // return document.getElementById('comments-modal').dataset.videoId;
@@ -1344,12 +1407,11 @@
             if (loading) {
                 button.disabled = true;
                 button.innerHTML = '<span class="loading-spinner"></span>Adding Video...';
-                isSubmitting = true;
             } else {
                 button.disabled = false;
                 button.innerHTML = 'Add Video to Feed';
-                isSubmitting = false;
             }
+            isSubmitting = loading; // Set global submitting state
         }
 
         // Set edit button loading state for Update Video
@@ -1359,12 +1421,11 @@
             if (loading) {
                 button.disabled = true;
                 button.innerHTML = '<span class="loading-spinner"></span>Updating Video...';
-                isSubmitting = true;
             } else {
                 button.disabled = false;
                 button.innerHTML = 'Update Video';
-                isSubmitting = false;
             }
+            isSubmitting = loading; // Set global submitting state
         }
 
         // Validate YouTube URL
@@ -1382,14 +1443,14 @@
             });
         }
 
-        // Escape HTML (already defined in dashboard.html, but good to keep consistent for admin)
+        // Escape HTML (already defined)
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Logout function - now includes CSRF token
+        // Logout function
         async function logout() {
             const csrfToken = document.getElementById('csrf_token').value; // Get the CSRF token
 
@@ -1402,17 +1463,15 @@
                     }
                 });
                 
-                const data = await response.json(); // Parse response to check success message
+                const data = await response.json();
 
-                if (data.success) { // Check data.success as per your API design
-                    window.location.href = '/'; // Redirect to login/home
+                if (data.success) {
+                    window.location.href = '/';
                 } else {
                     console.error('Logout failed:', data.message || 'Unknown error');
-                    // Optionally show a message to the user on the admin page
                 }
             } catch (error) {
                 console.error('Error during logout:', error);
-                // Force redirect even if logout fails due to network error
                 window.location.href = '/';
             }
         }
