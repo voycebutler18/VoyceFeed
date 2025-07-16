@@ -636,19 +636,16 @@ def subscribe():
     try:
         user = User.query.get(session['user_id'])
         
-        # Check if user exists
         if not user:
             flash('Please log in to subscribe', 'error')
             return redirect(url_for('index'))
-        
-        # Check for active subscription
-        if user.subscription and user.has_active_subscription():
-            flash('You already have an active subscription!', 'info')
-            return redirect(url_for('dashboard'))
-        
-        # Check for pending subscription (recently created but not yet active)
+            
+        # Check if user already has an active subscription
         if user.subscription:
-            if user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
+            if user.subscription.status == 'active' and user.subscription.current_period_end > datetime.utcnow():
+                flash('You already have an active subscription!', 'info')
+                return redirect(url_for('dashboard'))
+            elif user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
                 flash('You have a pending subscription. Please complete the payment process.', 'warning')
                 return redirect(url_for('dashboard'))
             elif user.subscription.status == 'past_due':
@@ -663,106 +660,84 @@ def subscribe():
 
 # Enhanced checkout session creation with comprehensive protection
 @app.route('/api/create-checkout-session', methods=['POST'])
+@csrf.exempt
 @login_required
+@limiter.limit("5 per minute")
 def create_checkout_session():
-    """Create Stripe checkout session with double-payment protection"""
+    """Create Stripe checkout session with multiple protection layers"""
+    if not request.is_json:
+        return jsonify({'success': False, 'message': 'Request must be JSON'}), 400
+
     try:
-        if not stripe.api_key:
-            return jsonify({'success': False, 'message': 'Stripe not configured'}), 500
-        
-        if not STRIPE_PRICE_ID:
-            return jsonify({'success': False, 'message': 'Stripe price ID not configured'}), 500
+        # Validate Stripe configuration
+        if not all([stripe.api_key, STRIPE_PRICE_ID]):
+            logger.error("Stripe not properly configured")
+            return jsonify({'success': False, 'message': 'Payment system unavailable'}), 500
         
         user = User.query.get(session['user_id'])
-        
-        # PROTECTION 1: Check for active subscription
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+
+        # Protection 1: DB subscription check
         if user.has_active_subscription():
+            logger.info(f"User {user.id} already has active subscription")
             return jsonify({
                 'success': False, 
-                'message': 'You already have an active subscription. Please visit your dashboard.',
+                'message': 'Active subscription exists',
                 'redirect': '/dashboard'
-            }), 400
+            }), 409  # 409 Conflict
 
-        # PROTECTION 2: Check for pending/incomplete subscriptions
-        if user.subscription:
-            if user.subscription.status in ['incomplete', 'incomplete_expired']:
-                return jsonify({
-                    'success': False, 
-                    'message': 'You have a pending subscription. Please complete or cancel it first.',
-                    'redirect': '/dashboard'
-                }), 400
-            elif user.subscription.status == 'trialing':
-                return jsonify({
-                    'success': False, 
-                    'message': 'You already have a trial subscription.',
-                    'redirect': '/dashboard'
-                }), 400
-            elif user.subscription.status == 'past_due':
-                # Allow past_due to create new checkout (for payment update)
-                pass
-        
-        # PROTECTION 3: Check for recent checkout sessions (last 30 minutes)
-        recent_checkout = check_recent_checkout_sessions(user)
-        if recent_checkout:
+        # Protection 2: Pending states
+        if user.subscription and user.subscription.status in ['incomplete', 'incomplete_expired']:
             return jsonify({
-                'success': False, 
-                'message': 'You have a recent checkout session. Please complete it or wait 30 minutes.',
-                'checkout_url': recent_checkout['url']
-            }), 400
-        
-        # Create or retrieve Stripe customer
-        customer_id = get_or_create_stripe_customer(user)
-        if not customer_id:
-            return jsonify({'success': False, 'message': 'Failed to create customer'}), 500
-        
-        # PROTECTION 4: Check for existing active subscriptions in Stripe
-        existing_stripe_subscriptions = stripe.Subscription.list(
-            customer=customer_id,
-            status='active',
-            limit=1
-        )
-        
-        if existing_stripe_subscriptions.data:
-            # User has active subscription in Stripe but not in our DB - sync it
-            sync_subscription_from_stripe(user, existing_stripe_subscriptions.data[0])
-            return jsonify({
-                'success': False, 
-                'message': 'You already have an active subscription.',
+                'success': False,
+                'message': 'Complete your pending subscription first',
                 'redirect': '/dashboard'
-            }), 400
-        
+            }), 409
+
+        # Protection 3: Recent sessions
+        if recent := check_recent_checkout_sessions(user):
+            return jsonify({
+                'success': False,
+                'message': 'Complete your recent checkout first',
+                'checkout_url': recent['url']
+            }), 429  # 429 Too Many Requests
+
+        # Get or create customer
+        if not (customer_id := get_or_create_stripe_customer(user)):
+            return jsonify({'success': False, 'message': 'Payment profile error'}), 500
+
+        # Protection 4: Stripe state verification
+        if subs := stripe.Subscription.list(customer=customer_id, status='active', limit=1).data:
+            sync_subscription_from_stripe(user, subs[0])
+            return jsonify({
+                'success': False,
+                'message': 'Subscription exists in payment system',
+                'redirect': '/dashboard'
+            }), 409
+
         # Create checkout session
-        checkout_session = stripe.checkout.Session.create(
+        session = stripe.checkout.Session.create(
             payment_method_types=['card'],
-            line_items=[{
-                'price': STRIPE_PRICE_ID,
-                'quantity': 1,
-            }],
+            line_items=[{'price': STRIPE_PRICE_ID, 'quantity': 1}],
             mode='subscription',
-            success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('subscribe', _external=True) + '?canceled=true',
+            success_url=url_for('payment_success', _external=True),
+            cancel_url=url_for('subscribe', _external=True),
             customer=customer_id,
-            metadata={
-                'user_id': str(user.id),
-                'created_at': str(int(datetime.utcnow().timestamp()))
-            },
-            # Prevent multiple subscriptions
-            subscription_data={
-                'metadata': {
-                    'user_id': str(user.id)
-                }
-            }
+            metadata={'user_id': str(user.id)},
+            subscription_data={'metadata': {'user_id': str(user.id)}},
+            idempotency_key=f"{user.id}-{int(datetime.utcnow().timestamp())}"
         )
-        
-        return jsonify({'success': True, 'checkout_url': checkout_session.url})
-        
-    except stripe.error.StripeError as e:
-        print(f"Stripe error: {e}")
-        return jsonify({'success': False, 'message': f'Stripe error: {str(e)}'}), 500
-    except Exception as e:
-        print(f"Checkout error: {e}")
-        return jsonify({'success': False, 'message': 'Failed to create checkout session'}), 500
 
+        logger.info(f"Created checkout session {session.id} for user {user.id}")
+        return jsonify({'success': True, 'checkout_url': session.url})
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Payment system error'}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': 'System error'}), 500
 def get_or_create_stripe_customer(user):
     """Get existing or create new Stripe customer"""
     try:
