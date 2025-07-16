@@ -186,6 +186,92 @@
             font-size: 0.8rem;
         }
 
+        /* Video Actions */
+        .video-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .action-btn.liked {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        .action-btn.liked:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .share-menu {
+            position: relative;
+            display: inline-block;
+        }
+
+        .share-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            min-width: 200px;
+            z-index: 100;
+            display: none;
+            margin-top: 5px;
+        }
+
+        .share-dropdown.active {
+            display: block;
+        }
+
+        .share-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .share-option:last-child {
+            border-bottom: none;
+        }
+
+        .share-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .share-icon {
+            font-size: 1.2rem;
+        }
+
         /* Comments System */
         .comments-section {
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -565,6 +651,17 @@
                 font-size: 0.8rem;
             }
 
+            .video-actions {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .action-btn {
+                flex: 1;
+                min-width: 100px;
+                justify-content: center;
+            }
+
             .comment-avatar {
                 width: 35px;
                 height: 35px;
@@ -654,6 +751,10 @@
         .comment-like-btn.liked {
             animation: heartBeat 0.3s ease;
         }
+
+        .action-btn.liked {
+            animation: heartBeat 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -693,95 +794,12 @@
         // Global variables
         let videos = [];
         let currentUser = null;
-        let comments = {}; // Store comments for each video
+        let videoLikes = {}; // Track video likes
         let activeReplyForms = {}; // Track active reply forms
         let currentUserName = 'User'; // Default username
 
-        // Sample video data for demo
-        const sampleVideos = [
-            {
-                id: 1,
-                title: "The Mystery of the Abandoned Lighthouse",
-                description: "A haunting tale of discovery and secrets hidden in plain sight. Follow Sarah as she uncovers the truth behind the lighthouse that has stood empty for decades.",
-                youtube_video_id: "dQw4w9WgXcQ",
-                created_at: "2024-01-15T10:30:00Z"
-            },
-            {
-                id: 2,
-                title: "Love Letters from Tomorrow",
-                description: "An emotional journey through time where past and future collide. Experience the power of love that transcends the boundaries of time itself.",
-                youtube_video_id: "dQw4w9WgXcQ",
-                created_at: "2024-01-12T14:20:00Z"
-            },
-            {
-                id: 3,
-                title: "The Last Train to Nowhere",
-                description: "A thrilling adventure aboard a mysterious train that appears only at midnight. Where does it go? Who are the passengers? The answers will surprise you.",
-                youtube_video_id: "dQw4w9WgXcQ",
-                created_at: "2024-01-10T09:15:00Z"
-            }
-        ];
-
-        // Initialize comments data
-        function initializeComments() {
-            comments = {
-                1: [
-                    {
-                        id: 1,
-                        author: "MysteryFan2024",
-                        text: "This story gave me chills! The way you built the suspense was incredible. Can't wait for the next episode!",
-                        time: "2 hours ago",
-                        likes: 12,
-                        liked: false,
-                        replies: [
-                            {
-                                id: 1,
-                                author: "StoryLover",
-                                text: "I totally agree! The lighthouse setting was perfect.",
-                                time: "1 hour ago",
-                                likes: 3,
-                                liked: false
-                            }
-                        ]
-                    },
-                    {
-                        id: 2,
-                        author: "ThrillerAddict",
-                        text: "The plot twist at the end was mind-blowing! I did not see that coming at all.",
-                        time: "4 hours ago",
-                        likes: 8,
-                        liked: true,
-                        replies: []
-                    }
-                ],
-                2: [
-                    {
-                        id: 3,
-                        author: "RomanticHeart",
-                        text: "This made me cry happy tears! Such a beautiful story about love conquering all.",
-                        time: "1 day ago",
-                        likes: 15,
-                        liked: false,
-                        replies: []
-                    }
-                ],
-                3: [
-                    {
-                        id: 4,
-                        author: "AdventureSeeker",
-                        text: "The atmosphere you created was so immersive! I felt like I was on that train.",
-                        time: "3 days ago",
-                        likes: 6,
-                        liked: false,
-                        replies: []
-                    }
-                ]
-            };
-        }
-
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            initializeComments();
             loadUserInfo();
             loadVideos();
         });
@@ -789,22 +807,34 @@
         // Load user information
         async function loadUserInfo() {
             try {
-                const userEmail = sessionStorage.getItem('user_email') || 'premium@voyce.com';
-                document.getElementById('user-email').textContent = userEmail;
-                currentUserName = userEmail.split('@')[0]; // Use email prefix as username
+                const response = await fetch('/api/auth/check');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    document.getElementById('user-email').textContent = currentUser.email;
+                    currentUserName = currentUser.email.split('@')[0];
+                } else {
+                    window.location.href = '/';
+                }
             } catch (error) {
                 console.error('Error loading user info:', error);
+                window.location.href = '/';
             }
         }
 
-        // Load videos (using sample data for demo)
+        // Load videos from API
         async function loadVideos() {
             try {
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const response = await fetch('/api/videos');
+                const data = await response.json();
                 
-                videos = sampleVideos;
-                displayVideos(videos);
+                if (data.success) {
+                    videos = data.videos;
+                    displayVideos(videos);
+                } else {
+                    throw new Error(data.message || 'Failed to load videos');
+                }
             } catch (error) {
                 console.error('Error loading videos:', error);
                 showError('Failed to load videos. Please check your connection.');
@@ -840,6 +870,20 @@
             videosToShow.forEach(video => {
                 const videoCard = createVideoCard(video);
                 videoFeed.appendChild(videoCard);
+                
+                // Set initial like state
+                const likeBtn = document.getElementById(`like-btn-${video.id}`);
+                const likeCount = document.getElementById(`like-count-${video.id}`);
+                
+                if (video.user_liked) {
+                    likeBtn.classList.add('liked');
+                }
+                likeCount.textContent = video.likes_count || 0;
+            });
+
+            // Load comments for each video
+            videosToShow.forEach(video => {
+                loadComments(video.id);
             });
         }
 
@@ -854,10 +898,9 @@
                 day: 'numeric'
             });
 
-            const videoComments = comments[video.id] || [];
-            const totalComments = videoComments.reduce((total, comment) => {
-                return total + 1 + (comment.replies ? comment.replies.length : 0);
-            }, 0);
+            const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            const shareTitle = `${video.title} - Voyce Stories`;
+            const shareText = `Check out this amazing story: ${video.title}`;
 
             card.innerHTML = `
                 <div class="video-container">
@@ -877,10 +920,61 @@
                         <span class="video-duration">New</span>
                     </div>
                     
+                    <!-- Video Actions -->
+                    <div class="video-actions">
+                        <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
+                            <span>❤️</span>
+                            <span id="like-count-${video.id}">0</span>
+                        </button>
+                        
+                        <div class="share-menu">
+                            <button class="action-btn" onclick="toggleShareMenu(${video.id})">
+                                <span>🔗</span>
+                                Share
+                            </button>
+                            <div class="share-dropdown" id="share-menu-${video.id}">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeUrl)}" 
+                                   target="_blank" class="share-option">
+                                    <span class="share-icon">📘</span>
+                                    Facebook
+                                </a>
+                                <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeUrl)}&text=${encodeURIComponent(shareText)}" 
+                                   target="_blank" class="share-option">
+                                    <span class="share-icon">🐦</span>
+                                    Twitter
+                                </a>
+                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeUrl)}" 
+                                   target="_blank" class="share-option">
+                                    <span class="share-icon">💼</span>
+                                    LinkedIn
+                                </a>
+                                <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeUrl)}" 
+                                   target="_blank" class="share-option">
+                                    <span class="share-icon">💬</span>
+                                    WhatsApp
+                                </a>
+                                <a href="${youtubeUrl}" 
+                                   target="_blank" class="share-option">
+                                    <span class="share-icon">📺</span>
+                                    Watch on YouTube
+                                </a>
+                                <a href="mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + ' ' + youtubeUrl)}" 
+                                   class="share-option">
+                                    <span class="share-icon">✉️</span>
+                                    Email
+                                </a>
+                                <a href="#" onclick="copyToClipboard('${youtubeUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option">
+                                    <span class="share-icon">📋</span>
+                                    Copy YouTube Link
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Comments Section -->
                     <div class="comments-section">
                         <div class="comments-header">
-                            <div class="comments-count">${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}</div>
+                            <div class="comments-count" id="comment-count-${video.id}">0 comments</div>
                             <button class="comments-toggle" onclick="toggleComments(${video.id})">
                                 <span id="toggle-text-${video.id}">Show Comments</span>
                             </button>
@@ -904,7 +998,7 @@
                             
                             <!-- Comments List -->
                             <div class="comments-list" id="comments-list-${video.id}">
-                                ${renderComments(videoComments, video.id)}
+                                <!-- Comments will be loaded here -->
                             </div>
                         </div>
                     </div>
@@ -933,6 +1027,220 @@
         // Generate avatar from name
         function generateAvatar(name) {
             return name.charAt(0).toUpperCase();
+        }
+
+        // Toggle video like
+        async function toggleVideoLike(videoId) {
+            try {
+                const response = await fetch(`/api/videos/${videoId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    const likeBtn = document.getElementById(`like-btn-${videoId}`);
+                    const likeCount = document.getElementById(`like-count-${videoId}`);
+                    
+                    if (data.liked) {
+                        likeBtn.classList.add('liked');
+                    } else {
+                        likeBtn.classList.remove('liked');
+                    }
+                    
+                    likeCount.textContent = data.likes_count;
+                    videoLikes[videoId] = data.liked;
+                } else {
+                    console.error('Failed to toggle like:', data.message);
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+            }
+        }
+
+        // Toggle share menu
+        function toggleShareMenu(videoId) {
+            const shareMenu = document.getElementById(`share-menu-${videoId}`);
+            shareMenu.classList.toggle('active');
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.share-menu')) {
+                    shareMenu.classList.remove('active');
+                }
+            });
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(url, title) {
+            navigator.clipboard.writeText(url).then(() => {
+                // Show success message
+                const Toast = {
+                    show: (message) => {
+                        const toast = document.createElement('div');
+                        toast.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #4CAF50;
+                            color: white;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            z-index: 10000;
+                            font-size: 0.9rem;
+                        `;
+                        toast.textContent = message;
+                        document.body.appendChild(toast);
+                        
+                        setTimeout(() => {
+                            toast.remove();
+                        }, 3000);
+                    }
+                };
+                
+                Toast.show(`YouTube link copied! "${title}"`);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const Toast = {
+                    show: (message) => {
+                        const toast = document.createElement('div');
+                        toast.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #4CAF50;
+                            color: white;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            z-index: 10000;
+                            font-size: 0.9rem;
+                        `;
+                        toast.textContent = message;
+                        document.body.appendChild(toast);
+                        
+                        setTimeout(() => {
+                            toast.remove();
+                        }, 3000);
+                    }
+                };
+                
+                Toast.show(`YouTube link copied! "${title}"`);
+            });
+        }
+
+        // Load comments for a video
+        async function loadComments(videoId) {
+            try {
+                const response = await fetch(`/api/videos/${videoId}/comments`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayComments(videoId, data.comments);
+                    updateCommentCount(videoId, data.comments);
+                } else {
+                    console.error('Failed to load comments:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+
+        // Display comments
+        function displayComments(videoId, comments) {
+            const commentsList = document.getElementById(`comments-list-${videoId}`);
+            
+            if (comments.length === 0) {
+                commentsList.innerHTML = `
+                    <div class="comments-empty">
+                        <div class="comments-empty-icon">💬</div>
+                        <div class="comments-empty-text">No comments yet</div>
+                        <div class="comments-empty-subtitle">Be the first to share your thoughts!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            commentsList.innerHTML = comments.map(comment => renderComment(comment, videoId)).join('');
+        }
+
+        // Render a single comment
+        function renderComment(comment, videoId) {
+            const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join('');
+            
+            return `
+                <div class="comment">
+                    <div class="comment-avatar">${generateAvatar(comment.author)}</div>
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <div class="comment-author">${escapeHtml(comment.author)}</div>
+                            <div class="comment-time">${comment.time}</div>
+                        </div>
+                        <div class="comment-text">${escapeHtml(comment.text)}</div>
+                        <div class="comment-footer">
+                            <button class="comment-like-btn ${comment.liked ? 'liked' : ''}" 
+                                    onclick="toggleCommentLike(${comment.id})">
+                                <span>❤️</span>
+                                <span id="comment-like-count-${comment.id}">${comment.likes}</span>
+                            </button>
+                            <button class="comment-reply-btn" onclick="showReplyForm(${comment.id}, ${videoId})">
+                                <span>↩️</span>
+                                Reply
+                            </button>
+                        </div>
+                        ${repliesHtml ? `<div class="replies">${repliesHtml}</div>` : ''}
+                        <div class="reply-form" id="reply-form-${comment.id}" style="display: none;">
+                            <textarea class="reply-input" 
+                                      id="reply-input-${comment.id}" 
+                                      placeholder="Write a reply..."
+                                      rows="2"></textarea>
+                            <div class="comment-actions">
+                                <button class="cancel-btn" onclick="cancelReply(${comment.id})">Cancel</button>
+                                <button class="comment-btn" onclick="postReply(${comment.id}, ${videoId})">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render a reply
+        function renderReply(reply, videoId) {
+            return `
+                <div class="reply">
+                    <div class="comment-header">
+                        <div class="comment-author">${escapeHtml(reply.author)}</div>
+                        <div class="comment-time">${reply.time}</div>
+                    </div>
+                    <div class="comment-text">${escapeHtml(reply.text)}</div>
+                    <div class="comment-footer">
+                        <button class="comment-like-btn ${reply.liked ? 'liked' : ''}" 
+                                onclick="toggleCommentLike(${reply.id})">
+                            <span>❤️</span>
+                            <span id="comment-like-count-${reply.id}">${reply.likes}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update comment count
+        function updateCommentCount(videoId, comments) {
+            const totalComments = comments.reduce((total, comment) => {
+                return total + 1 + (comment.replies ? comment.replies.length : 0);
+            }, 0);
+            
+            const commentCount = document.getElementById(`comment-count-${videoId}`);
+            commentCount.textContent = `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`;
         }
 
         // Toggle comments visibility
@@ -967,35 +1275,184 @@
         }
 
         // Post comment
-        function postComment(videoId) {
-    const input = document.getElementById(`comment-input-${videoId}`);
-    const text = input.value.trim();
+        async function postComment(videoId) {
+            const input = document.getElementById(`comment-input-${videoId}`);
+            const text = input.value.trim();
 
-    if (!text) return;
+            if (!text) return;
 
-    // Create new comment
-    const newComment = {
-        id: Date.now(),
-        author: currentUserName,
-        text: text,
-        time: 'just now',
-        likes: 0,
-        liked: false,
-        replies: []
-    };
+            try {
+                const response = await fetch(`/api/videos/${videoId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
 
-    // Add to local comments array
-    if (!comments[videoId]) {
-        comments[videoId] = [];
-    }
-    comments[videoId].unshift(newComment);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Reset input
+                    input.value = '';
+                    input.style.height = 'auto';
+                    cancelComment(videoId);
+                    
+                    // Reload comments
+                    loadComments(videoId);
+                } else {
+                    console.error('Failed to post comment:', data.message);
+                }
+            } catch (error) {
+                console.error('Error posting comment:', error);
+            }
+        }
 
-    // Re-render comments
-    const commentsList = document.getElementById(`comments-list-${videoId}`);
-    commentsList.innerHTML = renderComments(comments[videoId], videoId);
+        // Toggle comment like
+        async function toggleCommentLike(commentId) {
+            try {
+                const response = await fetch(`/api/comments/${commentId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-    // Reset input
-    input.value = '';
-    input.style.height = 'auto';
-    cancelComment(videoId);
-}
+                const data = await response.json();
+                
+                if (data.success) {
+                    const likeBtn = document.querySelector(`[onclick="toggleCommentLike(${commentId})"]`);
+                    const likeCount = document.getElementById(`comment-like-count-${commentId}`);
+                    
+                    if (data.liked) {
+                        likeBtn.classList.add('liked');
+                    } else {
+                        likeBtn.classList.remove('liked');
+                    }
+                    
+                    likeCount.textContent = data.likes_count;
+                } else {
+                    console.error('Failed to toggle comment like:', data.message);
+                }
+            } catch (error) {
+                console.error('Error toggling comment like:', error);
+            }
+        }
+
+        // Show reply form
+        function showReplyForm(commentId, videoId) {
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            replyForm.style.display = 'block';
+            
+            const replyInput = document.getElementById(`reply-input-${commentId}`);
+            replyInput.focus();
+        }
+
+        // Cancel reply
+        function cancelReply(commentId) {
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            const replyInput = document.getElementById(`reply-input-${commentId}`);
+            
+            replyInput.value = '';
+            replyForm.style.display = 'none';
+        }
+
+        // Post reply
+        async function postReply(commentId, videoId) {
+            const replyInput = document.getElementById(`reply-input-${commentId}`);
+            const text = replyInput.value.trim();
+
+            if (!text) return;
+
+            try {
+                const response = await fetch(`/api/videos/${videoId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        text,
+                        parent_id: commentId 
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Reset input
+                    replyInput.value = '';
+                    cancelReply(commentId);
+                    
+                    // Reload comments
+                    loadComments(videoId);
+                } else {
+                    console.error('Failed to post reply:', data.message);
+                }
+            } catch (error) {
+                console.error('Error posting reply:', error);
+            }
+        }
+
+        // Auto-resize textarea
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Show error message
+        function showError(message) {
+            const videoFeed = document.getElementById('video-feed');
+            const loading = document.getElementById('loading');
+            
+            loading.style.display = 'none';
+            
+            videoFeed.innerHTML = `
+                <div class="error-message">
+                    ${message}
+                </div>
+            `;
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    console.error('Logout failed:', data.message);
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                // Force redirect even if logout fails
+                window.location.href = '/';
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            // Close all share menus
+            document.querySelectorAll('.share-dropdown').forEach(menu => {
+                if (!e.target.closest('.share-menu')) {
+                    menu.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
