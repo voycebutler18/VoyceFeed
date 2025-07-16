@@ -1,6 +1,3 @@
-# FILE LOCATION: /app.py (root of your GitHub repo)
-# Complete Flask application for subscription-based storytelling website
-
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -10,6 +7,10 @@ import re
 import stripe
 from functools import wraps
 from sqlalchemy import func
+import logging # Import the logging module
+from flask_wtf.csrf import CSRFProtect # Import CSRFProtect
+from flask_limiter import Limiter # Import Limiter
+from flask_limiter.util import get_remote_address # Import get_remote_address
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -41,6 +42,17 @@ if not STRIPE_PUBLISHABLE_KEY:
 # Initialize extensions
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+csrf = CSRFProtect(app) # Initialize CSRFProtect
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+) # Initialize Limiter
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # Database Models
 class User(db.Model):
@@ -621,7 +633,6 @@ def edit_comment(comment_id):
         return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
 
 # Add this new route for handling successful payments
-# Add this new route for handling successful payments
 @app.route('/payment-success')
 @login_required
 def payment_success():
@@ -738,6 +749,7 @@ def create_checkout_session():
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'message': 'System error'}), 500
+
 def get_or_create_stripe_customer(user):
     """Get existing or create new Stripe customer"""
     try:
@@ -848,18 +860,14 @@ def sync_subscription_from_stripe(user, stripe_subscription):
                 user_id=user.id,
                 stripe_customer_id=stripe_subscription.customer,
                 stripe_subscription_id=stripe_subscription.id,
-                status=stripe_subscription.status,
+                status=stripe_subscription.status, # Complete the status assignment
                 current_period_start=datetime.fromtimestamp(stripe_subscription.current_period_start),
                 current_period_end=datetime.fromtimestamp(stripe_subscription.current_period_end)
             )
             db.session.add(new_subscription)
-        
         db.session.commit()
-        print(f"Synced subscription from Stripe for user {user.id}")
-        
     except Exception as e:
-        print(f"Error syncing subscription from Stripe: {e}")
-        db.session.rollback()
+        logger.error(f"Error syncing subscription from Stripe for user {user.id}: {e}")
 
 # Enhanced subscription status check
 @app.route('/api/user/subscription-status')
