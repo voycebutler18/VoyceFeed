@@ -52,6 +52,10 @@ class User(db.Model):
     
     # Relationship to subscription
     subscription = db.relationship('Subscription', backref='user', uselist=False)
+    # Relationship to comments
+    comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
+    # Relationship to comment likes
+    comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
@@ -61,6 +65,10 @@ class User(db.Model):
             return False
         return (self.subscription.status == 'active' and 
                 self.subscription.current_period_end > datetime.utcnow())
+    
+    def get_display_name(self):
+        """Get display name from email"""
+        return self.email.split('@')[0]
 
 class Subscription(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,6 +91,70 @@ class Video(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship to comments
+    comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # For replies
+    text = db.Column(db.Text, nullable=False)
+    likes_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Self-referential relationship for replies
+    replies = db.relationship('Comment', 
+                             backref=db.backref('parent', remote_side=[id]),
+                             lazy=True,
+                             cascade='all, delete-orphan')
+    
+    # Relationship to likes
+    likes = db.relationship('CommentLike', backref='comment', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self, current_user_id=None):
+        """Convert comment to dictionary for JSON response"""
+        liked_by_user = False
+        if current_user_id:
+            liked_by_user = any(like.user_id == current_user_id for like in self.likes)
+        
+        return {
+            'id': self.id,
+            'author': self.user.get_display_name(),
+            'text': self.text,
+            'time': self.get_time_ago(),
+            'likes': self.likes_count,
+            'liked': liked_by_user,
+            'replies': [reply.to_dict(current_user_id) for reply in self.replies],
+            'created_at': self.created_at.isoformat()
+        }
+    
+    def get_time_ago(self):
+        """Get human-readable time ago"""
+        now = datetime.utcnow()
+        diff = now - self.created_at
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "just now"
+
+class CommentLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure unique user-comment combination
+    __table_args__ = (db.UniqueConstraint('user_id', 'comment_id'),)
 
 # Helper Functions
 def extract_youtube_video_id(url):
@@ -290,6 +362,170 @@ def get_videos():
     
     return jsonify({'success': True, 'videos': video_list})
 
+# Comment System Routes
+@app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
+@subscription_required
+def get_comments(video_id):
+    """Get comments for a specific video"""
+    try:
+        # Check if video exists
+        video = Video.query.get_or_404(video_id)
+        
+        # Get top-level comments (not replies)
+        comments = Comment.query.filter_by(
+            video_id=video_id, 
+            parent_id=None
+        ).order_by(Comment.created_at.desc()).all()
+        
+        current_user_id = session['user_id']
+        
+        comment_list = []
+        for comment in comments:
+            comment_list.append(comment.to_dict(current_user_id))
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'total_count': len(comments)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
+
+@app.route('/api/videos/<int:video_id>/comments', methods=['POST'])
+@subscription_required
+def post_comment(video_id):
+    """Post a new comment on a video"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        parent_id = data.get('parent_id')  # For replies
+        
+        if not text:
+            return jsonify({'success': False, 'message': 'Comment text is required'}), 400
+        
+        # Check if video exists
+        video = Video.query.get_or_404(video_id)
+        
+        # Check if parent comment exists (for replies)
+        if parent_id:
+            parent_comment = Comment.query.get(parent_id)
+            if not parent_comment or parent_comment.video_id != video_id:
+                return jsonify({'success': False, 'message': 'Invalid parent comment'}), 400
+        
+        # Create new comment
+        comment = Comment(
+            video_id=video_id,
+            user_id=session['user_id'],
+            parent_id=parent_id,
+            text=text
+        )
+        
+        db.session.add(comment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Comment posted successfully',
+            'comment': comment.to_dict(session['user_id'])
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to post comment'}), 500
+
+@app.route('/api/comments/<int:comment_id>/like', methods=['POST'])
+@subscription_required
+def toggle_comment_like(comment_id):
+    """Toggle like on a comment"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        user_id = session['user_id']
+        
+        # Check if user already liked this comment
+        existing_like = CommentLike.query.filter_by(
+            user_id=user_id,
+            comment_id=comment_id
+        ).first()
+        
+        if existing_like:
+            # Unlike the comment
+            db.session.delete(existing_like)
+            comment.likes_count = max(0, comment.likes_count - 1)
+            liked = False
+        else:
+            # Like the comment
+            new_like = CommentLike(user_id=user_id, comment_id=comment_id)
+            db.session.add(new_like)
+            comment.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': comment.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
+
+@app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
+@subscription_required
+def delete_comment(comment_id):
+    """Delete a comment (only by the author or admin)"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        user = User.query.get(session['user_id'])
+        
+        # Check if user can delete this comment
+        if comment.user_id != user.id and not user.is_admin:
+            return jsonify({'success': False, 'message': 'Not authorized to delete this comment'}), 403
+        
+        db.session.delete(comment)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Comment deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
+
+@app.route('/api/comments/<int:comment_id>', methods=['PUT'])
+@subscription_required
+def edit_comment(comment_id):
+    """Edit a comment (only by the author)"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        user_id = session['user_id']
+        
+        # Check if user can edit this comment
+        if comment.user_id != user_id:
+            return jsonify({'success': False, 'message': 'Not authorized to edit this comment'}), 403
+        
+        data = request.get_json()
+        new_text = data.get('text', '').strip()
+        
+        if not new_text:
+            return jsonify({'success': False, 'message': 'Comment text is required'}), 400
+        
+        comment.text = new_text
+        comment.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Comment updated successfully',
+            'comment': comment.to_dict(user_id)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
+
 # Subscription Routes
 @app.route('/subscribe')
 @login_required
@@ -472,6 +708,10 @@ def admin_stats():
             'videos_this_month': Video.query.filter(
                 Video.created_at >= month_start,
                 Video.is_active == True
+            ).count(),
+            'total_comments': Comment.query.count(),
+            'comments_this_month': Comment.query.filter(
+                Comment.created_at >= month_start
             ).count()
         }
         
@@ -489,6 +729,7 @@ def admin_get_videos():
         
         video_list = []
         for video in videos:
+            comment_count = Comment.query.filter_by(video_id=video.id).count()
             video_list.append({
                 'id': video.id,
                 'title': video.title,
@@ -497,7 +738,8 @@ def admin_get_videos():
                 'youtube_video_id': video.youtube_video_id,
                 'thumbnail_url': video.thumbnail_url,
                 'is_active': video.is_active,
-                'created_at': video.created_at.isoformat()
+                'created_at': video.created_at.isoformat(),
+                'comment_count': comment_count
             })
         
         return jsonify({'success': True, 'videos': video_list})
@@ -601,6 +843,277 @@ def admin_update_video(video_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to update video'}), 500
+
+@app.route('/api/admin/comments', methods=['GET'])
+@admin_required
+def admin_get_comments():
+    """Get all comments for admin moderation"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        video_id = request.args.get('video_id', type=int)
+        
+        query = Comment.query
+        
+        # Filter by video if specified
+        if video_id:
+            query = query.filter_by(video_id=video_id)
+        
+        # Get paginated results
+        comments = query.order_by(Comment.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        comment_list = []
+        for comment in comments.items:
+            comment_data = comment.to_dict()
+            comment_data['video_title'] = comment.video.title
+            comment_data['user_email'] = comment.user.email
+            comment_list.append(comment_data)
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'pagination': {
+                'page': comments.page,
+                'pages': comments.pages,
+                'per_page': comments.per_page,
+                'total': comments.total,
+                'has_next': comments.has_next,
+                'has_prev': comments.has_prev
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/comments/<int:comment_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_comment(comment_id):
+    """Delete comment (admin only)"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        
+        db.session.delete(comment)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Comment deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_get_users():
+    """Get all users for admin"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        users = User.query.order_by(User.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        user_list = []
+        for user in users.items:
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'display_name': user.get_display_name(),
+                'is_admin': user.is_admin,
+                'created_at': user.created_at.isoformat(),
+                'has_subscription': user.has_active_subscription(),
+                'subscription_status': user.subscription.status if user.subscription else None,
+                'subscription_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None,
+                'comment_count': Comment.query.filter_by(user_id=user.id).count()
+            }
+            user_list.append(user_data)
+        
+        return jsonify({
+            'success': True,
+            'users': user_list,
+            'pagination': {
+                'page': users.page,
+                'pages': users.pages,
+                'per_page': users.per_page,
+                'total': users.total,
+                'has_next': users.has_next,
+                'has_prev': users.has_prev
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def admin_toggle_user_admin(user_id):
+    """Toggle admin status for a user"""
+    try:
+        user = User.query.get_or_404(user_id)
+        current_admin = User.query.get(session['user_id'])
+        
+        # Don't allow admin to remove their own admin status
+        if user.id == current_admin.id:
+            return jsonify({'success': False, 'message': 'Cannot modify your own admin status'}), 400
+        
+        user.is_admin = not user.is_admin
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'User {"granted" if user.is_admin else "revoked"} admin access',
+            'is_admin': user.is_admin
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update user'}), 500
+
+# User Profile Routes
+@app.route('/api/user/profile', methods=['GET'])
+@login_required
+def get_user_profile():
+    """Get current user's profile"""
+    try:
+        user = User.query.get(session['user_id'])
+        
+        profile_data = {
+            'id': user.id,
+            'email': user.email,
+            'display_name': user.get_display_name(),
+            'is_admin': user.is_admin,
+            'created_at': user.created_at.isoformat(),
+            'has_subscription': user.has_active_subscription(),
+            'subscription_status': user.subscription.status if user.subscription else None,
+            'subscription_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None,
+            'comment_count': Comment.query.filter_by(user_id=user.id).count()
+        }
+        
+        return jsonify({
+            'success': True,
+            'profile': profile_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Failed to load profile'}), 500
+
+@app.route('/api/user/comments', methods=['GET'])
+@subscription_required
+def get_user_comments():
+    """Get current user's comments"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        user_id = session['user_id']
+        
+        comments = Comment.query.filter_by(user_id=user_id).order_by(
+            Comment.created_at.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        comment_list = []
+        for comment in comments.items:
+            comment_data = comment.to_dict(user_id)
+            comment_data['video_title'] = comment.video.title
+            comment_data['video_id'] = comment.video.id
+            comment_list.append(comment_data)
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'pagination': {
+                'page': comments.page,
+                'pages': comments.pages,
+                'per_page': comments.per_page,
+                'total': comments.total,
+                'has_next': comments.has_next,
+                'has_prev': comments.has_prev
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
+
+# Search Routes
+@app.route('/api/search/videos', methods=['GET'])
+@subscription_required
+def search_videos():
+    """Search videos by title and description"""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if not query:
+            return jsonify({'success': False, 'message': 'Search query is required'}), 400
+        
+        videos = Video.query.filter(
+            Video.is_active == True,
+            db.or_(
+                Video.title.ilike(f'%{query}%'),
+                Video.description.ilike(f'%{query}%')
+            )
+        ).order_by(Video.created_at.desc()).all()
+        
+        video_list = []
+        for video in videos:
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url,
+                'youtube_video_id': video.youtube_video_id,
+                'thumbnail_url': video.thumbnail_url,
+                'created_at': video.created_at.isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'videos': video_list,
+            'query': query,
+            'count': len(video_list)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Search failed'}), 500
+
+@app.route('/api/search/comments', methods=['GET'])
+@subscription_required
+def search_comments():
+    """Search comments by text"""
+    try:
+        query = request.args.get('q', '').strip()
+        video_id = request.args.get('video_id', type=int)
+        
+        if not query:
+            return jsonify({'success': False, 'message': 'Search query is required'}), 400
+        
+        comment_query = Comment.query.filter(
+            Comment.text.ilike(f'%{query}%')
+        )
+        
+        if video_id:
+            comment_query = comment_query.filter_by(video_id=video_id)
+        
+        comments = comment_query.order_by(Comment.created_at.desc()).all()
+        
+        current_user_id = session['user_id']
+        comment_list = []
+        for comment in comments:
+            comment_data = comment.to_dict(current_user_id)
+            comment_data['video_title'] = comment.video.title
+            comment_data['video_id'] = comment.video.id
+            comment_list.append(comment_data)
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'query': query,
+            'count': len(comment_list)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Search failed'}), 500
 
 # Error handlers
 @app.errorhandler(404)
