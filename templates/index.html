@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Voyce Stories - Premium Storytelling Experience</title>
+    <title>Stories - Premium Storytelling Experience</title>
     <style>
         * {
             margin: 0;
@@ -219,7 +219,7 @@
         </div>
 
         <div class="admin-link">
-            <a href="admin.html">Admin Access</a>
+            <a href="/admin">Admin Access</a>
         </div>
     </div>
 
@@ -257,7 +257,7 @@
             const password = document.getElementById('login-password').value;
 
             try {
-                const response = await fetch('/api/auth/login.php', {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -300,7 +300,7 @@
             }
 
             try {
-                const response = await fetch('/api/auth/register.php', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
