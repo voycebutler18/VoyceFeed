@@ -1,9 +1,9 @@
-# Alternative requirements.txt with newer PostgreSQL adapter
+# Essential dependencies for subscription-based storytelling website
 
 Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
 Flask-Bcrypt==1.0.1
-psycopg[binary]==3.1.13
+psycopg[binary]==3.2.2
 stripe==7.8.0
 gunicorn==21.2.0
 requests==2.31.0
