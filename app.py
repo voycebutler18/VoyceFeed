@@ -611,6 +611,7 @@ def edit_comment(comment_id):
         return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
 
 # Add this new route for handling successful payments
+# Add this new route for handling successful payments
 @app.route('/payment-success')
 @login_required
 def payment_success():
@@ -640,10 +641,30 @@ def subscribe():
     return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
 
 # Enhanced checkout session creation with comprehensive protection
+@app.route('/api/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    """Create Stripe checkout session with double-payment protection"""
+    try:
+        if not stripe.api_key:
+            return jsonify({'success': False, 'message': 'Stripe not configured'}), 500
+        
+        if not STRIPE_PRICE_ID:
+            return jsonify({'success': False, 'message': 'Stripe price ID not configured'}), 500
+        
+        user = User.query.get(session['user_id'])
+        
+        # PROTECTION 1: Check for active subscription
+        if user.has_active_subscription():
+            return jsonify({
+                'success': False, 
+                'message': 'You already have an active subscription. Please visit your dashboard.',
+                'redirect': '/dashboard'
+            }), 400
 
-            # PROTECTION 2: Check for pending/incomplete subscriptions
-    if user.subscription:
-        if user.subscription.status in ['incomplete', 'incomplete_expired']:
+        # PROTECTION 2: Check for pending/incomplete subscriptions
+        if user.subscription:
+            if user.subscription.status in ['incomplete', 'incomplete_expired']:
                 return jsonify({
                     'success': False, 
                     'message': 'You have a pending subscription. Please complete or cancel it first.',
@@ -911,71 +932,6 @@ def check_duplicate_subscriptions():
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-
-# Update the checkout session creation
-@app.route('/api/create-checkout-session', methods=['POST'])
-@login_required
-def create_checkout_session():
-    """Create Stripe checkout session with double-payment protection"""
-    try:
-        if not stripe.api_key:
-            return jsonify({'success': False, 'message': 'Stripe not configured'}), 500
-        
-        if not STRIPE_PRICE_ID:
-            return jsonify({'success': False, 'message': 'Stripe price ID not configured'}), 500
-        
-        user = User.query.get(session['user_id'])
-        
-        # PROTECTION 1: Check for active subscription
-        if user.has_active_subscription():
-            return jsonify({
-                'success': False, 
-                'message': 'You already have an active subscription. Please visit your dashboard.',
-                'redirect': '/dashboard'
-            }), 400
-        
-        # Create or retrieve Stripe customer
-        try:
-            # Check if user already has a customer ID
-            if user.subscription and user.subscription.stripe_customer_id and user.subscription.stripe_customer_id != 'manual_unlimited':
-                customer_id = user.subscription.stripe_customer_id
-            else:
-                # Create new customer
-                customer = stripe.Customer.create(
-                    email=user.email,
-                    metadata={
-                        'user_id': str(user.id)
-                    }
-                )
-                customer_id = customer.id
-        except Exception as e:
-            print(f"Error creating customer: {e}")
-            return jsonify({'success': False, 'message': 'Failed to create customer'}), 500
-        
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price': STRIPE_PRICE_ID,
-                'quantity': 1,
-            }],
-            mode='subscription',
-            # FIXED: Corrected the syntax errors in your original code
-            success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('subscribe', _external=True) + '?canceled=true',
-            customer=customer_id,
-            metadata={
-                'user_id': str(user.id)
-            }
-        )
-        
-        return jsonify({'success': True, 'checkout_url': checkout_session.url})
-        
-    except stripe.error.StripeError as e:
-        print(f"Stripe error: {e}")
-        return jsonify({'success': False, 'message': f'Stripe error: {str(e)}'}), 500
-    except Exception as e:
-        print(f"Checkout error: {e}")
-        return jsonify({'success': False, 'message': 'Failed to create checkout session'}), 500
 
 # Add API endpoint to check subscription status
 @app.route('/api/check-subscription-status')
