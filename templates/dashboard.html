@@ -654,6 +654,7 @@
             .video-actions {
                 flex-wrap: wrap;
                 gap: 10px;
+                align-items: flex-start; /* Changed from center to flex-start */
             }
 
             .action-btn {
@@ -766,11 +767,14 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(5px);
+            display: flex; /* Added to center content */
+            justify-content: center; /* Added to center content */
+            align-items: center; /* Added to center content */
         }
 
         .modal-content {
             background: #0a0a0a;
-            margin: 5% auto;
+            margin: auto; /* Changed from 5% auto to auto */
             padding: 30px;
             border-radius: 20px;
             width: 90%;
@@ -945,7 +949,8 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+
     <div class="header">
         <div class="header-content">
             <div class="logo">Stories</div>
@@ -956,9 +961,7 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Welcome Section -->
         <div class="welcome-section">
             <div class="welcome-title">Welcome to Voyce Stories</div>
             <div class="welcome-subtitle">
@@ -967,9 +970,7 @@
             </div>
         </div>
 
-        <!-- Video Feed -->
         <div class="video-feed" id="video-feed">
-            <!-- Loading State -->
             <div class="loading" id="loading">
                 <div class="loading-spinner"></div>
                 <div class="loading-text">Loading your stories...</div>
@@ -977,31 +978,27 @@
         </div>
     </div>
 
-    <!-- Likes Modal -->
     <div id="likes-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title">Video Likes</div>
-                <button class="close-btn" onclick="closeLikesModal()">&times;</button>
+                <button class="close-btn" onclick="closeLikesModal()">×</button>
             </div>
             
             <div class="likes-content" id="likes-content">
-                <!-- Likes will be loaded here -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Comments Modal -->
     <div id="comments-modal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <div class="modal-title">Video Comments</div>
-                <button class="close-btn" onclick="closeCommentsModal()">&times;</button>
+                <button class="close-btn" onclick="closeCommentsModal()">×</button>
             </div>
             
             <div class="comments-content" id="comments-content">
-                <!-- Comments will be loaded here -->
-            </div>
+                </div>
         </div>
     </div>
 
@@ -1113,14 +1110,16 @@
                 day: 'numeric'
             });
 
-            const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            // Correct YouTube embed URL: use embed/ and not youtube.com/0 or youtube.com/1/2
+            const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
+            const youtubeShareUrl = `https://youtu.be/${video.youtube_video_id}`; // Use youtu.be for sharing
             const shareTitle = `${video.title} - Voyce Stories`;
             const shareText = `Check out this amazing story: ${video.title}`;
 
             card.innerHTML = `
                 <div class="video-container">
                     <iframe 
-                        src="https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1" 
+                        src="${youtubeEmbedUrl}" 
                         title="${escapeHtml(video.title)}"
                         frameborder="0" 
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -1135,11 +1134,10 @@
                         <span class="video-duration">New</span>
                     </div>
                     
-                    <!-- Video Actions -->
                     <div class="video-actions">
                         <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
                             <span>❤️</span>
-                            <span id="like-count-${video.id}">0</span>
+                            <span id="like-count-${video.id}">${video.likes_count || 0}</span>
                         </button>
                         
                         <div class="share-menu">
@@ -1148,37 +1146,37 @@
                                 Share
                             </button>
                             <div class="share-dropdown" id="share-menu-${video.id}">
-                                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeUrl)}" 
-                                   target="_blank" class="share-option">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeShareUrl)}" 
+                                    target="_blank" class="share-option">
                                     <span class="share-icon">📘</span>
                                     Facebook
                                 </a>
-                                <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeUrl)}&text=${encodeURIComponent(shareText)}" 
-                                   target="_blank" class="share-option">
+                                <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeShareUrl)}&text=${encodeURIComponent(shareText)}" 
+                                    target="_blank" class="share-option">
                                     <span class="share-icon">🐦</span>
                                     Twitter
                                 </a>
-                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeUrl)}" 
-                                   target="_blank" class="share-option">
+                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeShareUrl)}" 
+                                    target="_blank" class="share-option">
                                     <span class="share-icon">💼</span>
                                     LinkedIn
                                 </a>
-                                <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeUrl)}" 
-                                   target="_blank" class="share-option">
+                                <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
+                                    target="_blank" class="share-option">
                                     <span class="share-icon">💬</span>
                                     WhatsApp
                                 </a>
-                                <a href="${youtubeUrl}" 
-                                   target="_blank" class="share-option">
+                                <a href="${youtubeShareUrl}" 
+                                    target="_blank" class="share-option">
                                     <span class="share-icon">📺</span>
                                     Watch on YouTube
                                 </a>
-                                <a href="mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + ' ' + youtubeUrl)}" 
-                                   class="share-option">
+                                <a href="mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
+                                    class="share-option">
                                     <span class="share-icon">✉️</span>
                                     Email
                                 </a>
-                                <a href="#" onclick="copyToClipboard('${youtubeUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option">
+                                <a href="#" onclick="copyToClipboard('${youtubeShareUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option">
                                     <span class="share-icon">📋</span>
                                     Copy YouTube Link
                                 </a>
@@ -1186,7 +1184,6 @@
                         </div>
                     </div>
                     
-                    <!-- Comments Section -->
                     <div class="comments-section">
                         <div class="comments-header">
                             <div class="comments-count" id="comment-count-${video.id}" onclick="viewVideoComments(${video.id})">0 comments</div>
@@ -1196,7 +1193,6 @@
                         </div>
                         
                         <div class="comments-container" id="comments-${video.id}" style="display: none;">
-                            <!-- Comment Form -->
                             <div class="comment-form">
                                 <div class="comment-avatar">${generateAvatar(currentUserName)}</div>
                                 <div class="comment-input-container">
@@ -1211,10 +1207,8 @@
                                 </div>
                             </div>
                             
-                            <!-- Comments List -->
                             <div class="comments-list" id="comments-list-${video.id}">
-                                <!-- Comments will be loaded here -->
-                            </div>
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -1246,11 +1240,15 @@
 
         // Toggle video like
         async function toggleVideoLike(videoId) {
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
                 const response = await fetch(`/api/videos/${videoId}/like`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token
                     }
                 });
 
@@ -1282,6 +1280,8 @@
             shareMenu.classList.toggle('active');
             
             // Close menu when clicking outside
+            // This listener should ideally be added once globally if it handles all share menus
+            // but for simplicity, keeping it here for now.
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.share-menu')) {
                     shareMenu.classList.remove('active');
@@ -1392,6 +1392,11 @@
         function renderComment(comment, videoId) {
             const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join('');
             
+            // Determine if the current user can delete this comment (if it's their comment OR if they are an admin)
+            const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.is_admin);
+            const deleteButton = canDelete ? 
+                `<button class="delete-comment-btn" onclick="deleteComment(${comment.id}, ${videoId})">Delete</button>` : '';
+
             return `
                 <div class="comment">
                     <div class="comment-avatar">${generateAvatar(comment.author)}</div>
@@ -1411,6 +1416,7 @@
                                 <span>↩️</span>
                                 Reply
                             </button>
+                            ${deleteButton}
                         </div>
                         ${repliesHtml ? `<div class="replies">${repliesHtml}</div>` : ''}
                         <div class="reply-form" id="reply-form-${comment.id}" style="display: none;">
@@ -1430,6 +1436,11 @@
 
         // Render a reply
         function renderReply(reply, videoId) {
+            // Determine if the current user can delete this reply (if it's their reply OR if they are an admin)
+            const canDelete = currentUser && (currentUser.id === reply.user_id || currentUser.is_admin);
+            const deleteButton = canDelete ? 
+                `<button class="delete-comment-btn" onclick="deleteComment(${reply.id}, ${videoId})">Delete</button>` : '';
+
             return `
                 <div class="reply">
                     <div class="comment-header">
@@ -1443,6 +1454,7 @@
                             <span>❤️</span>
                             <span id="comment-like-count-${reply.id}">${reply.likes}</span>
                         </button>
+                        ${deleteButton}
                     </div>
                 </div>
             `;
@@ -1496,11 +1508,15 @@
 
             if (!text) return;
 
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
                 const response = await fetch(`/api/videos/${videoId}/comments`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token
                     },
                     body: JSON.stringify({ text })
                 });
@@ -1525,11 +1541,15 @@
 
         // Toggle comment like
         async function toggleCommentLike(commentId) {
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
                 const response = await fetch(`/api/comments/${commentId}/like`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token
                     }
                 });
 
@@ -1556,11 +1576,19 @@
 
         // Show reply form
         function showReplyForm(commentId, videoId) {
+            // Hide any other active reply forms for this video
+            for (const id in activeReplyForms) {
+                if (activeReplyForms[id] === videoId && id != commentId) {
+                    cancelReply(id);
+                }
+            }
+
             const replyForm = document.getElementById(`reply-form-${commentId}`);
             replyForm.style.display = 'block';
             
             const replyInput = document.getElementById(`reply-input-${commentId}`);
             replyInput.focus();
+            activeReplyForms[commentId] = videoId; // Mark this form as active
         }
 
         // Cancel reply
@@ -1570,6 +1598,7 @@
             
             replyInput.value = '';
             replyForm.style.display = 'none';
+            delete activeReplyForms[commentId]; // Remove from active forms
         }
 
         // Post reply
@@ -1579,11 +1608,15 @@
 
             if (!text) return;
 
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
                 const response = await fetch(`/api/videos/${videoId}/comments`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token
                     },
                     body: JSON.stringify({ 
                         text,
@@ -1614,14 +1647,14 @@
             textarea.style.height = textarea.scrollHeight + 'px';
         }
 
-        // Escape HTML
+        // Escape HTML for display
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Show error message
+        // Show error message (for overall page issues)
         function showError(message) {
             const videoFeed = document.getElementById('video-feed');
             const loading = document.getElementById('loading');
@@ -1637,50 +1670,61 @@
 
         // Logout function
         async function logout() {
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
                 const response = await fetch('/api/auth/logout', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token
                     }
                 });
 
                 const data = await response.json();
                 
                 if (data.success) {
-                    window.location.href = '/';
+                    window.location.href = '/'; // Redirect to login/home
                 } else {
                     console.error('Logout failed:', data.message);
+                    // Optionally show a message to the user
                 }
             } catch (error) {
                 console.error('Error during logout:', error);
-                // Force redirect even if logout fails
+                // Force redirect even if logout fails due to network error
                 window.location.href = '/';
             }
         }
 
-        // Close dropdowns when clicking outside
+        // Close dropdowns and modals when clicking outside
         document.addEventListener('click', function(e) {
             // Close all share menus
             document.querySelectorAll('.share-dropdown').forEach(menu => {
-                if (!e.target.closest('.share-menu')) {
+                // Ensure the click target is not within this share menu's button or itself
+                if (!e.target.closest('.share-menu') && menu.classList.contains('active')) {
                     menu.classList.remove('active');
                 }
             });
 
-            // Close modals when clicking outside
+            // Close modals when clicking outside the modal content
             const likesModal = document.getElementById('likes-modal');
             const commentsModal = document.getElementById('comments-modal');
             
-            if (e.target === likesModal) {
+            if (likesModal.style.display === 'block' && !e.target.closest('.modal-content')) {
                 closeLikesModal();
-            } else if (e.target === commentsModal) {
+            }
+            if (commentsModal.style.display === 'block' && !e.target.closest('.modal-content')) {
                 closeCommentsModal();
             }
         });
 
-        // View video comments (for admin/management)
+        // View video comments (for admin/management - note: your /api/admin/videos/:id/comments route is not defined in app.py)
+        // This function will need a corresponding backend endpoint.
         async function viewVideoComments(videoId) {
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
                 document.getElementById('comments-content').innerHTML = `
                     <div class="loading-small">
@@ -1691,7 +1735,12 @@
                 
                 document.getElementById('comments-modal').style.display = 'block';
                 
-                const response = await fetch(`/api/admin/videos/${videoId}/comments`);
+                // Assuming this is an admin-specific endpoint that might need an Admin check
+                const response = await fetch(`/api/admin/videos/${videoId}/comments`, {
+                    headers: {
+                        'X-CSRFToken': csrfToken // Include CSRF token for admin actions too
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1700,22 +1749,22 @@
                     document.getElementById('comments-content').innerHTML = `
                         <div class="empty-state-small">
                             <div class="empty-icon">❌</div>
-                            <div>Failed to load comments</div>
+                            <div>Failed to load comments: ${escapeHtml(data.message || 'Unknown error')}</div>
                         </div>
                     `;
                 }
             } catch (error) {
-                console.error('Error loading comments:', error);
+                console.error('Error loading comments for modal:', error);
                 document.getElementById('comments-content').innerHTML = `
                     <div class="empty-state-small">
                         <div class="empty-icon">❌</div>
-                        <div>Failed to load comments</div>
+                        <div>Failed to load comments due to a connection error.</div>
                     </div>
                 `;
             }
         }
 
-        // Display comments in modal
+        // Display comments in modal (likely used by admin panel)
         function displayCommentsModal(comments) {
             const commentsContent = document.getElementById('comments-content');
             
@@ -1733,15 +1782,14 @@
             commentsContent.innerHTML = comments.map(comment => `
                 <div class="comment-item">
                     <div class="user-info">
-                        <div class="user-avatar">${generateAvatar(comment.user_name)}</div>
+                        <div class="user-avatar">${generateAvatar(comment.author)}</div>
                         <div class="user-details">
-                            <div class="user-name">${escapeHtml(comment.user_name)}</div>
-                            <div class="user-email">${escapeHtml(comment.user_email)}</div>
-                            <div class="comment-text">${escapeHtml(comment.text)}</div>
+                            <div class="user-name">${escapeHtml(comment.author)}</div>
+                            <div class="user-email">${escapeHtml(comment.email)}</div> <div class="comment-text">${escapeHtml(comment.text)}</div>
                             <div class="comment-meta">
                                 <span class="comment-time">${formatTimeAgo(comment.created_at)}</span>
-                                <span class="comment-likes">❤️ ${comment.likes_count || 0}</span>
-                                ${comment.replies_count > 0 ? `<span>💬 ${comment.replies_count} replies</span>` : ''}
+                                <span class="comment-likes">❤️ ${comment.likes || 0}</span>
+                                ${comment.replies && comment.replies.length > 0 ? `<span>💬 ${comment.replies.length} replies</span>` : ''}
                             </div>
                         </div>
                     </div>
@@ -1750,15 +1798,22 @@
             `).join('');
         }
 
-        // Delete comment from modal
+        // Delete comment from modal (for admin access)
         async function deleteCommentFromModal(commentId) {
             if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
                 return;
             }
             
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
             try {
-                const response = await fetch(`/api/admin/comments/${commentId}`, {
-                    method: 'DELETE'
+                // This typically would be an admin-specific DELETE route
+                const response = await fetch(`/api/comments/${commentId}`, { // Corrected endpoint to match your app.py
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrfToken // Include CSRF token
+                    }
                 });
                 
                 const result = await response.json();
@@ -1768,8 +1823,12 @@
                     const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
                     commentElement.remove();
                     
-                    // Refresh video list to update comment counts
-                    loadVideos();
+                    // Also refresh comments in the main feed if it's open, and update the count
+                    videos.forEach(video => {
+                        if (document.getElementById(`comments-${video.id}`).style.display === 'block') {
+                            loadComments(video.id);
+                        }
+                    });
                 } else {
                     alert('Failed to delete comment: ' + (result.message || 'Unknown error'));
                 }
@@ -1778,6 +1837,37 @@
                 alert('Failed to delete comment. Please try again.');
             }
         }
+
+        // Delete comment from main feed (by author or admin)
+        // This function is new, to handle delete directly on comments rendered in the feed
+        async function deleteComment(commentId, videoId) {
+            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
+                return;
+            }
+            
+            const csrfToken = document.getElementById('csrf_token').value;
+
+            try {
+                const response = await fetch(`/api/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadComments(videoId); // Reload comments for the video to reflect deletion
+                } else {
+                    alert('Failed to delete comment: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                alert('Failed to delete comment. Please try again.');
+            }
+        }
+
 
         // Close comments modal
         function closeCommentsModal() {
