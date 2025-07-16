@@ -184,7 +184,8 @@
 
         <div class="error-message" id="error-message"></div>
 
-        <!-- Login Form -->
+        <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+
         <div id="login-form" class="form-container active">
             <form onsubmit="handleLogin(event)">
                 <div class="form-group">
@@ -199,7 +200,6 @@
             </form>
         </div>
 
-        <!-- Signup Form -->
         <div id="signup-form" class="form-container">
             <form onsubmit="handleSignup(event)">
                 <div class="form-group">
@@ -255,12 +255,15 @@
             
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
 
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token in the headers
                     },
                     body: JSON.stringify({ email, password })
                 });
@@ -289,6 +292,8 @@
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm').value;
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
 
             if (password !== confirmPassword) {
                 showError('Passwords do not match.');
@@ -305,6 +310,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token in the headers
                     },
                     body: JSON.stringify({ email, password })
                 });
