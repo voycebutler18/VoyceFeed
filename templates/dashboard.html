@@ -55,10 +55,42 @@
             gap: 15px;
         }
 
+        /* NEW: User Info Group for Email + Streak */
+        .user-info-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Align items to the right */
+            gap: 5px; /* Space between email and streak */
+        }
+
         .user-email {
             font-size: 0.9rem;
             opacity: 0.7;
         }
+
+        /* NEW: Streak Tracker Badge */
+        .streak-tracker {
+            display: inline-flex; /* Use inline-flex to keep content on one line */
+            align-items: center;
+            background: rgba(255, 215, 0, 0.2); /* Gold-ish background */
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #ffd700; /* Gold text */
+            box-shadow: 0 2px 5px rgba(255, 215, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        .streak-tracker:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(255, 215, 0, 0.2);
+        }
+        .streak-icon {
+            margin-right: 5px;
+            font-size: 1em; /* Adjust icon size relative to text */
+        }
+
 
         .logout-btn {
             background: rgba(255, 255, 255, 0.1);
@@ -109,6 +141,79 @@
             opacity: 0.8;
             line-height: 1.5;
         }
+
+        /* NEW: General Dashboard Section Styling */
+        .dashboard-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px; /* Space between sections */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #ff6b6b; /* Accent color for headers */
+            text-align: center;
+        }
+
+        .section-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Space between items in a section */
+        }
+
+        .story-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .story-item:hover {
+            background: rgba(255, 255, 255, 0.07);
+            transform: translateY(-2px);
+        }
+        .story-thumbnail {
+            width: 80px;
+            height: 45px; /* 16:9 aspect ratio for 80px width */
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+        .story-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .story-details {
+            flex-grow: 1;
+        }
+        .story-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        .story-meta {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        .story-genre-tag {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.75em;
+            margin-left: 5px;
+        }
+
 
         /* Video Feed */
         .video-feed {
@@ -271,6 +376,45 @@
         .share-icon {
             font-size: 1.2rem;
         }
+
+        /* NEW: Behind the Story */
+        .behind-the-story-toggle {
+            display: block; /* Make it a block button */
+            width: fit-content; /* Fit to content width */
+            margin: 0 auto 15px; /* Center and add margin below */
+            padding: 8px 15px;
+            background: rgba(102, 126, 234, 0.2); /* Light blue gradient color */
+            border: 1px solid rgba(102, 126, 234, 0.4);
+            border-radius: 8px;
+            color: #667eea; /* Matching text color */
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .behind-the-story-toggle:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+        }
+        .behind-the-story-content {
+            background: rgba(255, 255, 255, 0.02); /* Very subtle background */
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: none; /* Hidden by default, toggled by JS */
+            animation: fadeIn 0.3s ease-out; /* Add a fade-in animation */
+        }
+        .behind-the-story-content p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
 
         /* Comments System */
         .comments-section {
@@ -617,6 +761,11 @@
                 display: none;
             }
 
+            .streak-tracker { /* Keep visible on mobile for now */
+                font-size: 0.7rem;
+                padding: 3px 8px;
+            }
+
             .main-content {
                 padding: 15px;
                 margin-top: 70px;
@@ -633,6 +782,29 @@
 
             .welcome-subtitle {
                 font-size: 1rem;
+            }
+            .dashboard-section {
+                padding: 15px;
+            }
+            .section-header {
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+            .story-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            .story-thumbnail {
+                width: 100px;
+                height: 56px;
+            }
+            .story-details {
+                text-align: center;
+            }
+            .story-genre-tag {
+                margin: 5px auto 0;
+                display: inline-block;
             }
 
             .video-info {
@@ -662,6 +834,18 @@
                 min-width: 100px;
                 justify-content: center;
             }
+            
+            .behind-the-story-toggle {
+                font-size: 0.85rem;
+                padding: 6px 12px;
+            }
+            .behind-the-story-content {
+                padding: 12px;
+            }
+            .behind-the-story-content p {
+                font-size: 0.85rem;
+            }
+
 
             .comment-avatar {
                 width: 35px;
@@ -946,6 +1130,83 @@
             opacity: 1;
             transform: translateY(-1px);
         }
+
+        /* NEW: Floating Feedback Button */
+        .feedback-button-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999;
+        }
+        .feedback-button {
+            background: linear-gradient(45deg, #4ade80, #22c55e); /* Green gradient */
+            color: white;
+            border: none;
+            border-radius: 50%; /* Circular button */
+            width: 60px;
+            height: 60px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .feedback-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
+        }
+        /* NEW: Feedback Modal */
+        #feedback-modal .modal-content {
+            max-width: 450px;
+            padding: 30px;
+        }
+        #feedback-modal textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+            margin-bottom: 15px;
+            font-family: 'SF Pro Display', sans-serif;
+        }
+        #feedback-modal textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        #feedback-modal button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #feedback-modal button:hover {
+            background: linear-gradient(45deg, #22c55e, #4ade80);
+            transform: translateY(-1px);
+        }
+        .feedback-success-message {
+            color: #4ade80;
+            margin-top: 15px;
+            display: none;
+            font-size: 0.9rem;
+        }
+        .feedback-error-message {
+            color: #ff6b6b;
+            margin-top: 15px;
+            display: none;
+            font-size: 0.9rem;
+        }
+
     </style>
 </head>
 <body>
@@ -955,7 +1216,10 @@
         <div class="header-content">
             <div class="logo">Stories</div>
             <div class="user-menu">
-                <span class="user-email" id="user-email">Loading...</span>
+                <div class="user-info-group">
+                    <span class="user-email" id="user-email">Loading...</span>
+                    <span class="streak-tracker" id="watch-streak"><span class="streak-icon">🔥</span> <span id="streak-count">0</span>-Day Streak</span>
+                </div>
                 <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -967,6 +1231,32 @@
             <div class="welcome-subtitle">
                 Discover captivating mysteries and emotional narratives.<br>
                 Your premium storytelling experience awaits.
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-header">This Month's Top Stories</div>
+            <div class="section-content" id="top-stories-list">
+                <div class="story-item placeholder">
+                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-details">
+                        <div class="story-title">Loading Top Stories...</div>
+                        <div class="story-meta">Views: Loading</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-header">Start a New Series</div>
+            <div class="section-content" id="new-series-list">
+                <div class="story-item placeholder">
+                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-details">
+                        <div class="story-title">Discovering New Series...</div>
+                        <div class="story-meta">Genre: Loading</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1002,6 +1292,22 @@
         </div>
     </div>
 
+    <div id="feedback-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Suggest a Story / Give Feedback</div>
+                <button class="close-btn" onclick="closeFeedbackModal()">×</button>
+            </div>
+            <textarea id="feedback-text" placeholder="Share your ideas or tell us what you think!"></textarea>
+            <button onclick="submitFeedback()">Send Feedback</button>
+            <div id="feedback-message" class="feedback-success-message"></div>
+        </div>
+    </div>
+
+    <div class="feedback-button-container">
+        <button class="feedback-button" onclick="showFeedbackModal()">💡</button>
+    </div>
+
     <script>
         // Global variables
         let videos = [];
@@ -1009,11 +1315,15 @@
         let videoLikes = {}; // Track video likes
         let activeReplyForms = {}; // Track active reply forms
         let currentUserName = 'User'; // Default username
+        let dailyWatchStreak = 0; // NEW: Streak tracker
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
             loadVideos();
+            loadTopStories(); // NEW: Load top stories
+            loadNewSeries();  // NEW: Load new series
+            updateDailyWatchStreak(); // NEW: Update streak
         });
 
         // Load user information
@@ -1110,11 +1420,20 @@
                 day: 'numeric'
             });
 
-            // Correct YouTube embed URL: use embed/ and not youtube.com/0 or youtube.com/1/2
             const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
-            const youtubeShareUrl = `https://youtu.be/${video.youtube_video_id}`; // Use youtu.be for sharing
+            const youtubeShareUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
             const shareTitle = `${video.title} - Voyce Stories`;
             const shareText = `Check out this amazing story: ${video.title}`;
+
+            // NEW: Placeholder for Behind the Story content
+            const behindTheStoryContent = video.description ? `
+                <button class="behind-the-story-toggle" onclick="toggleBehindTheStory(${video.id})">Behind the Story</button>
+                <div class="behind-the-story-content" id="behind-the-story-${video.id}">
+                    <p>This story was inspired by [Creator's Insight for ${escapeHtml(video.title)}].</p>
+                    <p>My goal was to [Explain Creative Goal].</p>
+                    </div>
+            ` : '';
+
 
             card.innerHTML = `
                 <div class="video-container">
@@ -1134,7 +1453,7 @@
                         <span class="video-duration">New</span>
                     </div>
                     
-                    <div class="video-actions">
+                    ${behindTheStoryContent} <div class="video-actions">
                         <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
                             <span>❤️</span>
                             <span id="like-count-${video.id}">${video.likes_count || 0}</span>
@@ -1426,7 +1745,7 @@
                                       rows="2"></textarea>
                             <div class="comment-actions">
                                 <button class="cancel-btn" onclick="cancelReply(${comment.id})">Cancel</button>
-                                <button class="comment-btn" onclick="postReply(${comment.id}, ${videoId})">Reply</button>
+                                <button class="comment-btn" onclick="postReply(${comment.id}, ${videoId})">Post</button>
                             </div>
                         </div>
                     </div>
@@ -1710,12 +2029,16 @@
             // Close modals when clicking outside the modal content
             const likesModal = document.getElementById('likes-modal');
             const commentsModal = document.getElementById('comments-modal');
-            
+            const feedbackModal = document.getElementById('feedback-modal'); // NEW: Feedback modal
+
             if (likesModal.style.display === 'block' && !e.target.closest('.modal-content')) {
                 closeLikesModal();
             }
             if (commentsModal.style.display === 'block' && !e.target.closest('.modal-content')) {
                 closeCommentsModal();
+            }
+            if (feedbackModal.style.display === 'block' && !e.target.closest('.modal-content') && !e.target.closest('.feedback-button-container')) { // NEW: Feedback modal
+                closeFeedbackModal();
             }
         });
 
@@ -1899,6 +2222,155 @@
                 return 'Just now';
             }
         }
+
+        // NEW: Feature 11 - This Month's Top Stories (Frontend Mock)
+        function loadTopStories() {
+            const topStoriesList = document.getElementById('top-stories-list');
+            // This would typically fetch from a backend API, e.g., /api/videos/top-stories
+            const mockTopStories = [
+                { id: 101, title: "The Whispering Woods", views: "1.2K", thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg" },
+                { id: 102, title: "Echoes of the Past", views: "987", thumbnail: "https://i.ytimg.com/vi/3tX8Wf8iB6Y/mqdefault.jpg" },
+                { id: 103, title: "The Crimson Key", views: "750", thumbnail: "https://i.ytimg.com/vi/W-w3WKgD32E/mqdefault.jpg" },
+                // Add more mock stories as needed
+            ];
+
+            topStoriesList.innerHTML = mockTopStories.map(story => `
+                <div class="story-item" onclick="alert('Playing Top Story: ${escapeHtml(story.title)}')">
+                    <div class="story-thumbnail"><img src="${story.thumbnail}" alt="${escapeHtml(story.title)}"></div>
+                    <div class="story-details">
+                        <div class="story-title">${escapeHtml(story.title)}</div>
+                        <div class="story-meta">Views: ${story.views}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // NEW: Feature 12 - Start a New Series (Frontend Mock)
+        function loadNewSeries() {
+            const newSeriesList = document.getElementById('new-series-list');
+            // This would typically fetch from a backend API, e.g., /api/series/new
+            const mockNewSeries = [
+                { id: 201, title: "Shadow Play", genre: "Thriller", thumbnail: "https://i.ytimg.com/vi/ZXsK2w2fI0c/mqdefault.jpg" },
+                { id: 202, title: "The Glitch in Time", genre: "Sci-Fi", thumbnail: "https://i.ytimg.com/vi/yKNxS9t2o3A/mqdefault.jpg" },
+                { id: 203, title: "Family Secrets", genre: "Drama", thumbnail: "https://i.ytimg.com/vi/DqXh2tP_o_8/mqdefault.jpg" },
+                // Add more mock series as needed
+            ];
+
+            newSeriesList.innerHTML = mockNewSeries.map(series => `
+                <div class="story-item" onclick="alert('Starting New Series: ${escapeHtml(series.title)}')">
+                    <div class="story-thumbnail"><img src="${series.thumbnail}" alt="${escapeHtml(series.title)}"></div>
+                    <div class="story-details">
+                        <div class="story-title">${escapeHtml(series.title)} <span class="story-genre-tag">${escapeHtml(series.genre)}</span></div>
+                        <div class="story-meta">Status: Not Started</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // NEW: Feature 13 - Behind the Story Toggle
+        function toggleBehindTheStory(videoId) {
+            const contentDiv = document.getElementById(`behind-the-story-${videoId}`);
+            if (contentDiv) {
+                if (contentDiv.style.display === 'none' || contentDiv.style.display === '') {
+                    contentDiv.style.display = 'block';
+                } else {
+                    contentDiv.style.display = 'none';
+                }
+            }
+        }
+
+        // NEW: Feature 14 - Feedback Box Modal
+        function showFeedbackModal() {
+            document.getElementById('feedback-modal').style.display = 'flex'; // Use flex to center
+            document.getElementById('feedback-text').value = ''; // Clear previous text
+            document.getElementById('feedback-message').style.display = 'none'; // Hide messages
+            document.getElementById('feedback-message').className = 'feedback-success-message'; // Reset class
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedback-modal').style.display = 'none';
+        }
+
+        async function submitFeedback() {
+            const feedbackText = document.getElementById('feedback-text').value.trim();
+            const feedbackMessageDiv = document.getElementById('feedback-message');
+            const csrfToken = document.getElementById('csrf_token').value; // Get the CSRF token
+
+            if (!feedbackText) {
+                feedbackMessageDiv.textContent = 'Feedback cannot be empty.';
+                feedbackMessageDiv.className = 'feedback-error-message';
+                feedbackMessageDiv.style.display = 'block';
+                return;
+            }
+
+            feedbackMessageDiv.textContent = 'Sending feedback...';
+            feedbackMessageDiv.className = 'feedback-success-message'; // Use success class for loading too
+            feedbackMessageDiv.style.display = 'block';
+
+            try {
+                // This would be a new backend endpoint, e.g., /api/feedback
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include CSRF token
+                    },
+                    body: JSON.stringify({ feedback: feedbackText })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) { // Check response.ok for 2xx status codes
+                    feedbackMessageDiv.textContent = 'Thank you for your feedback!';
+                    feedbackMessageDiv.className = 'feedback-success-message';
+                    document.getElementById('feedback-text').value = ''; // Clear text area
+                    setTimeout(() => closeFeedbackModal(), 2000); // Close after 2 seconds
+                } else {
+                    throw new Error(data.message || 'Failed to send feedback.');
+                }
+            } catch (error) {
+                console.error('Error sending feedback:', error);
+                feedbackMessageDiv.textContent = error.message || 'Error sending feedback. Please try again.';
+                feedbackMessageDiv.className = 'feedback-error-message';
+            }
+        }
+
+        // NEW: Feature 15 - Daily Watch Streak (Frontend Mock)
+        function updateDailyWatchStreak() {
+            // In a real app, this would involve fetching the streak from the backend
+            // and updating it based on daily watch activity.
+            // For now, let's mock it using localStorage.
+            const lastWatchDate = localStorage.getItem('lastWatchDate');
+            const today = new Date().toDateString();
+
+            if (lastWatchDate === today) {
+                // Watched today, streak continues
+                // No change to streak count for today, assuming it was updated yesterday
+            } else {
+                const lastDate = new Date(lastWatchDate);
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                if (lastWatchDate && lastDate.toDateString() === yesterday.toDateString()) {
+                    // Watched yesterday, increment streak
+                    dailyWatchStreak = parseInt(localStorage.getItem('dailyWatchStreak') || '0') + 1;
+                } else {
+                    // Gap in watching or first watch, reset streak
+                    dailyWatchStreak = 1;
+                }
+                localStorage.setItem('dailyWatchStreak', dailyWatchStreak.toString());
+                localStorage.setItem('lastWatchDate', today);
+            }
+
+            document.getElementById('streak-count').textContent = dailyWatchStreak;
+        }
+
+        // IMPORTANT: Ensure the auto-resize textarea function is available globally
+        // or copied into any new script blocks that need it.
+        // It's already defined in your original script block, so it should be fine.
+
+        // Make sure `escapeHtml` is globally available for new functions
+        // It's already defined in your original script block, so it should be fine.
     </script>
 </body>
 </html>
