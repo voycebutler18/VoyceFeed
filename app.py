@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date # Import date for last_watch_date
 import os
 import re
 import stripe
@@ -64,6 +64,9 @@ class User(db.Model):
     password_hash = db.Column(db.String(60), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # NEW: Fields for watch streak
+    last_watch_date = db.Column(db.Date, nullable=True)
+    watch_streak = db.Column(db.Integer, default=0)
     
     # Relationship to subscription
     subscription = db.relationship('Subscription', backref='user', uselist=False)
@@ -203,6 +206,24 @@ class CommentLike(db.Model):
         db.UniqueConstraint('user_id', 'comment_id'),
         {'extend_existing': True}
     )
+
+# NEW: Feedback Model
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    feedback_text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'feedback_text': self.feedback_text,
+            'created_at': self.created_at.isoformat(),
+            'user_email': self.user.email # Assuming user relationship is available
+        }
+
 
 # Helper Functions
 def extract_youtube_video_id(url):
@@ -1590,11 +1611,153 @@ def internal_error(error):
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
     return redirect(url_for('index'))
 
+# NEW FEATURE ROUTES START HERE
+
+@app.route('/api/videos/top-stories', methods=['GET'])
+@subscription_required
+def get_top_stories():
+    """
+    API to get top trending videos based on likes count.
+    Returns top 5 videos.
+    """
+    try:
+        top_videos = Video.query.filter_by(is_active=True).order_by(Video.likes_count.desc()).limit(5).all()
+        
+        video_list = []
+        for video in top_videos:
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_video_id': video.youtube_video_id,
+                'thumbnail_url': video.thumbnail_url,
+                'likes_count': video.likes_count
+            })
+        
+        return jsonify({'success': True, 'videos': video_list})
+    except Exception as e:
+        logger.error(f"Error fetching top stories: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to load top stories'}), 500
+
+@app.route('/api/series/new', methods=['GET'])
+@subscription_required
+def get_new_series():
+    """
+    API to get new series for discovery.
+    Currently returns mock data as there is no 'Series' model.
+    """
+    try:
+        # Mock data for new series
+        mock_series = [
+            {
+                'id': 201,
+                'title': "Shadow Play",
+                'genre': "Thriller",
+                'thumbnail_url': "https://i.ytimg.com/vi/ZXsK2w2fI0c/mqdefault.jpg", # Placeholder thumbnail
+                'description': "A gripping thriller about a detective chasing shadows."
+            },
+            {
+                'id': 202,
+                'title': "The Glitch in Time",
+                'genre': "Sci-Fi",
+                'thumbnail_url': "https://i.ytimg.com/vi/yKNxS9t2o3A/mqdefault.jpg", # Placeholder thumbnail
+                'description': "A mind-bending sci-fi journey through temporal anomalies."
+            },
+            {
+                'id': 203,
+                'title': "Family Secrets",
+                'genre': "Drama",
+                'thumbnail_url': "https://i.ytimg.com/vi/DqXh2tP_o_8/mqdefault.jpg", # Placeholder thumbnail
+                'description': "Unraveling generations of hidden truths within a powerful family."
+            }
+        ]
+        
+        return jsonify({'success': True, 'series': mock_series})
+    except Exception as e:
+        logger.error(f"Error fetching new series: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to load new series'}), 500
+
+@app.route('/api/feedback', methods=['POST'])
+@login_required
+def submit_feedback():
+    """
+    API to submit user feedback or story suggestions.
+    """
+    try:
+        data = request.get_json()
+        feedback_text = data.get('feedback', '').strip()
+
+        if not feedback_text:
+            return jsonify({'success': False, 'message': 'Feedback text cannot be empty'}), 400
+        
+        user_id = session['user_id']
+        
+        feedback_entry = Feedback(
+            user_id=user_id,
+            feedback_text=feedback_text
+        )
+        db.session.add(feedback_entry)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Feedback submitted successfully!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error submitting feedback: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to submit feedback'}), 500
+
+@app.route('/api/user/watch-streak', methods=['GET', 'POST'])
+@login_required
+def user_watch_streak():
+    """
+    API to get and update user's daily watch streak.
+    GET: Returns current streak.
+    POST: Updates streak based on daily activity.
+    """
+    user = User.query.get(session['user_id'])
+    today = date.today()
+
+    if request.method == 'GET':
+        return jsonify({
+            'success': True,
+            'streak': user.watch_streak,
+            'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
+        })
+    
+    elif request.method == 'POST':
+        try:
+            if user.last_watch_date == today:
+                # Already updated today, no change needed
+                pass
+            elif user.last_watch_date == (today - timedelta(days=1)):
+                # Watched yesterday, increment streak
+                user.watch_streak += 1
+            else:
+                # Gap in watching or first watch, reset streak to 1
+                user.watch_streak = 1
+            
+            user.last_watch_date = today
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Watch streak updated',
+                'streak': user.watch_streak,
+                'last_watch_date': user.last_watch_date.isoformat()
+            })
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating watch streak for user {user.id}: {e}", exc_info=True)
+            return jsonify({'success': False, 'message': 'Failed to update watch streak'}), 500
+
+
+# NEW FEATURE ROUTES END HERE
+
+
 def create_tables():
     """Create database tables and default admin user"""
     try:
         with app.app_context():
-            db.create_all()
+            db.create_all() # This will create all tables and new columns
 
             # Admin user setup
             admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
