@@ -56,6 +56,8 @@ class User(db.Model):
     comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
     # Relationship to comment likes
     comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
+    # Relationship to video likes
+    video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
@@ -89,11 +91,32 @@ class Video(db.Model):
     youtube_video_id = db.Column(db.String(50), nullable=False)
     thumbnail_url = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)
+    likes_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationship to comments
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
+    # Relationship to likes
+    likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
+
+class VideoLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure unique user-video combination
+    __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
+
+class VideoLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure unique user-video combination
+    __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -335,6 +358,45 @@ def auth_check():
         }
     })
 
+# Video Like System Routes
+@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
+@subscription_required
+def toggle_video_like(video_id):
+    """Toggle like on a video"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        user_id = session['user_id']
+        
+        # Check if user already liked this video
+        existing_like = VideoLike.query.filter_by(
+            user_id=user_id,
+            video_id=video_id
+        ).first()
+        
+        if existing_like:
+            # Unlike the video
+            db.session.delete(existing_like)
+            video.likes_count = max(0, video.likes_count - 1)
+            liked = False
+        else:
+            # Like the video
+            new_like = VideoLike(user_id=user_id, video_id=video_id)
+            db.session.add(new_like)
+            video.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': video.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
+
 # Dashboard Routes
 @app.route('/dashboard')
 @subscription_required
@@ -347,9 +409,16 @@ def dashboard():
 def get_videos():
     """Get all active videos for feed"""
     videos = Video.query.filter_by(is_active=True).order_by(Video.created_at.desc()).all()
+    current_user_id = session['user_id']
     
     video_list = []
     for video in videos:
+        # Check if current user liked this video
+        user_liked = VideoLike.query.filter_by(
+            user_id=current_user_id,
+            video_id=video.id
+        ).first() is not None
+        
         video_list.append({
             'id': video.id,
             'title': video.title,
@@ -357,10 +426,51 @@ def get_videos():
             'youtube_url': video.youtube_url,
             'youtube_video_id': video.youtube_video_id,
             'thumbnail_url': video.thumbnail_url,
+            'likes_count': video.likes_count,
+            'user_liked': user_liked,
             'created_at': video.created_at.isoformat()
         })
     
     return jsonify({'success': True, 'videos': video_list})
+
+# Video Like System Routes
+@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
+@subscription_required
+def toggle_video_like(video_id):
+    """Toggle like on a video"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        user_id = session['user_id']
+        
+        # Check if user already liked this video
+        existing_like = VideoLike.query.filter_by(
+            user_id=user_id,
+            video_id=video_id
+        ).first()
+        
+        if existing_like:
+            # Unlike the video
+            db.session.delete(existing_like)
+            video.likes_count = max(0, video.likes_count - 1)
+            liked = False
+        else:
+            # Like the video
+            new_like = VideoLike(user_id=user_id, video_id=video_id)
+            db.session.add(new_like)
+            video.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': video.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 # Comment System Routes
 @app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
@@ -433,12 +543,6 @@ def post_comment(video_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to post comment'}), 500
-        
-@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
-@subscription_required
-def toggle_video_like(video_id):
-    # Similar to comment like functionality
-    pass
 
 @app.route('/api/comments/<int:comment_id>/like', methods=['POST'])
 @subscription_required
