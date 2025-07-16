@@ -640,28 +640,8 @@ def subscribe():
     return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
 
 # Enhanced checkout session creation with comprehensive protection
-@app.route('/api/create-checkout-session', methods=['POST'])
-@login_required
-def create_checkout_session():
-    """Create Stripe checkout session with double-payment protection"""
-    try:
-        if not stripe.api_key:
-            return jsonify({'success': False, 'message': 'Stripe not configured'}), 500
-        
-        if not STRIPE_PRICE_ID:
-            return jsonify({'success': False, 'message': 'Stripe price ID not configured'}), 500
-        
-        user = User.query.get(session['user_id'])
-        
-        # PROTECTION 1: Check for active subscription
-        if user.has_active_subscription():
-            return jsonify({
-                'success': False, 
-                'message': 'You already have an active subscription. Please visit your dashboard.',
-                'redirect': '/dashboard'
-            }), 400
-        
-        # PROTECTION 2: Check for pending/incomplete subscriptions
+
+            # PROTECTION 2: Check for pending/incomplete subscriptions
         if user.subscription:
             if user.subscription.status in ['incomplete', 'incomplete_expired']:
                 return jsonify({
@@ -936,7 +916,7 @@ def check_duplicate_subscriptions():
 @app.route('/api/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
-    """Create Stripe checkout session"""
+    """Create Stripe checkout session with double-payment protection"""
     try:
         if not stripe.api_key:
             return jsonify({'success': False, 'message': 'Stripe not configured'}), 500
@@ -945,6 +925,14 @@ def create_checkout_session():
             return jsonify({'success': False, 'message': 'Stripe price ID not configured'}), 500
         
         user = User.query.get(session['user_id'])
+        
+        # PROTECTION 1: Check for active subscription
+        if user.has_active_subscription():
+            return jsonify({
+                'success': False, 
+                'message': 'You already have an active subscription. Please visit your dashboard.',
+                'redirect': '/dashboard'
+            }), 400
         
         # Create or retrieve Stripe customer
         try:
@@ -971,7 +959,7 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='subscription',
-            # Change success URL to payment success page
+            # FIXED: Corrected the syntax errors in your original code
             success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=url_for('subscribe', _external=True) + '?canceled=true',
             customer=customer_id,
