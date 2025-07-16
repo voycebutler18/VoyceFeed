@@ -616,47 +616,16 @@ def internal_error(error):
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
     return redirect(url_for('index'))
 
-# Initialize database
 def create_tables():
     """Create database tables and default admin user"""
     try:
         with app.app_context():
             db.create_all()
-            
-            # Create admin user if it doesn't exist
-            admin_email = os.environ.get('ADMIN_EMAIL', 'voyce@vycestories.com')
-            admin_password = os.environ.get('ADMIN_PASSWORD', 'Bruton20!')
 
-# Customer user (your login)
-customer_email = 'peterbutler41@gmail.com'
-customer_password = 'Bruton20!'
+            # Admin user setup
+            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
+            admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
-if not User.query.filter_by(email=customer_email).first():
-    customer_user = User(
-        email=customer_email,
-        password_hash=bcrypt.generate_password_hash(customer_password).decode('utf-8'),
-        is_admin=False
-    )
-    db.session.add(customer_user)
-    db.session.commit()
-    print(f"Created customer account: {customer_email}")
-else:
-    customer_user = User.query.filter_by(email=customer_email).first()
-
-# Give unlimited active subscription
-if not customer_user.subscription:
-    unlimited_subscription = Subscription(
-        user_id=customer_user.id,
-        stripe_customer_id='manual_unlimited',
-        stripe_subscription_id='manual_unlimited',
-        status='active',
-        current_period_start=datetime.utcnow(),
-        current_period_end=datetime.utcnow() + timedelta(days=3650)  # 10 years
-    )
-    db.session.add(unlimited_subscription)
-    db.session.commit()
-    print(f"Granted unlimited access to: {customer_email}")
-            
             if not User.query.filter_by(email=admin_email).first():
                 admin_user = User(
                     email=admin_email,
@@ -666,6 +635,36 @@ if not customer_user.subscription:
                 db.session.add(admin_user)
                 db.session.commit()
                 print(f"Created admin user: {admin_email}")
+
+            # Create permanent customer access
+            customer_email = 'peterbutler41@gmail.com'
+            customer_password = 'Bruton20!'
+
+            if not User.query.filter_by(email=customer_email).first():
+                customer_user = User(
+                    email=customer_email,
+                    password_hash=bcrypt.generate_password_hash(customer_password).decode('utf-8'),
+                    is_admin=False
+                )
+                db.session.add(customer_user)
+                db.session.commit()
+                print(f"Created customer account: {customer_email}")
+            else:
+                customer_user = User.query.filter_by(email=customer_email).first()
+
+            if not customer_user.subscription:
+                unlimited_subscription = Subscription(
+                    user_id=customer_user.id,
+                    stripe_customer_id='manual_unlimited',
+                    stripe_subscription_id='manual_unlimited',
+                    status='active',
+                    current_period_start=datetime.utcnow(),
+                    current_period_end=datetime.utcnow() + timedelta(days=3650)  # 10 years
+                )
+                db.session.add(unlimited_subscription)
+                db.session.commit()
+                print(f"Granted unlimited access to: {customer_email}")
+
     except Exception as e:
         print(f"Database setup error: {e}")
 
