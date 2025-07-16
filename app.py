@@ -76,6 +76,9 @@ class User(db.Model):
         return self.email.split('@')[0]
 
 class Subscription(db.Model):
+    __tablename__ = 'subscription'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     stripe_customer_id = db.Column(db.String(100), nullable=False)
@@ -108,15 +111,17 @@ class Video(db.Model):
 
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'video_id'),
-        {'extend_existing': True}
-    )
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure unique user-video combination and allow table extension
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'video_id'),
+        {'extend_existing': True}
+    )
 
 class VideoLike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -128,6 +133,9 @@ class VideoLike(db.Model):
     __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
 
 class Comment(db.Model):
+    __tablename__ = 'comment'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -180,13 +188,18 @@ class Comment(db.Model):
             return "just now"
 
 class CommentLike(db.Model):
+    __tablename__ = 'comment_like'
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Ensure unique user-comment combination
-    __table_args__ = (db.UniqueConstraint('user_id', 'comment_id'),)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'comment_id'),
+        {'extend_existing': True}
+    )
 
 # Helper Functions
 def extract_youtube_video_id(url):
