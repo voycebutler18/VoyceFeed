@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Voyce Stories</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .processing {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            font-size: 1rem;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .access-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .access-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .access-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .success-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">🎉</div>
+        <h1 class="title">Payment Successful!</h1>
+        <p class="subtitle">Thank you for subscribing to Voyce Stories. We're setting up your account now.</p>
+        
+        <div class="processing" id="processing">
+            <div class="spinner"></div>
+            <span>Processing your subscription...</span>
+        </div>
+        
+        <div class="error-message" id="error-message">
+            There was an issue processing your subscription. Please contact support if this persists.
+        </div>
+        
+        <button class="access-button" id="access-button" onclick="goToDashboard()" disabled>
+            Access Your Stories
+        </button>
+        
+        <p class="status-text" id="status-text">
+            This should only take a few moments. You'll be redirected automatically.
+        </p>
+    </div>
+
+    <script>
+        let checkCount = 0;
+        const maxChecks = 30; // Check for 30 seconds max
+        
+        // Check subscription status every second
+        const checkInterval = setInterval(checkSubscriptionStatus, 1000);
+        
+        // Also check immediately
+        checkSubscriptionStatus();
+        
+        async function checkSubscriptionStatus() {
+            checkCount++;
+            
+            try {
+                const response = await fetch('/api/check-subscription-status');
+                const data = await response.json();
+                
+                if (data.success && data.hasActiveSubscription) {
+                    // Subscription is active!
+                    clearInterval(checkInterval);
+                    
+                    document.getElementById('processing').style.display = 'none';
+                    document.getElementById('access-button').disabled = false;
+                    document.getElementById('status-text').innerHTML = 'Your subscription is active! Click below to access your stories.';
+                    
+                    // Auto-redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                    
+                } else if (checkCount >= maxChecks) {
+                    // Timeout - stop checking
+                    clearInterval(checkInterval);
+                    
+                    document.getElementById('processing').style.display = 'none';
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('access-button').disabled = false;
+                    document.getElementById('access-button').textContent = 'Try Again';
+                    document.getElementById('status-text').innerHTML = 'If you continue to have issues, please contact support.';
+                }
+                
+            } catch (error) {
+                console.error('Error checking subscription status:', error);
+                
+                if (checkCount >= maxChecks) {
+                    clearInterval(checkInterval);
+                    
+                    document.getElementById('processing').style.display = 'none';
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('access-button').disabled = false;
+                    document.getElementById('access-button').textContent = 'Try Again';
+                }
+            }
+        }
+        
+        function goToDashboard() {
+            window.location.href = '/dashboard';
+        }
+        
+        // Handle page visibility change - resume checking when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && checkCount < maxChecks) {
+                checkSubscriptionStatus();
+            }
+        });
+    </script>
+</body>
+</html>
