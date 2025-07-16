@@ -219,6 +219,7 @@ def login_required(f):
         if 'user_id' not in session:
             if request.is_json:
                 return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            flash('Please log in to access this page', 'error')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
@@ -632,22 +633,33 @@ def payment_success():
 @login_required
 def subscribe():
     """Subscription page with comprehensive checks"""
-    user = User.query.get(session['user_id'])
-    
-    # Check for active subscription
-    if user.has_active_subscription():
-        flash('You already have an active subscription!', 'info')
-        return redirect(url_for('dashboard'))
-    
-    # Check for pending subscription (recently created but not yet active)
-    if user.subscription:
-        if user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
-            flash('You have a pending subscription. Please complete the payment process.', 'warning')
+    try:
+        user = User.query.get(session['user_id'])
+        
+        # Check if user exists
+        if not user:
+            flash('Please log in to subscribe', 'error')
+            return redirect(url_for('index'))
+        
+        # Check for active subscription
+        if user.subscription and user.has_active_subscription():
+            flash('You already have an active subscription!', 'info')
             return redirect(url_for('dashboard'))
-        elif user.subscription.status == 'past_due':
-            flash('Your subscription payment is past due. Please update your payment method.', 'warning')
-    
-    return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
+        
+        # Check for pending subscription (recently created but not yet active)
+        if user.subscription:
+            if user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
+                flash('You have a pending subscription. Please complete the payment process.', 'warning')
+                return redirect(url_for('dashboard'))
+            elif user.subscription.status == 'past_due':
+                flash('Your subscription payment is past due. Please update your payment method.', 'warning')
+        
+        return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
+        
+    except Exception as e:
+        print(f"Error in subscribe route: {e}")
+        flash('An error occurred. Please try again.', 'error')
+        return redirect(url_for('index'))
 
 # Enhanced checkout session creation with comprehensive protection
 @app.route('/api/create-checkout-session', methods=['POST'])
