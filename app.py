@@ -44,6 +44,9 @@ bcrypt = Bcrypt(app)
 
 # Database Models
 class User(db.Model):
+    __tablename__ = 'user'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(60), nullable=False)
@@ -84,6 +87,9 @@ class Subscription(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Video(db.Model):
+    __tablename__ = 'video'
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -101,13 +107,16 @@ class Video(db.Model):
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
 
 class VideoLike(db.Model):
+    __tablename__ = 'video_like'
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'video_id'),
+        {'extend_existing': True}
+    )
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Ensure unique user-video combination
-    __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
 
 class VideoLike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
