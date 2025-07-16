@@ -123,6 +123,15 @@ class VideoLike(db.Model):
         {'extend_existing': True}
     )
 
+class VideoLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure unique user-video combination
+    __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
+
 class Comment(db.Model):
     __tablename__ = 'comment'
     __table_args__ = {'extend_existing': True}
@@ -447,6 +456,43 @@ def get_videos():
     return jsonify({'success': True, 'videos': video_list})
 
 # Video Like System Routes
+@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
+@subscription_required
+def toggle_video_like(video_id):
+    """Toggle like on a video"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        user_id = session['user_id']
+        
+        # Check if user already liked this video
+        existing_like = VideoLike.query.filter_by(
+            user_id=user_id,
+            video_id=video_id
+        ).first()
+        
+        if existing_like:
+            # Unlike the video
+            db.session.delete(existing_like)
+            video.likes_count = max(0, video.likes_count - 1)
+            liked = False
+        else:
+            # Like the video
+            new_like = VideoLike(user_id=user_id, video_id=video_id)
+            db.session.add(new_like)
+            video.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': video.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 # Comment System Routes
 @app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
@@ -830,6 +876,75 @@ def admin_get_videos():
             })
         
         return jsonify({'success': True, 'videos': video_list})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos/<int:video_id>/likes', methods=['GET'])
+@admin_required
+def admin_get_video_likes(video_id):
+    """Get all likes for a specific video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        # Get all likes for this video with user information
+        likes = db.session.query(VideoLike, User).join(User).filter(
+            VideoLike.video_id == video_id
+        ).order_by(VideoLike.created_at.desc()).all()
+        
+        like_list = []
+        for like, user in likes:
+            like_list.append({
+                'id': like.id,
+                'user_name': user.get_display_name(),
+                'user_email': user.email,
+                'created_at': like.created_at.isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'likes': like_list,
+            'video_title': video.title,
+            'total_likes': len(like_list)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos/<int:video_id>/comments', methods=['GET'])
+@admin_required
+def admin_get_video_comments(video_id):
+    """Get all comments for a specific video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        # Get all comments for this video with user information
+        comments = db.session.query(Comment, User).join(User).filter(
+            Comment.video_id == video_id
+        ).order_by(Comment.created_at.desc()).all()
+        
+        comment_list = []
+        for comment, user in comments:
+            # Count replies for this comment
+            replies_count = Comment.query.filter_by(parent_id=comment.id).count()
+            
+            comment_list.append({
+                'id': comment.id,
+                'user_name': user.get_display_name(),
+                'user_email': user.email,
+                'text': comment.text,
+                'likes_count': comment.likes_count,
+                'replies_count': replies_count,
+                'created_at': comment.created_at.isoformat(),
+                'is_reply': comment.parent_id is not None
+            })
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'video_title': video.title,
+            'total_comments': len(comment_list)
+        })
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
