@@ -16,12 +16,12 @@ app = Flask(__name__)
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///stories.db')
+
+# Use SQLite for now (works with Python 3.13)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stories.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Fix for Render PostgreSQL URL format
-if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
+print("Using SQLite database for compatibility with Python 3.13")
 
 # Stripe configuration
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
@@ -599,23 +599,34 @@ def internal_error(error):
 # Initialize database
 def create_tables():
     """Create database tables and default admin user"""
-    with app.app_context():
-        db.create_all()
-        
-        # Create admin user if it doesn't exist
-        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
-        admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
-        
-        if not User.query.filter_by(email=admin_email).first():
-            admin_user = User(
-                email=admin_email,
-                password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
-                is_admin=True
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print(f"Created admin user: {admin_email}")
+    try:
+        with app.app_context():
+            db.create_all()
+            
+            # Create admin user if it doesn't exist
+            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
+            admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+            
+            if not User.query.filter_by(email=admin_email).first():
+                admin_user = User(
+                    email=admin_email,
+                    password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
+                    is_admin=True
+                )
+                db.session.add(admin_user)
+                db.session.commit()
+                print(f"Created admin user: {admin_email}")
+    except Exception as e:
+        print(f"Database setup error: {e}")
+
+# Health check endpoint
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
 
 if __name__ == '__main__':
     create_tables()
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+else:
+    # This runs when deployed (not in debug mode)
+    create_tables()
