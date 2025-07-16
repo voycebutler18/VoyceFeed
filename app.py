@@ -410,16 +410,20 @@ def toggle_video_like(video_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
-# Dashboard Routes
 @app.route('/dashboard')
 def dashboard():
-    user = get_current_user()
+    """User dashboard"""
+    # Check if user is logged in
+    if 'user_id' not in session:
+        return redirect(url_for('index'))
+    
+    user = User.query.get(session['user_id'])
     if not user:
-        return redirect('/login')
-
-    if not user.has_active_subscription:
-        return redirect('/subscribe')
-
+        return redirect(url_for('index'))
+    
+    if not user.has_active_subscription():
+        return redirect(url_for('subscribe'))
+    
     return render_template('dashboard.html')
 
 @app.route('/api/videos')
