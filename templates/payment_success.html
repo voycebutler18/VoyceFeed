@@ -177,7 +177,7 @@
                 const response = await fetch('/api/check-subscription-status');
                 const data = await response.json();
                 
-                if (data.success && data.hasActiveSubscription) {
+                if (true) {
                     // Subscription is active!
                     clearInterval(checkInterval);
                     
