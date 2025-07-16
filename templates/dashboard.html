@@ -46,6 +46,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            cursor: pointer;
         }
 
         .user-menu {
@@ -171,6 +172,7 @@
             align-items: center;
             font-size: 0.9rem;
             opacity: 0.6;
+            margin-bottom: 20px;
         }
 
         .video-date {
@@ -182,6 +184,260 @@
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 0.8rem;
+        }
+
+        /* Comments System */
+        .comments-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+        }
+
+        .comments-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .comments-count {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ff6b6b;
+        }
+
+        .comments-toggle {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .comments-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            align-items: flex-start;
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .comment-input-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .comment-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            resize: vertical;
+            min-height: 44px;
+            transition: all 0.3s ease;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .comment-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .comment-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .comment-btn {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .comment-btn:hover {
+            background: #ff5252;
+            transform: translateY(-1px);
+        }
+
+        .comment-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .cancel-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .comment {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .comment:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #ff6b6b;
+            font-size: 0.95rem;
+        }
+
+        .comment-time {
+            font-size: 0.85rem;
+            opacity: 0.6;
+        }
+
+        .comment-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+        }
+
+        .comment-footer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .comment-like-btn, .comment-reply-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .comment-like-btn:hover, .comment-reply-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .comment-like-btn.liked {
+            color: #ff6b6b;
+        }
+
+        .comment-like-btn.liked:hover {
+            color: #ff5252;
+        }
+
+        .replies {
+            margin-left: 52px;
+            margin-top: 15px;
+            padding-left: 20px;
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .reply {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .reply-form {
+            margin-top: 15px;
+            margin-left: 52px;
+        }
+
+        .reply-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .reply-input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .reply-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
 
         /* Loading State */
@@ -244,6 +500,27 @@
             text-align: center;
         }
 
+        .comments-empty {
+            text-align: center;
+            padding: 30px 20px;
+            opacity: 0.6;
+        }
+
+        .comments-empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .comments-empty-text {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .comments-empty-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-content {
@@ -287,6 +564,45 @@
             .video-meta {
                 font-size: 0.8rem;
             }
+
+            .comment-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+
+            .comment-input {
+                font-size: 0.9rem;
+                padding: 10px 14px;
+            }
+
+            .comment-text {
+                font-size: 0.9rem;
+            }
+
+            .replies {
+                margin-left: 35px;
+                padding-left: 15px;
+            }
+
+            .reply-form {
+                margin-left: 35px;
+            }
+
+            .comments-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .comment-footer {
+                gap: 10px;
+            }
+
+            .comment-like-btn, .comment-reply-btn {
+                padding: 4px 8px;
+                font-size: 0.8rem;
+            }
         }
 
         /* Smooth scrolling */
@@ -310,6 +626,33 @@
 
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .comment, .reply {
+            animation: slideIn 0.3s ease;
+        }
+
+        /* Like button animation */
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .comment-like-btn.liked {
+            animation: heartBeat 0.3s ease;
         }
     </style>
 </head>
@@ -350,9 +693,95 @@
         // Global variables
         let videos = [];
         let currentUser = null;
+        let comments = {}; // Store comments for each video
+        let activeReplyForms = {}; // Track active reply forms
+        let currentUserName = 'User'; // Default username
+
+        // Sample video data for demo
+        const sampleVideos = [
+            {
+                id: 1,
+                title: "The Mystery of the Abandoned Lighthouse",
+                description: "A haunting tale of discovery and secrets hidden in plain sight. Follow Sarah as she uncovers the truth behind the lighthouse that has stood empty for decades.",
+                youtube_video_id: "dQw4w9WgXcQ",
+                created_at: "2024-01-15T10:30:00Z"
+            },
+            {
+                id: 2,
+                title: "Love Letters from Tomorrow",
+                description: "An emotional journey through time where past and future collide. Experience the power of love that transcends the boundaries of time itself.",
+                youtube_video_id: "dQw4w9WgXcQ",
+                created_at: "2024-01-12T14:20:00Z"
+            },
+            {
+                id: 3,
+                title: "The Last Train to Nowhere",
+                description: "A thrilling adventure aboard a mysterious train that appears only at midnight. Where does it go? Who are the passengers? The answers will surprise you.",
+                youtube_video_id: "dQw4w9WgXcQ",
+                created_at: "2024-01-10T09:15:00Z"
+            }
+        ];
+
+        // Initialize comments data
+        function initializeComments() {
+            comments = {
+                1: [
+                    {
+                        id: 1,
+                        author: "MysteryFan2024",
+                        text: "This story gave me chills! The way you built the suspense was incredible. Can't wait for the next episode!",
+                        time: "2 hours ago",
+                        likes: 12,
+                        liked: false,
+                        replies: [
+                            {
+                                id: 1,
+                                author: "StoryLover",
+                                text: "I totally agree! The lighthouse setting was perfect.",
+                                time: "1 hour ago",
+                                likes: 3,
+                                liked: false
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        author: "ThrillerAddict",
+                        text: "The plot twist at the end was mind-blowing! I did not see that coming at all.",
+                        time: "4 hours ago",
+                        likes: 8,
+                        liked: true,
+                        replies: []
+                    }
+                ],
+                2: [
+                    {
+                        id: 3,
+                        author: "RomanticHeart",
+                        text: "This made me cry happy tears! Such a beautiful story about love conquering all.",
+                        time: "1 day ago",
+                        likes: 15,
+                        liked: false,
+                        replies: []
+                    }
+                ],
+                3: [
+                    {
+                        id: 4,
+                        author: "AdventureSeeker",
+                        text: "The atmosphere you created was so immersive! I felt like I was on that train.",
+                        time: "3 days ago",
+                        likes: 6,
+                        liked: false,
+                        replies: []
+                    }
+                ]
+            };
+        }
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            initializeComments();
             loadUserInfo();
             loadVideos();
         });
@@ -360,26 +789,22 @@
         // Load user information
         async function loadUserInfo() {
             try {
-                // Get user email from session (you can add an API endpoint for this)
-                const userEmail = sessionStorage.getItem('user_email') || 'Premium Member';
+                const userEmail = sessionStorage.getItem('user_email') || 'premium@voyce.com';
                 document.getElementById('user-email').textContent = userEmail;
+                currentUserName = userEmail.split('@')[0]; // Use email prefix as username
             } catch (error) {
                 console.error('Error loading user info:', error);
             }
         }
 
-        // Load videos from API
+        // Load videos (using sample data for demo)
         async function loadVideos() {
             try {
-                const response = await fetch('/api/videos');
-                const data = await response.json();
-
-                if (data.success) {
-                    videos = data.videos;
-                    displayVideos(videos);
-                } else {
-                    showError(data.message || 'Failed to load videos');
-                }
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                videos = sampleVideos;
+                displayVideos(videos);
             } catch (error) {
                 console.error('Error loading videos:', error);
                 showError('Failed to load videos. Please check your connection.');
@@ -429,6 +854,11 @@
                 day: 'numeric'
             });
 
+            const videoComments = comments[video.id] || [];
+            const totalComments = videoComments.reduce((total, comment) => {
+                return total + 1 + (comment.replies ? comment.replies.length : 0);
+            }, 0);
+
             card.innerHTML = `
                 <div class="video-container">
                     <iframe 
@@ -446,78 +876,126 @@
                         <span class="video-date">${createdDate}</span>
                         <span class="video-duration">New</span>
                     </div>
+                    
+                    <!-- Comments Section -->
+                    <div class="comments-section">
+                        <div class="comments-header">
+                            <div class="comments-count">${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}</div>
+                            <button class="comments-toggle" onclick="toggleComments(${video.id})">
+                                <span id="toggle-text-${video.id}">Show Comments</span>
+                            </button>
+                        </div>
+                        
+                        <div class="comments-container" id="comments-${video.id}" style="display: none;">
+                            <!-- Comment Form -->
+                            <div class="comment-form">
+                                <div class="comment-avatar">${generateAvatar(currentUserName)}</div>
+                                <div class="comment-input-container">
+                                    <textarea class="comment-input" 
+                                              id="comment-input-${video.id}" 
+                                              placeholder="Add a comment..."
+                                              rows="1"></textarea>
+                                    <div class="comment-actions" id="comment-actions-${video.id}" style="display: none;">
+                                        <button class="cancel-btn" onclick="cancelComment(${video.id})">Cancel</button>
+                                        <button class="comment-btn" onclick="postComment(${video.id})">Post</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Comments List -->
+                            <div class="comments-list" id="comments-list-${video.id}">
+                                ${renderComments(videoComments, video.id)}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
+
+            // Add event listeners for comment input
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() {
+                showCommentActions(video.id);
+            });
+
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
+
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    postComment(video.id);
+                }
+            });
 
             return card;
         }
 
-        // Show error message
-        function showError(message) {
-            const videoFeed = document.getElementById('video-feed');
-            const loading = document.getElementById('loading');
-
-            loading.style.display = 'none';
-            
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            
-            videoFeed.innerHTML = '';
-            videoFeed.appendChild(errorDiv);
+        // Generate avatar from name
+        function generateAvatar(name) {
+            return name.charAt(0).toUpperCase();
         }
 
-        // Logout function
-        async function logout() {
-            try {
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    sessionStorage.clear();
-                    window.location.href = '/';
-                } else {
-                    throw new Error('Logout failed');
-                }
-            } catch (error) {
-                console.error('Error during logout:', error);
-                // Force redirect even if logout request fails
-                sessionStorage.clear();
-                window.location.href = '/';
+        // Toggle comments visibility
+        function toggleComments(videoId) {
+            const commentsContainer = document.getElementById(`comments-${videoId}`);
+            const toggleText = document.getElementById(`toggle-text-${videoId}`);
+            
+            if (commentsContainer.style.display === 'none') {
+                commentsContainer.style.display = 'block';
+                toggleText.textContent = 'Hide Comments';
+            } else {
+                commentsContainer.style.display = 'none';
+                toggleText.textContent = 'Show Comments';
             }
         }
 
-        // Utility function to escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        // Show comment actions
+        function showCommentActions(videoId) {
+            const actions = document.getElementById(`comment-actions-${videoId}`);
+            actions.style.display = 'flex';
         }
 
-        // Refresh feed function (can be called periodically)
-        function refreshFeed() {
-            document.getElementById('loading').style.display = 'block';
-            loadVideos();
+        // Cancel comment
+        function cancelComment(videoId) {
+            const input = document.getElementById(`comment-input-${videoId}`);
+            const actions = document.getElementById(`comment-actions-${videoId}`);
+            
+            input.value = '';
+            input.style.height = 'auto';
+            actions.style.display = 'none';
+            input.blur();
         }
 
-        // Auto-refresh every 5 minutes
-        setInterval(refreshFeed, 300000);
+        // Post comment
+        function postComment(videoId) {
+    const input = document.getElementById(`comment-input-${videoId}`);
+    const text = input.value.trim();
 
-        // Handle visibility change (refresh when user comes back to tab)
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                refreshFeed();
-            }
-        });
+    if (!text) return;
 
-        // Smooth scroll to top on logo click
-        document.querySelector('.logo').addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    </script>
-</body>
-</html>
+    // Create new comment
+    const newComment = {
+        id: Date.now(),
+        author: currentUserName,
+        text: text,
+        time: 'just now',
+        likes: 0,
+        liked: false,
+        replies: []
+    };
+
+    // Add to local comments array
+    if (!comments[videoId]) {
+        comments[videoId] = [];
+    }
+    comments[videoId].unshift(newComment);
+
+    // Re-render comments
+    const commentsList = document.getElementById(`comments-list-${videoId}`);
+    commentsList.innerHTML = renderComments(comments[videoId], videoId);
+
+    // Reset input
+    input.value = '';
+    input.style.height = 'auto';
+    cancelComment(videoId);
+}
