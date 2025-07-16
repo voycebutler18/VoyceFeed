@@ -412,9 +412,14 @@ def toggle_video_like(video_id):
 
 # Dashboard Routes
 @app.route('/dashboard')
-@subscription_required
 def dashboard():
-    """Main dashboard with video feed"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+
+    if not user.has_active_subscription:
+        return redirect('/subscribe')
+
     return render_template('dashboard.html')
 
 @app.route('/api/videos')
