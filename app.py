@@ -610,23 +610,327 @@ def edit_comment(comment_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
 
-# Subscription Routes
-@app.route('/subscribe')
-@login_required
-def subscribe():
-    """Subscription page"""
-    user = User.query.get(session['user_id'])
-    if user.has_active_subscription():
-        return redirect(url_for('dashboard'))
-    
-    return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
-
 # Add this new route for handling successful payments
 @app.route('/payment-success')
 @login_required
 def payment_success():
     """Handle successful payment - wait for webhook to process"""
     return render_template('payment_success.html')
+
+# Enhanced subscription route with better protection
+@app.route('/subscribe')
+@login_required
+def subscribe():
+    """Subscription page with comprehensive checks"""
+    user = User.query.get(session['user_id'])
+    
+    # Check for active subscription
+    if user.has_active_subscription():
+        flash('You already have an active subscription!', 'info')
+        return redirect(url_for('dashboard'))
+    
+    # Check for pending subscription (recently created but not yet active)
+    if user.subscription:
+        if user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
+            flash('You have a pending subscription. Please complete the payment process.', 'warning')
+            return redirect(url_for('dashboard'))
+        elif user.subscription.status == 'past_due':
+            flash('Your subscription payment is past due. Please update your payment method.', 'warning')
+    
+    return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
+
+# Enhanced checkout session creation with comprehensive protection
+@app.route('/api/create-checkout-session', methods=['POST'])
+@login_required
+def create_checkout_session():
+    """Create Stripe checkout session with double-payment protection"""
+    try:
+        if not stripe.api_key:
+            return jsonify({'success': False, 'message': 'Stripe not configured'}), 500
+        
+        if not STRIPE_PRICE_ID:
+            return jsonify({'success': False, 'message': 'Stripe price ID not configured'}), 500
+        
+        user = User.query.get(session['user_id'])
+        
+        # PROTECTION 1: Check for active subscription
+        if user.has_active_subscription():
+            return jsonify({
+                'success': False, 
+                'message': 'You already have an active subscription. Please visit your dashboard.',
+                'redirect': '/dashboard'
+            }), 400
+        
+        # PROTECTION 2: Check for pending/incomplete subscriptions
+        if user.subscription:
+            if user.subscription.status in ['incomplete', 'incomplete_expired']:
+                return jsonify({
+                    'success': False, 
+                    'message': 'You have a pending subscription. Please complete or cancel it first.',
+                    'redirect': '/dashboard'
+                }), 400
+            elif user.subscription.status == 'trialing':
+                return jsonify({
+                    'success': False, 
+                    'message': 'You already have a trial subscription.',
+                    'redirect': '/dashboard'
+                }), 400
+            elif user.subscription.status == 'past_due':
+                # Allow past_due to create new checkout (for payment update)
+                pass
+        
+        # PROTECTION 3: Check for recent checkout sessions (last 30 minutes)
+        recent_checkout = check_recent_checkout_sessions(user)
+        if recent_checkout:
+            return jsonify({
+                'success': False, 
+                'message': 'You have a recent checkout session. Please complete it or wait 30 minutes.',
+                'checkout_url': recent_checkout['url']
+            }), 400
+        
+        # Create or retrieve Stripe customer
+        customer_id = get_or_create_stripe_customer(user)
+        if not customer_id:
+            return jsonify({'success': False, 'message': 'Failed to create customer'}), 500
+        
+        # PROTECTION 4: Check for existing active subscriptions in Stripe
+        existing_stripe_subscriptions = stripe.Subscription.list(
+            customer=customer_id,
+            status='active',
+            limit=1
+        )
+        
+        if existing_stripe_subscriptions.data:
+            # User has active subscription in Stripe but not in our DB - sync it
+            sync_subscription_from_stripe(user, existing_stripe_subscriptions.data[0])
+            return jsonify({
+                'success': False, 
+                'message': 'You already have an active subscription.',
+                'redirect': '/dashboard'
+            }), 400
+        
+        # Create checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': STRIPE_PRICE_ID,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('subscribe', _external=True) + '?canceled=true',
+            customer=customer_id,
+            metadata={
+                'user_id': str(user.id),
+                'created_at': str(int(datetime.utcnow().timestamp()))
+            },
+            # Prevent multiple subscriptions
+            subscription_data={
+                'metadata': {
+                    'user_id': str(user.id)
+                }
+            }
+        )
+        
+        return jsonify({'success': True, 'checkout_url': checkout_session.url})
+        
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {e}")
+        return jsonify({'success': False, 'message': f'Stripe error: {str(e)}'}), 500
+    except Exception as e:
+        print(f"Checkout error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to create checkout session'}), 500
+
+def get_or_create_stripe_customer(user):
+    """Get existing or create new Stripe customer"""
+    try:
+        # Check if user already has a customer ID
+        if user.subscription and user.subscription.stripe_customer_id and user.subscription.stripe_customer_id != 'manual_unlimited':
+            # Verify customer exists in Stripe
+            try:
+                stripe.Customer.retrieve(user.subscription.stripe_customer_id)
+                return user.subscription.stripe_customer_id
+            except stripe.error.InvalidRequestError:
+                # Customer doesn't exist, create new one
+                pass
+        
+        # Search for existing customer by email
+        existing_customers = stripe.Customer.list(email=user.email, limit=1)
+        if existing_customers.data:
+            customer = existing_customers.data[0]
+            # Update our database with the customer ID
+            if user.subscription:
+                user.subscription.stripe_customer_id = customer.id
+            else:
+                # Create subscription record
+                new_subscription = Subscription(
+                    user_id=user.id,
+                    stripe_customer_id=customer.id,
+                    stripe_subscription_id='',
+                    status='incomplete'
+                )
+                db.session.add(new_subscription)
+            db.session.commit()
+            return customer.id
+        
+        # Create new customer
+        customer = stripe.Customer.create(
+            email=user.email,
+            metadata={
+                'user_id': str(user.id),
+                'created_at': str(int(datetime.utcnow().timestamp()))
+            }
+        )
+        
+        # Update database
+        if user.subscription:
+            user.subscription.stripe_customer_id = customer.id
+        else:
+            new_subscription = Subscription(
+                user_id=user.id,
+                stripe_customer_id=customer.id,
+                stripe_subscription_id='',
+                status='incomplete'
+            )
+            db.session.add(new_subscription)
+        db.session.commit()
+        
+        return customer.id
+        
+    except Exception as e:
+        print(f"Error creating customer: {e}")
+        return None
+
+def check_recent_checkout_sessions(user):
+    """Check for recent incomplete checkout sessions"""
+    try:
+        # Get customer ID
+        if not user.subscription or not user.subscription.stripe_customer_id:
+            return None
+        
+        customer_id = user.subscription.stripe_customer_id
+        if customer_id == 'manual_unlimited':
+            return None
+        
+        # Check for recent checkout sessions (last 30 minutes)
+        thirty_minutes_ago = int((datetime.utcnow() - timedelta(minutes=30)).timestamp())
+        
+        checkout_sessions = stripe.checkout.Session.list(
+            customer=customer_id,
+            created={'gte': thirty_minutes_ago},
+            limit=5
+        )
+        
+        for session in checkout_sessions.data:
+            if session.status == 'open':
+                return {
+                    'id': session.id,
+                    'url': session.url,
+                    'status': session.status
+                }
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error checking recent checkout sessions: {e}")
+        return None
+
+def sync_subscription_from_stripe(user, stripe_subscription):
+    """Sync subscription from Stripe to database"""
+    try:
+        existing_subscription = Subscription.query.filter_by(user_id=user.id).first()
+        
+        if existing_subscription:
+            existing_subscription.stripe_subscription_id = stripe_subscription.id
+            existing_subscription.status = stripe_subscription.status
+            existing_subscription.current_period_start = datetime.fromtimestamp(stripe_subscription.current_period_start)
+            existing_subscription.current_period_end = datetime.fromtimestamp(stripe_subscription.current_period_end)
+            existing_subscription.updated_at = datetime.utcnow()
+        else:
+            new_subscription = Subscription(
+                user_id=user.id,
+                stripe_customer_id=stripe_subscription.customer,
+                stripe_subscription_id=stripe_subscription.id,
+                status=stripe_subscription.status,
+                current_period_start=datetime.fromtimestamp(stripe_subscription.current_period_start),
+                current_period_end=datetime.fromtimestamp(stripe_subscription.current_period_end)
+            )
+            db.session.add(new_subscription)
+        
+        db.session.commit()
+        print(f"Synced subscription from Stripe for user {user.id}")
+        
+    except Exception as e:
+        print(f"Error syncing subscription from Stripe: {e}")
+        db.session.rollback()
+
+# Enhanced subscription status check
+@app.route('/api/user/subscription-status')
+@login_required
+def subscription_status():
+    """Check user's subscription status with Stripe sync"""
+    user = User.query.get(session['user_id'])
+    
+    # If user has subscription, sync with Stripe to ensure accuracy
+    if user.subscription and user.subscription.stripe_subscription_id and user.subscription.stripe_subscription_id != 'manual_unlimited':
+        try:
+            stripe_subscription = stripe.Subscription.retrieve(user.subscription.stripe_subscription_id)
+            
+            # Update local status if different
+            if user.subscription.status != stripe_subscription.status:
+                user.subscription.status = stripe_subscription.status
+                user.subscription.current_period_start = datetime.fromtimestamp(stripe_subscription.current_period_start)
+                user.subscription.current_period_end = datetime.fromtimestamp(stripe_subscription.current_period_end)
+                user.subscription.updated_at = datetime.utcnow()
+                db.session.commit()
+                
+        except stripe.error.InvalidRequestError:
+            # Subscription doesn't exist in Stripe
+            user.subscription.status = 'canceled'
+            db.session.commit()
+        except Exception as e:
+            print(f"Error syncing subscription status: {e}")
+    
+    return jsonify({
+        'success': True,
+        'hasActiveSubscription': user.has_active_subscription(),
+        'subscription': {
+            'status': user.subscription.status if user.subscription else None,
+            'current_period_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None
+        } if user.subscription else None
+    })
+
+# Add admin endpoint to check for duplicate subscriptions
+@app.route('/api/admin/check-duplicate-subscriptions')
+@admin_required
+def check_duplicate_subscriptions():
+    """Check for users with duplicate subscriptions"""
+    try:
+        # Find users with multiple subscription records
+        duplicate_users = db.session.query(User).join(Subscription).group_by(User.id).having(func.count(Subscription.id) > 1).all()
+        
+        duplicates = []
+        for user in duplicate_users:
+            user_subs = Subscription.query.filter_by(user_id=user.id).all()
+            duplicates.append({
+                'user_id': user.id,
+                'email': user.email,
+                'subscriptions': [{
+                    'id': sub.id,
+                    'status': sub.status,
+                    'stripe_subscription_id': sub.stripe_subscription_id,
+                    'created_at': sub.created_at.isoformat()
+                } for sub in user_subs]
+            })
+        
+        return jsonify({
+            'success': True,
+            'duplicates': duplicates,
+            'count': len(duplicates)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 # Update the checkout session creation
 @app.route('/api/create-checkout-session', methods=['POST'])
