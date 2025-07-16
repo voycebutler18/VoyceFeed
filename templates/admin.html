@@ -304,6 +304,33 @@
         .video-meta {
             font-size: 0.8rem;
             opacity: 0.6;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .video-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .stat-item.likes {
+            color: #ff6b6b;
+        }
+
+        .stat-item.comments {
+            color: #4ade80;
         }
 
         .video-actions {
@@ -327,6 +354,15 @@
             transform: translateY(-1px);
         }
 
+        .action-btn.edit {
+            border-color: rgba(74, 222, 128, 0.3);
+            color: #4ade80;
+        }
+
+        .action-btn.edit:hover {
+            background: rgba(74, 222, 128, 0.1);
+        }
+
         .action-btn.delete {
             border-color: rgba(255, 107, 107, 0.3);
             color: #ff6b6b;
@@ -334,6 +370,55 @@
 
         .action-btn.delete:hover {
             background: rgba(255, 107, 107, 0.1);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
         }
 
         /* Messages */
@@ -418,6 +503,12 @@
             .video-actions {
                 justify-content: center;
             }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -498,8 +589,42 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Edit Video</div>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            
+            <div class="message" id="edit-message"></div>
+            
+            <form id="edit-video-form">
+                <div class="form-group">
+                    <label for="edit-video-title">Video Title</label>
+                    <input type="text" id="edit-video-title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-video-description">Description (Optional)</label>
+                    <textarea id="edit-video-description" name="description"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-youtube-url">YouTube URL</label>
+                    <input type="url" id="edit-youtube-url" name="youtube_url" required>
+                </div>
+                
+                <button type="submit" class="add-video-btn" id="edit-btn">
+                    Update Video
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
         let isSubmitting = false;
+        let editingVideoId = null;
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
@@ -563,12 +688,22 @@
                         <div class="video-title">${escapeHtml(video.title)}</div>
                         <div class="video-description">${escapeHtml(video.description || 'No description')}</div>
                         <div class="video-meta">
-                            Added ${formatDate(video.created_at)} • 
-                            <a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>
+                            <span>Added ${formatDate(video.created_at)}</span>
+                            <span><a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a></span>
+                        </div>
+                        <div class="video-stats">
+                            <div class="stat-item likes">
+                                <span>❤️</span>
+                                <span>${video.likes_count || 0} likes</span>
+                            </div>
+                            <div class="stat-item comments">
+                                <span>💬</span>
+                                <span>${video.comment_count || 0} comments</span>
+                            </div>
                         </div>
                     </div>
                     <div class="video-actions">
-                        <button class="action-btn" onclick="editVideo(${video.id})">Edit</button>
+                        <button class="action-btn edit" onclick="editVideo(${video.id})">Edit</button>
                         <button class="action-btn delete" onclick="deleteVideo(${video.id})">Delete</button>
                     </div>
                 </div>
@@ -630,6 +765,63 @@
             }
         });
 
+        // Handle edit form submission
+        document.getElementById('edit-video-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (isSubmitting || !editingVideoId) return;
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Validation
+            if (!data.title.trim()) {
+                showEditMessage('Title is required', 'error');
+                return;
+            }
+            
+            if (!data.youtube_url.trim()) {
+                showEditMessage('YouTube URL is required', 'error');
+                return;
+            }
+            
+            // Validate YouTube URL
+            if (!isValidYouTubeUrl(data.youtube_url)) {
+                showEditMessage('Please enter a valid YouTube URL', 'error');
+                return;
+            }
+            
+            setEditButtonLoading(true);
+            
+            try {
+                const response = await fetch(`/api/admin/videos/${editingVideoId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showEditMessage('Video updated successfully!', 'success');
+                    setTimeout(() => {
+                        closeEditModal();
+                        loadVideos();
+                        loadStats();
+                    }, 1000);
+                } else {
+                    showEditMessage(result.message || 'Failed to update video', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating video:', error);
+                showEditMessage('Failed to update video. Please try again.', 'error');
+            } finally {
+                setEditButtonLoading(false);
+            }
+        });
+
         // Delete video
         async function deleteVideo(videoId) {
             if (!confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
@@ -656,9 +848,47 @@
             }
         }
 
-        // Edit video (placeholder for future implementation)
-        function editVideo(videoId) {
-            showMessage('Edit functionality coming soon!', 'error');
+        // Edit video - open modal
+        async function editVideo(videoId) {
+            editingVideoId = videoId;
+            
+            try {
+                // Get current video data
+                const response = await fetch('/api/admin/videos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const video = data.videos.find(v => v.id === videoId);
+                    if (video) {
+                        // Fill form with current data
+                        document.getElementById('edit-video-title').value = video.title;
+                        document.getElementById('edit-video-description').value = video.description || '';
+                        document.getElementById('edit-youtube-url').value = video.youtube_url;
+                        
+                        // Show modal
+                        document.getElementById('edit-modal').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading video data:', error);
+                showMessage('Failed to load video data', 'error');
+            }
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            editingVideoId = null;
+            document.getElementById('edit-video-form').reset();
+            hideEditMessage();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('edit-modal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
         }
 
         // Show message
@@ -674,6 +904,25 @@
             }, 5000);
         }
 
+        // Show edit message
+        function showEditMessage(text, type) {
+            const messageDiv = document.getElementById('edit-message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Hide edit message
+        function hideEditMessage() {
+            const messageDiv = document.getElementById('edit-message');
+            messageDiv.style.display = 'none';
+        }
+
         // Set button loading state
         function setButtonLoading(loading) {
             const button = document.getElementById('add-btn');
@@ -685,6 +934,21 @@
             } else {
                 button.disabled = false;
                 button.innerHTML = 'Add Video to Feed';
+                isSubmitting = false;
+            }
+        }
+
+        // Set edit button loading state
+        function setEditButtonLoading(loading) {
+            const button = document.getElementById('edit-btn');
+            
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<span class="loading-spinner"></span>Updating Video...';
+                isSubmitting = true;
+            } else {
+                button.disabled = false;
+                button.innerHTML = 'Update Video';
                 isSubmitting = false;
             }
         }
