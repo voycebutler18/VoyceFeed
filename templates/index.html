@@ -268,11 +268,12 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Check if user has active subscription
-                    if (data.hasSubscription) {
-                        window.location.href = '/dashboard.html';
+                    if (data.isAdmin) {
+                        window.location.href = '/admin';
+                    } else if (data.hasSubscription) {
+                        window.location.href = '/dashboard';
                     } else {
-                        window.location.href = '/subscribe.html';
+                        window.location.href = '/subscribe';
                     }
                 } else {
                     showError(data.message || 'Login failed. Please try again.');
@@ -312,7 +313,7 @@
 
                 if (data.success) {
                     // After successful signup, redirect to subscription page
-                    window.location.href = '/subscribe.html';
+                    window.location.href = '/subscribe';
                 } else {
                     showError(data.message || 'Registration failed. Please try again.');
                 }
