@@ -642,8 +642,8 @@ def subscribe():
 # Enhanced checkout session creation with comprehensive protection
 
             # PROTECTION 2: Check for pending/incomplete subscriptions
-        if user.subscription:
-            if user.subscription.status in ['incomplete', 'incomplete_expired']:
+    if user.subscription:
+        if user.subscription.status in ['incomplete', 'incomplete_expired']:
                 return jsonify({
                     'success': False, 
                     'message': 'You have a pending subscription. Please complete or cancel it first.',
