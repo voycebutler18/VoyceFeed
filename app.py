@@ -123,6 +123,15 @@ class VideoLike(db.Model):
         {'extend_existing': True}
     )
 
+class VideoLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure unique user-video combination
+    __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
+
 class Comment(db.Model):
     __tablename__ = 'comment'
     __table_args__ = {'extend_existing': True}
@@ -445,6 +454,45 @@ def get_videos():
         })
     
     return jsonify({'success': True, 'videos': video_list})
+
+# Video Like System Routes
+@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
+@subscription_required
+def toggle_video_like(video_id):
+    """Toggle like on a video"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        user_id = session['user_id']
+        
+        # Check if user already liked this video
+        existing_like = VideoLike.query.filter_by(
+            user_id=user_id,
+            video_id=video_id
+        ).first()
+        
+        if existing_like:
+            # Unlike the video
+            db.session.delete(existing_like)
+            video.likes_count = max(0, video.likes_count - 1)
+            liked = False
+        else:
+            # Like the video
+            new_like = VideoLike(user_id=user_id, video_id=video_id)
+            db.session.add(new_like)
+            video.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': video.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 # Comment System Routes
 @app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
@@ -822,6 +870,7 @@ def admin_get_videos():
                 'youtube_video_id': video.youtube_video_id,
                 'thumbnail_url': video.thumbnail_url,
                 'is_active': video.is_active,
+                'likes_count': video.likes_count,
                 'created_at': video.created_at.isoformat(),
                 'comment_count': comment_count
             })
