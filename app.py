@@ -456,43 +456,6 @@ def get_videos():
     return jsonify({'success': True, 'videos': video_list})
 
 # Video Like System Routes
-@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
-@subscription_required
-def toggle_video_like(video_id):
-    """Toggle like on a video"""
-    try:
-        video = Video.query.get_or_404(video_id)
-        user_id = session['user_id']
-        
-        # Check if user already liked this video
-        existing_like = VideoLike.query.filter_by(
-            user_id=user_id,
-            video_id=video_id
-        ).first()
-        
-        if existing_like:
-            # Unlike the video
-            db.session.delete(existing_like)
-            video.likes_count = max(0, video.likes_count - 1)
-            liked = False
-        else:
-            # Like the video
-            new_like = VideoLike(user_id=user_id, video_id=video_id)
-            db.session.add(new_like)
-            video.likes_count += 1
-            liked = True
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'liked': liked,
-            'likes_count': video.likes_count
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 # Comment System Routes
 @app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
