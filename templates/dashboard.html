@@ -55,7 +55,7 @@
             gap: 15px;
         }
 
-        /* NEW: User Info Group for Email + Streak */
+        /* User Info Group for Email + Streak */
         .user-info-group {
             display: flex;
             flex-direction: column;
@@ -68,7 +68,7 @@
             opacity: 0.7;
         }
 
-        /* NEW: Streak Tracker Badge */
+        /* Streak Tracker Badge */
         .streak-tracker {
             display: inline-flex; /* Use inline-flex to keep content on one line */
             align-items: center;
@@ -142,7 +142,7 @@
             line-height: 1.5;
         }
 
-        /* NEW: General Dashboard Section Styling */
+        /* General Dashboard Section Styling */
         .dashboard-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
@@ -377,7 +377,7 @@
             font-size: 1.2rem;
         }
 
-        /* NEW: Behind the Story */
+        /* Behind the Story */
         .behind-the-story-toggle {
             display: block; /* Make it a block button */
             width: fit-content; /* Fit to content width */
@@ -1315,15 +1315,13 @@
         let videoLikes = {}; // Track video likes
         let activeReplyForms = {}; // Track active reply forms
         let currentUserName = 'User'; // Default username
-        let dailyWatchStreak = 0; // NEW: Streak tracker
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
             loadVideos();
-            loadTopStories(); // NEW: Load top stories
-            loadNewSeries();  // NEW: Load new series
-            updateDailyWatchStreak(); // NEW: Update streak
+            loadTopStories(); // Load top stories from backend
+            loadNewSeries();  // Load new series from backend
         });
 
         // Load user information
@@ -1336,6 +1334,7 @@
                     currentUser = data.user;
                     document.getElementById('user-email').textContent = currentUser.email;
                     currentUserName = currentUser.email.split('@')[0];
+                    updateDailyWatchStreak(); // Update streak based on current user after login
                 } else {
                     window.location.href = '/';
                 }
@@ -1420,12 +1419,13 @@
                 day: 'numeric'
             });
 
+            // CORRECTED YouTube URLs
             const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
             const youtubeShareUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
             const shareTitle = `${video.title} - Voyce Stories`;
             const shareText = `Check out this amazing story: ${video.title}`;
 
-            // NEW: Placeholder for Behind the Story content
+            // Placeholder for Behind the Story content
             const behindTheStoryContent = video.description ? `
                 <button class="behind-the-story-toggle" onclick="toggleBehindTheStory(${video.id})">Behind the Story</button>
                 <div class="behind-the-story-content" id="behind-the-story-${video.id}">
@@ -1453,7 +1453,9 @@
                         <span class="video-duration">New</span>
                     </div>
                     
-                    ${behindTheStoryContent} <div class="video-actions">
+                    ${behindTheStoryContent}
+
+                    <div class="video-actions">
                         <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
                             <span>❤️</span>
                             <span id="like-count-${video.id}">${video.likes_count || 0}</span>
@@ -1599,8 +1601,6 @@
             shareMenu.classList.toggle('active');
             
             // Close menu when clicking outside
-            // This listener should ideally be added once globally if it handles all share menus
-            // but for simplicity, keeping it here for now.
             document.addEventListener('click', function(e) {
                 if (!e.target.closest('.share-menu')) {
                     shareMenu.classList.remove('active');
@@ -1794,7 +1794,7 @@
             const commentsContainer = document.getElementById(`comments-${videoId}`);
             const toggleText = document.getElementById(`toggle-text-${videoId}`);
             
-            if (commentsContainer.style.display === 'none') {
+            if (commentsContainer.style.display === 'none' || commentsContainer.style.display === '') {
                 commentsContainer.style.display = 'block';
                 toggleText.textContent = 'Hide Comments';
             } else {
@@ -2108,7 +2108,7 @@
                         <div class="user-avatar">${generateAvatar(comment.author)}</div>
                         <div class="user-details">
                             <div class="user-name">${escapeHtml(comment.author)}</div>
-                            <div class="user-email">${escapeHtml(comment.email)}</div> <div class="comment-text">${escapeHtml(comment.text)}</div>
+                            <div class="user-email">${escapeHtml(comment.user_email)}</div> <div class="comment-text">${escapeHtml(comment.text)}</div>
                             <div class="comment-meta">
                                 <span class="comment-time">${formatTimeAgo(comment.created_at)}</span>
                                 <span class="comment-likes">❤️ ${comment.likes || 0}</span>
@@ -2131,7 +2131,6 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                // This typically would be an admin-specific DELETE route
                 const response = await fetch(`/api/comments/${commentId}`, { // Corrected endpoint to match your app.py
                     method: 'DELETE',
                     headers: {
@@ -2144,8 +2143,9 @@
                 if (result.success) {
                     // Remove the comment from display
                     const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
-                    commentElement.remove();
-                    
+                    if (commentElement) {
+                        commentElement.remove();
+                    }
                     // Also refresh comments in the main feed if it's open, and update the count
                     videos.forEach(video => {
                         if (document.getElementById(`comments-${video.id}`).style.display === 'block') {
@@ -2162,7 +2162,6 @@
         }
 
         // Delete comment from main feed (by author or admin)
-        // This function is new, to handle delete directly on comments rendered in the feed
         async function deleteComment(commentId, videoId) {
             if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
                 return;
@@ -2174,6 +2173,7 @@
                 const response = await fetch(`/api/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
+                        'Content-Type': 'application/json', // Added content type
                         'X-CSRFToken': csrfToken
                     }
                 });
@@ -2223,51 +2223,98 @@
             }
         }
 
-        // NEW: Feature 11 - This Month's Top Stories (Frontend Mock)
-        function loadTopStories() {
+        // Helper function to render a story item (for Top Stories and New Series sections)
+        function renderStoryItemHtml(video, type) {
+            const youtubeShareUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            let metaInfo = '';
+            if (type === 'top-story') {
+                metaInfo = `Likes: ${video.likes_count || 0}`;
+            } else if (type === 'new-series' && video.genre) {
+                metaInfo = `Genre: ${escapeHtml(video.genre)}`;
+            } else {
+                metaInfo = `Added: ${new Date(video.created_at).toLocaleDateString()}`;
+            }
+
+            return `
+                <div class="story-item" onclick="window.open('${youtubeShareUrl}', '_blank');">
+                    <div class="story-thumbnail"><img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://via.placeholder.com/80x45/1a1a1a/888?text=Video'"></div>
+                    <div class="story-details">
+                        <div class="story-title">${escapeHtml(video.title)}</div>
+                        <div class="story-meta">${metaInfo}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Feature 11 - Load This Month's Top Stories
+        async function loadTopStories() {
             const topStoriesList = document.getElementById('top-stories-list');
-            // This would typically fetch from a backend API, e.g., /api/videos/top-stories
-            const mockTopStories = [
-                { id: 101, title: "The Whispering Woods", views: "1.2K", thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg" },
-                { id: 102, title: "Echoes of the Past", views: "987", thumbnail: "https://i.ytimg.com/vi/3tX8Wf8iB6Y/mqdefault.jpg" },
-                { id: 103, title: "The Crimson Key", views: "750", thumbnail: "https://i.ytimg.com/vi/W-w3WKgD32E/mqdefault.jpg" },
-                // Add more mock stories as needed
-            ];
-
-            topStoriesList.innerHTML = mockTopStories.map(story => `
-                <div class="story-item" onclick="alert('Playing Top Story: ${escapeHtml(story.title)}')">
-                    <div class="story-thumbnail"><img src="${story.thumbnail}" alt="${escapeHtml(story.title)}"></div>
+            topStoriesList.innerHTML = `
+                <div class="story-item placeholder">
+                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
-                        <div class="story-title">${escapeHtml(story.title)}</div>
-                        <div class="story-meta">Views: ${story.views}</div>
+                        <div class="story-title">Loading Top Stories...</div>
+                        <div class="story-meta"></div>
                     </div>
                 </div>
-            `).join('');
+            `; // Show loading state
+
+            try {
+                const response = await fetch('/api/videos/categorized?tag=Top Story');
+                const data = await response.json();
+
+                if (data.success && data.videos.length > 0) {
+                    topStoriesList.innerHTML = data.videos.map(video => renderStoryItemHtml(video, 'top-story')).join('');
+                } else {
+                    topStoriesList.innerHTML = `
+                        <div class="empty-state-small" style="padding: 10px 0;">
+                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">⭐</div>
+                            <div>No Top Stories yet.</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">Add videos and mark them as 'Top Story' in admin.</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading top stories:', error);
+                topStoriesList.innerHTML = `<div class="empty-state-small" style="padding: 10px 0; color: #ff6b6b;"><div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">❌</div>Failed to load Top Stories.</div>`;
+            }
         }
 
-        // NEW: Feature 12 - Start a New Series (Frontend Mock)
-        function loadNewSeries() {
+        // Feature 12 - Load New Series
+        async function loadNewSeries() {
             const newSeriesList = document.getElementById('new-series-list');
-            // This would typically fetch from a backend API, e.g., /api/series/new
-            const mockNewSeries = [
-                { id: 201, title: "Shadow Play", genre: "Thriller", thumbnail: "https://i.ytimg.com/vi/ZXsK2w2fI0c/mqdefault.jpg" },
-                { id: 202, title: "The Glitch in Time", genre: "Sci-Fi", thumbnail: "https://i.ytimg.com/vi/yKNxS9t2o3A/mqdefault.jpg" },
-                { id: 203, title: "Family Secrets", genre: "Drama", thumbnail: "https://i.ytimg.com/vi/DqXh2tP_o_8/mqdefault.jpg" },
-                // Add more mock series as needed
-            ];
-
-            newSeriesList.innerHTML = mockNewSeries.map(series => `
-                <div class="story-item" onclick="alert('Starting New Series: ${escapeHtml(series.title)}')">
-                    <div class="story-thumbnail"><img src="${series.thumbnail}" alt="${escapeHtml(series.title)}"></div>
+            newSeriesList.innerHTML = `
+                <div class="story-item placeholder">
+                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
-                        <div class="story-title">${escapeHtml(series.title)} <span class="story-genre-tag">${escapeHtml(series.genre)}</span></div>
-                        <div class="story-meta">Status: Not Started</div>
+                        <div class="story-title">Discovering New Series...</div>
+                        <div class="story-meta"></div>
                     </div>
                 </div>
-            `).join('');
+            `; // Show loading state
+
+            try {
+                const response = await fetch('/api/videos/categorized?tag=New Series');
+                const data = await response.json();
+
+                if (data.success && data.videos.length > 0) {
+                    newSeriesList.innerHTML = data.videos.map(video => renderStoryItemHtml(video, 'new-series')).join('');
+                } else {
+                    newSeriesList.innerHTML = `
+                        <div class="empty-state-small" style="padding: 10px 0;">
+                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">🆕</div>
+                            <div>No New Series yet.</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">Add videos and mark them as 'New Series' in admin.</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading new series:', error);
+                newSeriesList.innerHTML = `<div class="empty-state-small" style="padding: 10px 0; color: #ff6b6b;"><div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">❌</div>Failed to load New Series.</div>`;
+            }
         }
 
-        // NEW: Feature 13 - Behind the Story Toggle
+        // Feature 13 - Behind the Story Toggle (already implemented in previous step)
         function toggleBehindTheStory(videoId) {
             const contentDiv = document.getElementById(`behind-the-story-${videoId}`);
             if (contentDiv) {
@@ -2279,7 +2326,7 @@
             }
         }
 
-        // NEW: Feature 14 - Feedback Box Modal
+        // Feature 14 - Feedback Box Modal (already implemented in previous step)
         function showFeedbackModal() {
             document.getElementById('feedback-modal').style.display = 'flex'; // Use flex to center
             document.getElementById('feedback-text').value = ''; // Clear previous text
@@ -2308,7 +2355,6 @@
             feedbackMessageDiv.style.display = 'block';
 
             try {
-                // This would be a new backend endpoint, e.g., /api/feedback
                 const response = await fetch('/api/feedback', {
                     method: 'POST',
                     headers: {
@@ -2335,42 +2381,55 @@
             }
         }
 
-        // NEW: Feature 15 - Daily Watch Streak (Frontend Mock)
-        function updateDailyWatchStreak() {
-            // In a real app, this would involve fetching the streak from the backend
-            // and updating it based on daily watch activity.
-            // For now, let's mock it using localStorage.
-            const lastWatchDate = localStorage.getItem('lastWatchDate');
-            const today = new Date().toDateString();
+        // Feature 15 - Daily Watch Streak (Now fully integrated with backend API)
+        async function updateDailyWatchStreak() {
+            const streakCountElement = document.getElementById('streak-count');
+            const csrfToken = document.getElementById('csrf_token').value;
 
-            if (lastWatchDate === today) {
-                // Watched today, streak continues
-                // No change to streak count for today, assuming it was updated yesterday
-            } else {
-                const lastDate = new Date(lastWatchDate);
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
+            try {
+                // 1. Get current streak from backend
+                const getResponse = await fetch('/api/user/watch-streak', {
+                    method: 'GET',
+                    headers: { 'X-CSRFToken': csrfToken } // GET requests often don't need CSRF, but safer to include for consistency
+                });
+                const getData = await getResponse.json();
 
-                if (lastWatchDate && lastDate.toDateString() === yesterday.toDateString()) {
-                    // Watched yesterday, increment streak
-                    dailyWatchStreak = parseInt(localStorage.getItem('dailyWatchStreak') || '0') + 1;
+                if (getData.success) {
+                    streakCountElement.textContent = getData.streak;
+
+                    // 2. Send POST to update streak for today (assuming a video was 'watched' by loading the dashboard)
+                    const postResponse = await fetch('/api/user/watch-streak', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken // POST request absolutely needs CSRF
+                        }
+                    });
+                    const postData = await postResponse.json();
+
+                    if (postData.success) {
+                        // Update UI again if streak actually changed
+                        streakCountElement.textContent = postData.streak;
+                        console.log('Daily watch streak updated to:', postData.streak);
+                    } else {
+                        console.warn('Failed to update streak:', postData.message);
+                    }
                 } else {
-                    // Gap in watching or first watch, reset streak
-                    dailyWatchStreak = 1;
+                    console.error('Failed to load streak:', getData.message);
+                    streakCountElement.textContent = 'N/A'; // Indicate error
                 }
-                localStorage.setItem('dailyWatchStreak', dailyWatchStreak.toString());
-                localStorage.setItem('lastWatchDate', today);
+            } catch (error) {
+                console.error('Error updating daily watch streak:', error);
+                streakCountElement.textContent = 'N/A';
             }
-
-            document.getElementById('streak-count').textContent = dailyWatchStreak;
         }
 
-        // IMPORTANT: Ensure the auto-resize textarea function is available globally
-        // or copied into any new script blocks that need it.
-        // It's already defined in your original script block, so it should be fine.
-
-        // Make sure `escapeHtml` is globally available for new functions
-        // It's already defined in your original script block, so it should be fine.
+        // Escape HTML function (already present)
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>
