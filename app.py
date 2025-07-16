@@ -668,32 +668,52 @@ def admin_stats():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/admin/videos', methods=['GET'])
+@app.route('/api/admin/videos', methods=['POST'])
 @admin_required
-def admin_get_videos():
-    """Get all videos for admin"""
+def admin_add_video():
+    """Add new video (admin only)"""
     try:
-        videos = Video.query.order_by(Video.created_at.desc()).all()
+        data = request.get_json()
+        title = data.get('title', '').strip()
+        description = data.get('description', '').strip()
+        youtube_url = data.get('youtube_url', '').strip()
         
-        video_list = []
-        for video in videos:
-            comment_count = Comment.query.filter_by(video_id=video.id).count()
-            video_list.append({
-                'id': video.id,
-                'title': video.title,
-                'description': video.description,
-                'youtube_url': video.youtube_url,
-                'youtube_video_id': video.youtube_video_id,
-                'thumbnail_url': video.thumbnail_url,
-                'is_active': video.is_active,
-                'created_at': video.created_at.isoformat(),
-                'comment_count': comment_count
-            })
+        if not title or not youtube_url:
+            return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
         
-        return jsonify({'success': True, 'videos': video_list})
+        # Extract video ID
+        video_id = extract_youtube_video_id(youtube_url)
+        if not video_id:
+            return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
+        
+        # Check if video already exists
+        existing_video = Video.query.filter_by(youtube_video_id=video_id).first()
+        if existing_video:
+            return jsonify({'success': False, 'message': 'This video has already been added'}), 400
+        
+        # Generate thumbnail URL
+        thumbnail_url = get_youtube_thumbnail(video_id)
+        
+        # Create video record
+        video = Video(
+            title=title,
+            description=description if description else None,
+            youtube_url=youtube_url,
+            youtube_video_id=video_id,
+            thumbnail_url=thumbnail_url
+        )
+        
+        db.session.add(video)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Video added successfully'
+        })
         
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to add video'}), 500
 
 @app.route('/api/admin/videos', methods=['POST'])
 @admin_required
