@@ -714,7 +714,7 @@ def admin_add_video():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to add video'}), 500
-
+        
 @app.route('/api/admin/videos', methods=['POST'])
 @admin_required
 def admin_add_video():
