@@ -1,5 +1,5 @@
 # FILE LOCATION: /app.py (root of your GitHub repo)
-# Main Flask application for subscription-based storytelling website
+# Complete Flask application for subscription-based storytelling website
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -9,6 +9,7 @@ import os
 import re
 import stripe
 from functools import wraps
+from sqlalchemy import func
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -18,10 +19,14 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///stories.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Fix for Render PostgreSQL URL format
+if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
+
 # Stripe configuration
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
-STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID')  # Your subscription price ID
+STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', 'price_1RlTWbJhjilOfxPRUg9SzyST')  # Your price ID
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -72,9 +77,18 @@ class Video(db.Model):
 # Helper Functions
 def extract_youtube_video_id(url):
     """Extract YouTube video ID from URL"""
-    pattern = r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'
-    match = re.search(pattern, url)
-    return match.group(1) if match else None
+    patterns = [
+        r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+        r'youtube\.com\/watch\?v=([^"&?\/\s]{11})',
+        r'youtu\.be\/([^"&?\/\s]{11})',
+        r'youtube\.com\/embed\/([^"&?\/\s]{11})'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    return None
 
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
@@ -85,7 +99,9 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -94,11 +110,15 @@ def subscription_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            return redirect(url_for('index'))
         
         user = User.query.get(session['user_id'])
         if not user or not user.has_active_subscription():
-            return jsonify({'success': False, 'message': 'Active subscription required'}), 402
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Active subscription required'}), 402
+            return redirect(url_for('subscribe'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -108,11 +128,15 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            return redirect(url_for('index'))
         
         user = User.query.get(session['user_id'])
         if not user or not user.is_admin:
-            return jsonify({'success': False, 'message': 'Admin access required'}), 403
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Admin access required'}), 403
+            return redirect(url_for('index'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -124,13 +148,17 @@ def index():
     # Check if user is already logged in
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
-        if user and user.has_active_subscription():
-            return redirect(url_for('dashboard'))
-        else:
-            return redirect(url_for('subscribe'))
+        if user:
+            if user.is_admin:
+                return redirect(url_for('admin_dashboard'))
+            elif user.has_active_subscription():
+                return redirect(url_for('dashboard'))
+            else:
+                return redirect(url_for('subscribe'))
     
     return render_template('index.html')
 
+# Authentication Routes
 @app.route('/api/auth/register', methods=['POST'])
 def register():
     """User registration endpoint"""
@@ -163,7 +191,8 @@ def register():
         return jsonify({
             'success': True,
             'message': 'Registration successful',
-            'hasSubscription': False
+            'hasSubscription': False,
+            'isAdmin': False
         })
         
     except Exception as e:
@@ -209,6 +238,22 @@ def logout():
     session.clear()
     return jsonify({'success': True, 'message': 'Logged out successfully'})
 
+@app.route('/api/auth/check')
+@login_required
+def auth_check():
+    """Check if user is authenticated"""
+    user = User.query.get(session['user_id'])
+    return jsonify({
+        'success': True,
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'is_admin': user.is_admin,
+            'has_subscription': user.has_active_subscription()
+        }
+    })
+
+# Dashboard Routes
 @app.route('/dashboard')
 @subscription_required
 def dashboard():
@@ -235,6 +280,7 @@ def get_videos():
     
     return jsonify({'success': True, 'videos': video_list})
 
+# Subscription Routes
 @app.route('/subscribe')
 @login_required
 def subscribe():
@@ -259,19 +305,34 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='subscription',
-            success_url=url_for('dashboard', _external=True),
-            cancel_url=url_for('subscribe', _external=True),
+            success_url=url_for('dashboard', _external=True) + '?success=true',
+            cancel_url=url_for('subscribe', _external=True) + '?canceled=true',
             customer_email=user.email,
             metadata={
-                'user_id': user.id
+                'user_id': str(user.id)
             }
         )
         
-        return jsonify({'checkout_url': checkout_session.url})
+        return jsonify({'success': True, 'checkout_url': checkout_session.url})
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/user/subscription-status')
+@login_required
+def subscription_status():
+    """Check user's subscription status"""
+    user = User.query.get(session['user_id'])
+    return jsonify({
+        'success': True,
+        'hasActiveSubscription': user.has_active_subscription(),
+        'subscription': {
+            'status': user.subscription.status if user.subscription else None,
+            'current_period_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None
+        } if user.subscription else None
+    })
+
+# Stripe Webhook
 @app.route('/webhook/stripe', methods=['POST'])
 def stripe_webhook():
     """Handle Stripe webhooks"""
@@ -290,7 +351,7 @@ def stripe_webhook():
     # Handle different event types
     if event['type'] == 'checkout.session.completed':
         session_data = event['data']['object']
-        user_id = session_data['metadata']['user_id']
+        user_id = int(session_data['metadata']['user_id'])
         
         # Get subscription details
         subscription = stripe.Subscription.retrieve(session_data['subscription'])
@@ -305,6 +366,7 @@ def stripe_webhook():
                 existing_subscription.status = subscription['status']
                 existing_subscription.current_period_start = datetime.fromtimestamp(subscription['current_period_start'])
                 existing_subscription.current_period_end = datetime.fromtimestamp(subscription['current_period_end'])
+                existing_subscription.updated_at = datetime.utcnow()
             else:
                 new_subscription = Subscription(
                     user_id=user_id,
@@ -326,7 +388,9 @@ def stripe_webhook():
         db_subscription = Subscription.query.filter_by(stripe_subscription_id=subscription_id).first()
         if db_subscription:
             db_subscription.status = 'active'
+            db_subscription.current_period_start = datetime.fromtimestamp(subscription['current_period_start'])
             db_subscription.current_period_end = datetime.fromtimestamp(subscription['current_period_end'])
+            db_subscription.updated_at = datetime.utcnow()
             db.session.commit()
     
     elif event['type'] == 'invoice.payment_failed':
@@ -336,19 +400,94 @@ def stripe_webhook():
         db_subscription = Subscription.query.filter_by(stripe_subscription_id=subscription_id).first()
         if db_subscription:
             db_subscription.status = 'past_due'
+            db_subscription.updated_at = datetime.utcnow()
+            db.session.commit()
+    
+    elif event['type'] == 'customer.subscription.updated':
+        # Handle subscription updates
+        subscription_data = event['data']['object']
+        
+        db_subscription = Subscription.query.filter_by(stripe_subscription_id=subscription_data['id']).first()
+        if db_subscription:
+            db_subscription.status = subscription_data['status']
+            db_subscription.current_period_start = datetime.fromtimestamp(subscription_data['current_period_start'])
+            db_subscription.current_period_end = datetime.fromtimestamp(subscription_data['current_period_end'])
+            db_subscription.updated_at = datetime.utcnow()
+            db.session.commit()
+    
+    elif event['type'] == 'customer.subscription.deleted':
+        # Handle subscription cancellation
+        subscription_data = event['data']['object']
+        
+        db_subscription = Subscription.query.filter_by(stripe_subscription_id=subscription_data['id']).first()
+        if db_subscription:
+            db_subscription.status = 'canceled'
+            db_subscription.updated_at = datetime.utcnow()
             db.session.commit()
     
     return '', 200
 
+# Admin Routes
 @app.route('/admin')
 @admin_required
 def admin_dashboard():
     """Admin dashboard"""
     return render_template('admin.html')
 
+@app.route('/api/admin/stats')
+@admin_required
+def admin_stats():
+    """Get admin dashboard statistics"""
+    try:
+        # Get current month start
+        now = datetime.utcnow()
+        month_start = datetime(now.year, now.month, 1)
+        
+        stats = {
+            'total_videos': Video.query.filter_by(is_active=True).count(),
+            'total_users': User.query.count(),
+            'active_subscribers': Subscription.query.filter_by(status='active').filter(
+                Subscription.current_period_end > datetime.utcnow()
+            ).count(),
+            'videos_this_month': Video.query.filter(
+                Video.created_at >= month_start,
+                Video.is_active == True
+            ).count()
+        }
+        
+        return jsonify({'success': True, 'stats': stats})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos', methods=['GET'])
+@admin_required
+def admin_get_videos():
+    """Get all videos for admin"""
+    try:
+        videos = Video.query.order_by(Video.created_at.desc()).all()
+        
+        video_list = []
+        for video in videos:
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url,
+                'youtube_video_id': video.youtube_video_id,
+                'thumbnail_url': video.thumbnail_url,
+                'is_active': video.is_active,
+                'created_at': video.created_at.isoformat()
+            })
+        
+        return jsonify({'success': True, 'videos': video_list})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/admin/videos', methods=['POST'])
 @admin_required
-def add_video():
+def admin_add_video():
     """Add new video (admin only)"""
     try:
         data = request.get_json()
@@ -364,13 +503,18 @@ def add_video():
         if not video_id:
             return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
         
+        # Check if video already exists
+        existing_video = Video.query.filter_by(youtube_video_id=video_id).first()
+        if existing_video:
+            return jsonify({'success': False, 'message': 'This video has already been added'}), 400
+        
         # Generate thumbnail URL
         thumbnail_url = get_youtube_thumbnail(video_id)
         
         # Create video record
         video = Video(
             title=title,
-            description=description,
+            description=description if description else None,
             youtube_url=youtube_url,
             youtube_video_id=video_id,
             thumbnail_url=thumbnail_url
@@ -387,7 +531,8 @@ def add_video():
                 'title': video.title,
                 'description': video.description,
                 'youtube_video_id': video.youtube_video_id,
-                'thumbnail_url': video.thumbnail_url
+                'thumbnail_url': video.thumbnail_url,
+                'created_at': video.created_at.isoformat()
             }
         })
         
@@ -395,24 +540,82 @@ def add_video():
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to add video'}), 500
 
-# Create tables and admin user
-@app.before_first_request
+@app.route('/api/admin/videos/<int:video_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_video(video_id):
+    """Delete video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        db.session.delete(video)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Video deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to delete video'}), 500
+
+@app.route('/api/admin/videos/<int:video_id>', methods=['PUT'])
+@admin_required
+def admin_update_video(video_id):
+    """Update video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        data = request.get_json()
+        
+        # Update fields
+        if 'title' in data:
+            video.title = data['title'].strip()
+        if 'description' in data:
+            video.description = data['description'].strip() if data['description'] else None
+        if 'is_active' in data:
+            video.is_active = bool(data['is_active'])
+        
+        video.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Video updated successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to update video'}), 500
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    if request.is_json:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    return redirect(url_for('index'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    if request.is_json:
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+    return redirect(url_for('index'))
+
+# Initialize database
 def create_tables():
     """Create database tables and default admin user"""
-    db.create_all()
-    
-    # Create admin user if it doesn't exist
-    admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
-    admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
-    
-    if not User.query.filter_by(email=admin_email).first():
-        admin_user = User(
-            email=admin_email,
-            password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
-            is_admin=True
-        )
-        db.session.add(admin_user)
-        db.session.commit()
+    with app.app_context():
+        db.create_all()
+        
+        # Create admin user if it doesn't exist
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
+        admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        
+        if not User.query.filter_by(email=admin_email).first():
+            admin_user = User(
+                email=admin_email,
+                password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
+                is_admin=True
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            print(f"Created admin user: {admin_email}")
 
 if __name__ == '__main__':
+    create_tables()
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
