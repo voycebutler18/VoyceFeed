@@ -23,10 +23,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 print("Using SQLite database for compatibility with Python 3.13")
 
-# Stripe configuration
+# Stripe configuration with better error handling
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
-STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', 'price_1RlTWbJhjilOfxPRUg9SzyST')  # Your price ID
+STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', 'price_1RlTWbJhjilOfxPRUg9SzyST')
+
+# Debug: Check Stripe configuration at startup
+print(f"Stripe API Key set: {bool(stripe.api_key)}")
+print(f"Stripe Publishable Key set: {bool(STRIPE_PUBLISHABLE_KEY)}")
+print(f"Stripe Price ID: {STRIPE_PRICE_ID}")
+
+if not stripe.api_key:
+    print("WARNING: STRIPE_SECRET_KEY environment variable not set!")
+if not STRIPE_PUBLISHABLE_KEY:
+    print("WARNING: STRIPE_PUBLISHABLE_KEY environment variable not set!")
 
 # Initialize extensions
 db = SQLAlchemy(app)
