@@ -7,10 +7,10 @@ import re
 import stripe
 from functools import wraps
 from sqlalchemy import func
-import logging # Import the logging module
-from flask_wtf.csrf import CSRFProtect # Import CSRFProtect
-from flask_limiter import Limiter # Import Limiter
-from flask_limiter.util import get_remote_address # Import get_remote_address
+import logging
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -42,12 +42,12 @@ if not STRIPE_PUBLISHABLE_KEY:
 # Initialize extensions
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-csrf = CSRFProtect(app) # Initialize CSRFProtect
+csrf = CSRFProtect(app)
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
-) # Initialize Limiter
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -118,7 +118,10 @@ class Video(db.Model):
     likes_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    # NEW: Fields for categorization
+    genre = db.Column(db.String(100), nullable=True) # e.g., 'Thriller', 'Family', 'Sci-Fi'
+    featured_tag = db.Column(db.String(50), nullable=True) # e.g., 'Top Story', 'New Series', 'Hidden Gem'
+
     # Relationship to comments
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     # Relationship to likes
@@ -214,6 +217,8 @@ class Feedback(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     feedback_text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='feedbacks') # Add backref for easy access to user from feedback
 
     def to_dict(self):
         return {
@@ -484,7 +489,9 @@ def get_videos():
             'thumbnail_url': video.thumbnail_url,
             'likes_count': video.likes_count,
             'user_liked': user_liked,
-            'created_at': video.created_at.isoformat()
+            'created_at': video.created_at.isoformat(),
+            'genre': video.genre, # Include genre
+            'featured_tag': video.featured_tag # Include featured_tag
         })
     
     return jsonify({'success': True, 'videos': video_list})
@@ -888,7 +895,7 @@ def sync_subscription_from_stripe(user, stripe_subscription):
             db.session.add(new_subscription)
         db.session.commit()
     except Exception as e:
-        logger.error(f"Error syncing subscription from Stripe for user {user.id}: {e}")
+        logger.error(f"Error syncing subscription from Stripe for user {user.id}: {e}", exc_info=True)
 
 # Enhanced subscription status check
 @app.route('/api/user/subscription-status')
@@ -1095,6 +1102,7 @@ def stripe_webhook():
             print(f"Canceled subscription {subscription_data['id']}")
     
     return '', 200
+
 # Admin Routes
 @app.route('/admin')
 @admin_required
@@ -1152,7 +1160,8 @@ def admin_get_videos():
                 'is_active': video.is_active,
                 'likes_count': video.likes_count,
                 'created_at': video.created_at.isoformat(),
-                'comment_count': comment_count
+                'genre': video.genre, # Include genre
+                'featured_tag': video.featured_tag # Include featured_tag
             })
         
         return jsonify({'success': True, 'videos': video_list})
@@ -1238,6 +1247,8 @@ def admin_add_video():
         title = data.get('title', '').strip()
         description = data.get('description', '').strip()
         youtube_url = data.get('youtube_url', '').strip()
+        genre = data.get('genre', '').strip() # NEW: Get genre
+        featured_tag = data.get('featured_tag', '').strip() # NEW: Get featured_tag
         
         if not title or not youtube_url:
             return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
@@ -1261,7 +1272,9 @@ def admin_add_video():
             description=description if description else None,
             youtube_url=youtube_url,
             youtube_video_id=video_id,
-            thumbnail_url=thumbnail_url
+            thumbnail_url=thumbnail_url,
+            genre=genre if genre else None, # NEW: Save genre
+            featured_tag=featured_tag if featured_tag else None # NEW: Save featured_tag
         )
         
         db.session.add(video)
@@ -1276,12 +1289,15 @@ def admin_add_video():
                 'description': video.description,
                 'youtube_video_id': video.youtube_video_id,
                 'thumbnail_url': video.thumbnail_url,
-                'created_at': video.created_at.isoformat()
+                'created_at': video.created_at.isoformat(),
+                'genre': video.genre,
+                'featured_tag': video.featured_tag
             }
         })
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error adding video: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to add video'}), 500
 
 @app.route('/api/admin/videos/<int:video_id>', methods=['DELETE'])
@@ -1298,6 +1314,7 @@ def admin_delete_video(video_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error deleting video: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to delete video'}), 500
 
 @app.route('/api/admin/videos/<int:video_id>', methods=['PUT'])
@@ -1315,6 +1332,10 @@ def admin_update_video(video_id):
             video.description = data['description'].strip() if data['description'] else None
         if 'is_active' in data:
             video.is_active = bool(data['is_active'])
+        if 'genre' in data: # NEW: Update genre
+            video.genre = data['genre'].strip() if data['genre'] else None
+        if 'featured_tag' in data: # NEW: Update featured_tag
+            video.featured_tag = data['featured_tag'].strip() if data['featured_tag'] else None
         
         video.updated_at = datetime.utcnow()
         
@@ -1324,6 +1345,7 @@ def admin_update_video(video_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error updating video: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update video'}), 500
 
 @app.route('/api/admin/comments', methods=['GET'])
@@ -1367,6 +1389,7 @@ def admin_get_comments():
         })
         
     except Exception as e:
+        logger.error(f"Error getting comments for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/comments/<int:comment_id>', methods=['DELETE'])
@@ -1383,6 +1406,7 @@ def admin_delete_comment(comment_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error deleting comment for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
 
 @app.route('/api/admin/users', methods=['GET'])
@@ -1393,7 +1417,7 @@ def admin_get_users():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         
-        users = User.query.order_by(User.created_at.desc()).paginate(
+        users = db.session.query(User).options(db.joinedload(User.subscription)).order_by(User.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
         
@@ -1408,7 +1432,9 @@ def admin_get_users():
                 'has_subscription': user.has_active_subscription(),
                 'subscription_status': user.subscription.status if user.subscription else None,
                 'subscription_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None,
-                'comment_count': Comment.query.filter_by(user_id=user.id).count()
+                'comment_count': Comment.query.filter_by(user_id=user.id).count(),
+                'watch_streak': user.watch_streak, # NEW: Include watch streak
+                'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None # NEW: Include last watch date
             }
             user_list.append(user_data)
         
@@ -1426,6 +1452,7 @@ def admin_get_users():
         })
         
     except Exception as e:
+        logger.error(f"Error getting users for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
@@ -1451,6 +1478,7 @@ def admin_toggle_user_admin(user_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error toggling admin status: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update user'}), 500
 
 # User Profile Routes
@@ -1470,7 +1498,9 @@ def get_user_profile():
             'has_subscription': user.has_active_subscription(),
             'subscription_status': user.subscription.status if user.subscription else None,
             'subscription_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None,
-            'comment_count': Comment.query.filter_by(user_id=user.id).count()
+            'comment_count': Comment.query.filter_by(user_id=user.id).count(),
+            'watch_streak': user.watch_streak, # NEW: Include watch streak
+            'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None # NEW: Include last watch date
         }
         
         return jsonify({
@@ -1479,6 +1509,7 @@ def get_user_profile():
         })
         
     except Exception as e:
+        logger.error(f"Error getting user profile: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to load profile'}), 500
 
 @app.route('/api/user/comments', methods=['GET'])
@@ -1516,6 +1547,7 @@ def get_user_comments():
         })
         
     except Exception as e:
+        logger.error(f"Error getting user comments: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
 
 # Search Routes
@@ -1557,6 +1589,7 @@ def search_videos():
         })
         
     except Exception as e:
+        logger.error(f"Error searching videos: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Search failed'}), 500
 
 @app.route('/api/search/comments', methods=['GET'])
@@ -1595,6 +1628,7 @@ def search_comments():
         })
         
     except Exception as e:
+        logger.error(f"Error searching comments: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Search failed'}), 500
 
 # Error handlers
@@ -1613,72 +1647,61 @@ def internal_error(error):
 
 # NEW FEATURE ROUTES START HERE
 
-@app.route('/api/videos/top-stories', methods=['GET'])
+@app.route('/api/videos/categorized', methods=['GET'])
 @subscription_required
-def get_top_stories():
+def get_categorized_videos():
     """
-    API to get top trending videos based on likes count.
-    Returns top 5 videos.
+    API to get videos based on their featured_tag.
+    Query parameters:
+        tag: 'Top Story', 'New Series', etc.
+        genre: Optional, to filter new series by genre.
     """
     try:
-        top_videos = Video.query.filter_by(is_active=True).order_by(Video.likes_count.desc()).limit(5).all()
-        
+        tag = request.args.get('tag', '').strip()
+        genre = request.args.get('genre', '').strip()
+
+        if not tag:
+            return jsonify({'success': False, 'message': 'Tag parameter is required'}), 400
+
+        query = Video.query.filter_by(is_active=True, featured_tag=tag)
+
+        if tag == 'Top Story':
+            # For top stories, order by likes_count and limit
+            videos = query.order_by(Video.likes_count.desc()).limit(10).all()
+        elif tag == 'New Series':
+            # For new series, order by creation date
+            if genre:
+                query = query.filter_by(genre=genre)
+            videos = query.order_by(Video.created_at.desc()).limit(10).all()
+        else:
+            # For any other custom tags, order by creation date
+            videos = query.order_by(Video.created_at.desc()).limit(10).all()
+
         video_list = []
-        for video in top_videos:
+        for video in videos:
+            # We don't need user_liked here since these are just for display in lists,
+            # not for individual video cards that show like status.
             video_list.append({
                 'id': video.id,
                 'title': video.title,
                 'description': video.description,
                 'youtube_video_id': video.youtube_video_id,
                 'thumbnail_url': video.thumbnail_url,
-                'likes_count': video.likes_count
+                'likes_count': video.likes_count,
+                'created_at': video.created_at.isoformat(),
+                'genre': video.genre,
+                'featured_tag': video.featured_tag
             })
         
         return jsonify({'success': True, 'videos': video_list})
     except Exception as e:
-        logger.error(f"Error fetching top stories: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': 'Failed to load top stories'}), 500
-
-@app.route('/api/series/new', methods=['GET'])
-@subscription_required
-def get_new_series():
-    """
-    API to get new series for discovery.
-    Currently returns mock data as there is no 'Series' model.
-    """
-    try:
-        # Mock data for new series
-        mock_series = [
-            {
-                'id': 201,
-                'title': "Shadow Play",
-                'genre': "Thriller",
-                'thumbnail_url': "https://i.ytimg.com/vi/ZXsK2w2fI0c/mqdefault.jpg", # Placeholder thumbnail
-                'description': "A gripping thriller about a detective chasing shadows."
-            },
-            {
-                'id': 202,
-                'title': "The Glitch in Time",
-                'genre': "Sci-Fi",
-                'thumbnail_url': "https://i.ytimg.com/vi/yKNxS9t2o3A/mqdefault.jpg", # Placeholder thumbnail
-                'description': "A mind-bending sci-fi journey through temporal anomalies."
-            },
-            {
-                'id': 203,
-                'title': "Family Secrets",
-                'genre': "Drama",
-                'thumbnail_url': "https://i.ytimg.com/vi/DqXh2tP_o_8/mqdefault.jpg", # Placeholder thumbnail
-                'description': "Unraveling generations of hidden truths within a powerful family."
-            }
-        ]
-        
-        return jsonify({'success': True, 'series': mock_series})
-    except Exception as e:
-        logger.error(f"Error fetching new series: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': 'Failed to load new series'}), 500
+        logger.error(f"Error fetching categorized videos for tag '{tag}': {e}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Failed to load {tag} videos'}), 500
 
 @app.route('/api/feedback', methods=['POST'])
 @login_required
+@csrf.exempt # Exempt this POST route from CSRF if you're not sending X-CSRFToken for it, but better to send it from frontend.
+# If you decide to send X-CSRFToken, remove @csrf.exempt. Current dashboard.html sends it.
 def submit_feedback():
     """
     API to submit user feedback or story suggestions.
@@ -1702,7 +1725,7 @@ def submit_feedback():
         return jsonify({'success': True, 'message': 'Feedback submitted successfully!'}), 200
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error submitting feedback: {e}", exc_info=True)
+        logger.error(f"Error submitting feedback for user {session.get('user_id')}: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to submit feedback'}), 500
 
 @app.route('/api/user/watch-streak', methods=['GET', 'POST'])
@@ -1711,7 +1734,7 @@ def user_watch_streak():
     """
     API to get and update user's daily watch streak.
     GET: Returns current streak.
-    POST: Updates streak based on daily activity.
+    POST: Updates streak based on daily activity (e.g., watching a video).
     """
     user = User.query.get(session['user_id'])
     today = date.today()
@@ -1727,13 +1750,20 @@ def user_watch_streak():
         try:
             if user.last_watch_date == today:
                 # Already updated today, no change needed
-                pass
+                return jsonify({
+                    'success': True,
+                    'message': 'Streak already updated for today',
+                    'streak': user.watch_streak,
+                    'last_watch_date': user.last_watch_date.isoformat()
+                })
             elif user.last_watch_date == (today - timedelta(days=1)):
                 # Watched yesterday, increment streak
                 user.watch_streak += 1
+                logger.info(f"User {user.id} streak incremented to {user.watch_streak}")
             else:
                 # Gap in watching or first watch, reset streak to 1
                 user.watch_streak = 1
+                logger.info(f"User {user.id} streak reset to {user.watch_streak}")
             
             user.last_watch_date = today
             db.session.commit()
@@ -1789,7 +1819,13 @@ def create_tables():
             else:
                 customer_user = User.query.filter_by(email=customer_email).first()
 
-            if not customer_user.subscription:
+            # Ensure the manual_unlimited subscription is handled robustly
+            if not (customer_user.subscription and customer_user.subscription.stripe_customer_id == 'manual_unlimited'):
+                # Check if a subscription exists but is not 'manual_unlimited' and handle it if needed
+                if customer_user.subscription:
+                    db.session.delete(customer_user.subscription) # Remove old subscription if it's not manual_unlimited
+                    db.session.commit()
+
                 unlimited_subscription = Subscription(
                     user_id=customer_user.id,
                     stripe_customer_id='manual_unlimited',
