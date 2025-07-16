@@ -433,6 +433,12 @@ def post_comment(video_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to post comment'}), 500
+        
+@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
+@subscription_required
+def toggle_video_like(video_id):
+    # Similar to comment like functionality
+    pass
 
 @app.route('/api/comments/<int:comment_id>/like', methods=['POST'])
 @subscription_required
