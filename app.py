@@ -1058,12 +1058,14 @@ def admin_stats():
         now = datetime.utcnow()
         month_start = datetime(now.year, now.month, 1)
         
+        # Fetch active subscriptions directly from Stripe
+        stripe_active_subscriptions = stripe.Subscription.list(status='active', limit=100).data # Fetch up to 100 active subscriptions
+        active_subscribers_count = len(stripe_active_subscriptions)
+
         stats = {
             'total_videos': Video.query.filter_by(is_active=True).count(),
             'total_users': User.query.count(),
-            'active_subscribers': Subscription.query.filter_by(status='active').filter(
-                Subscription.current_period_end > datetime.utcnow()
-            ).count(),
+            'active_subscribers': active_subscribers_count, # Use count from Stripe
             'videos_this_month': Video.query.filter(
                 Video.created_at >= month_start,
                 Video.is_active == True
