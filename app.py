@@ -7,10 +7,10 @@ import re
 import stripe
 from functools import wraps
 from sqlalchemy import func
-import logging
-from flask_wtf.csrf import CSRFProtect
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+import logging # Import the logging module
+from flask_wtf.csrf import CSRFProtect # Import CSRFProtect
+from flask_limiter import Limiter # Import Limiter
+from flask_limiter.util import get_remote_address # Import get_remote_address
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -42,12 +42,12 @@ if not STRIPE_PUBLISHABLE_KEY:
 # Initialize extensions
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-csrf = CSRFProtect(app)
+csrf = CSRFProtect(app) # Initialize CSRFProtect
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"]
-)
+) # Initialize Limiter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -781,38 +781,6 @@ def create_checkout_session():
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'message': 'System error'}), 500
 
-        # Protection 4: Stripe state verification
-        if subs := stripe.Subscription.list(customer=customer_id, status='active', limit=1).data:
-            sync_subscription_from_stripe(user, subs[0])
-            return jsonify({
-                'success': False,
-                'message': 'Subscription exists in payment system',
-                'redirect': '/dashboard'
-            }), 409
-
-        # Create checkout session
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{'price': STRIPE_PRICE_ID, 'quantity': 1}],
-            mode='subscription',
-            success_url=url_for('payment_success', _external=True),
-            cancel_url=url_for('subscribe', _external=True),
-            customer=customer_id,
-            metadata={'user_id': str(user.id)},
-            subscription_data={'metadata': {'user_id': str(user.id)}},
-            idempotency_key=f"{user.id}-{int(datetime.utcnow().timestamp())}"
-        )
-
-        logger.info(f"Created checkout session {session.id} for user {user.id}")
-        return jsonify({'success': True, 'checkout_url': session.url})
-
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error: {str(e)}", exc_info=True)
-        return jsonify({'success': False, 'message': 'Payment system error'}), 500
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        return jsonify({'success': False, 'message': 'System error'}), 500
-
 def get_or_create_stripe_customer(user):
     """Get existing or create new Stripe customer"""
     try:
@@ -893,12 +861,12 @@ def check_recent_checkout_sessions(user):
             limit=5
         )
         
-        for session in checkout_sessions.data:
-            if session.status == 'open':
+        for session_obj in checkout_sessions.data: # Renamed session to session_obj
+            if session_obj.status == 'open':
                 return {
-                    'id': session.id,
-                    'url': session.url,
-                    'status': session.status
+                    'id': session_obj.id,
+                    'url': session_obj.url,
+                    'status': session_obj.status
                 }
         
         return None
@@ -1173,6 +1141,7 @@ def admin_stats():
         return jsonify({'success': True, 'stats': stats})
         
     except Exception as e:
+        logger.error(f"Error fetching admin stats: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/videos', methods=['GET'])
@@ -1202,6 +1171,7 @@ def admin_get_videos():
         return jsonify({'success': True, 'videos': video_list})
         
     except Exception as e:
+        logger.error(f"Error fetching admin videos: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/videos/<int:video_id>/likes', methods=['GET'])
@@ -1233,6 +1203,7 @@ def admin_get_video_likes(video_id):
         })
         
     except Exception as e:
+        logger.error(f"Error fetching video likes for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/videos/<int:video_id>/comments', methods=['GET'])
@@ -1271,6 +1242,7 @@ def admin_get_video_comments(video_id):
         })
         
     except Exception as e:
+        logger.error(f"Error fetching video comments for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/videos', methods=['POST'])
@@ -1332,7 +1304,7 @@ def admin_add_video():
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error adding video: {e}", exc_info=True)
+        logger.error(f"Error adding video for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to add video'}), 500
 
 @app.route('/api/admin/videos/<int:video_id>', methods=['DELETE'])
@@ -1349,7 +1321,7 @@ def admin_delete_video(video_id):
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error deleting video: {e}", exc_info=True)
+        logger.error(f"Error deleting video for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to delete video'}), 500
 
 @app.route('/api/admin/videos/<int:video_id>', methods=['PUT'])
@@ -1380,7 +1352,7 @@ def admin_update_video(video_id):
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error updating video: {e}", exc_info=True)
+        logger.error(f"Error updating video for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update video'}), 500
 
 @app.route('/api/admin/comments', methods=['GET'])
@@ -1735,8 +1707,7 @@ def get_categorized_videos():
 
 @app.route('/api/feedback', methods=['POST'])
 @login_required
-@csrf.exempt # Exempt this POST route from CSRF if you're not sending X-CSRFToken for it, but better to send it from frontend.
-# If you decide to send X-CSRFToken, remove @csrf.exempt. Current dashboard.html sends it.
+# @csrf.exempt # Removed @csrf.exempt as frontend now sends X-CSRFToken
 def submit_feedback():
     """
     API to submit user feedback or story suggestions.
@@ -1856,9 +1827,9 @@ def create_tables():
 
             # Ensure the manual_unlimited subscription is handled robustly
             if not (customer_user.subscription and customer_user.subscription.stripe_customer_id == 'manual_unlimited'):
-                # Check if a subscription exists but is not 'manual_unlimited' and handle it if needed
+                # Check if a subscription exists but is not 'manual_unlimited' and remove it
                 if customer_user.subscription:
-                    db.session.delete(customer_user.subscription) # Remove old subscription if it's not manual_unlimited
+                    db.session.delete(customer_user.subscription)
                     db.session.commit()
 
                 unlimited_subscription = Subscription(
@@ -1887,3 +1858,4 @@ if __name__ == '__main__':
 else:
     # This runs when deployed (not in debug mode)
     create_tables()
+
