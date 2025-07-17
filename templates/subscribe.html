@@ -254,6 +254,10 @@
         </div>
     </div>
 
+    <!-- Hidden input for CSRF token -->
+    <!-- This field will be populated by Flask-WTF when rendered by your Flask app -->
+    <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+
     <script>
         // Initialize Stripe with your publishable key
         const stripe = Stripe('{{ stripe_key }}');
@@ -281,40 +285,46 @@
         }
 
         async function createCheckoutSession() {
-    if (isProcessing) return;
-    
-    setButtonLoading(true);
-    
-    try {
-        const response = await fetch('/api/create-checkout-session', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // IMPORTANT: Ensure you are sending the CSRF token from subscribe.html as well!
-                // If subscribe.html has an input like <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
-                // Then add: 'X-CSRFToken': document.getElementById('csrf_token').value
+            if (isProcessing) return;
+            
+            setButtonLoading(true);
+            
+            // Get the CSRF token from the hidden input field
+            const csrfToken = document.getElementById('csrf_token').value;
+
+            try {
+                const response = await fetch('/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // Include the CSRF token
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.checkout_url) {
+                    // Success: redirect to Stripe checkout
+                    window.location.href = data.checkout_url;
+                } else if (!response.ok && data.redirect) { // Handle server-sent redirect (e.g., if already subscribed)
+                    console.warn('Redirecting due to backend message:', data.message);
+                    window.location.href = data.redirect;
+                }
+                else {
+                    // General error or unknown redirect
+                    throw new Error(data.message || 'Failed to create checkout session');
+                }
+            } catch (error) {
+                console.error('Error creating checkout session:', error);
+                showError('Unable to start subscription. Please try again.');
+                setButtonLoading(false);
             }
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.checkout_url) {
-            // Success: redirect to Stripe checkout
-            window.location.href = data.checkout_url;
-        } else if (!response.ok && data.redirect) { // NEW: Handle server-sent redirect
-            // Server returned a 409 (or other non-2xx) with a redirect URL
-            console.warn('Redirecting due to backend message:', data.message);
-            window.location.href = data.redirect;
-        } else {
-            // General error or unknown redirect
-            throw new Error(data.message || 'Failed to create checkout session');
         }
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
-        showError('Unable to start subscription. Please try again.');
-        setButtonLoading(false);
-    }
-}
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !isProcessing) {
+                createCheckoutSession();
+            }
         });
     </script>
 </body>
