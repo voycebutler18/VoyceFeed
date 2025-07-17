@@ -338,15 +338,18 @@ def register():
         session['user_id'] = user.id
         session['user_email'] = user.email
         
+        # MODIFIED: Redirect directly to dashboard after registration
         return jsonify({
             'success': True,
             'message': 'Registration successful',
-            'hasSubscription': False,
-            'isAdmin': False
+            'hasSubscription': False, # Still false for new users
+            'isAdmin': False,
+            'redirect': '/dashboard' # Indicate redirect to frontend
         })
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error during registration: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Registration failed. Please try again.'}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -376,6 +379,7 @@ def login():
             return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
             
     except Exception as e:
+        logger.error(f"Error during login: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Login failed. Please try again.'}), 500
 
 @app.route('/api/auth/logout', methods=['POST'])
@@ -434,6 +438,7 @@ def toggle_video_like(video_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error toggling video like: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 @app.route('/dashboard')
@@ -504,6 +509,7 @@ def get_comments(video_id):
         })
         
     except Exception as e:
+        logger.error(f"Error getting comments: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
 
 @app.route('/api/videos/<int:video_id>/comments', methods=['POST'])
@@ -543,6 +549,7 @@ def post_comment(video_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error posting comment: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to post comment'}), 500
 
 @app.route('/api/comments/<int:comment_id>/like', methods=['POST'])
@@ -578,6 +585,7 @@ def toggle_comment_like(comment_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error toggling comment like: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 @app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
@@ -598,6 +606,7 @@ def delete_comment(comment_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error deleting comment: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
 
 @app.route('/api/comments/<int:comment_id>', methods=['PUT'])
@@ -630,6 +639,7 @@ def edit_comment(comment_id):
         
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Error editing comment: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
 
 @app.route('/payment-success')
@@ -670,6 +680,7 @@ def subscribe():
 @login_required
 @limiter.limit("5 per minute")
 def create_checkout_session():
+    # Explicitly re-import session and request to avoid UnboundLocalError
     from flask import session, request 
 
     if not request.is_json:
@@ -970,7 +981,7 @@ def stripe_webhook():
                 new_subscription = Subscription(
                     user_id=user_id,
                     stripe_customer_id=session_data['customer'],
-                    stripe_subscription_id=session['subscription'],
+                    stripe_subscription_id=session_data['subscription'], # Corrected from session['subscription']
                     status=subscription['status'],
                     current_period_start=datetime.fromtimestamp(subscription['current_period_start']),
                     current_period_end=datetime.fromtimestamp(subscription['current_period_end'])
