@@ -269,6 +269,8 @@
             z-index: 5; /* Above iframe, below share menu */
             cursor: pointer;
             transition: background 0.3s ease;
+            background-size: cover; /* Ensure background image covers the area */
+            background-position: center; /* Center the background image */
         }
         .video-overlay:hover {
             background: rgba(0, 0, 0, 0.8);
@@ -1365,6 +1367,11 @@
     </div>
 
     <script>
+        // Define BASE_URL globally
+        // This is crucial for environments where the HTML might be served from a blob: URL or file://
+        // In production on Render, this will correctly resolve to your app's domain.
+        const BASE_URL = window.location.origin;
+
         // Global variables
         let videos = [];
         let currentUser = null;
@@ -1383,7 +1390,7 @@
         // Load user information
         async function loadUserInfo() {
             try {
-                const response = await fetch('/api/auth/check');
+                const response = await fetch(`${BASE_URL}/api/auth/check`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1393,18 +1400,18 @@
                     updateDailyWatchStreak(); // Update streak based on current user after login
                     toggleSubscribePrompt(currentUser.has_active_subscription); // NEW: Show/hide subscribe prompt
                 } else {
-                    window.location.href = '/';
+                    window.location.href = `${BASE_URL}/`; // Redirect to base URL
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
-                window.location.href = '/';
+                window.location.href = `${BASE_URL}/`; // Redirect to base URL on error
             }
         }
 
         // Load videos from API
         async function loadVideos() {
             try {
-                const response = await fetch('/api/videos');
+                const response = await fetch(`${BASE_URL}/api/videos`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1497,7 +1504,7 @@
             ` : `
                 <div class="video-overlay" style="background-image: url('${video.thumbnail_url}'); background-size: cover; background-position: center;">
                     <div class="overlay-text">Premium Content</div>
-                    <button class="subscribe-overlay-btn" onclick="window.location.href='/subscribe'">
+                    <button class="subscribe-overlay-btn" onclick="window.location.href='${BASE_URL}/subscribe'">
                         Subscribe to Watch
                     </button>
                 </div>
@@ -1555,7 +1562,7 @@
                 </div>
             ` : `
                 <div class="video-actions" style="justify-content: center; border-top: none; padding-top: 0;">
-                    <button class="subscribe-overlay-btn" onclick="window.location.href='/subscribe'">
+                    <button class="subscribe-overlay-btn" onclick="window.location.href='${BASE_URL}/subscribe'">
                         Subscribe to Unlock Features
                     </button>
                 </div>
@@ -1654,7 +1661,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`/api/videos/${videoId}/like`, {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1699,7 +1706,12 @@
 
         // Copy to clipboard
         function copyToClipboard(url, title) {
-            navigator.clipboard.writeText(url).then(() => {
+            // Use window.location.origin to ensure absolute URL for sharing
+            const fullUrl = `${BASE_URL}/videos/${video.youtube_video_id}`; // Example: if you have a video detail page
+            // Or simply use the youtubeShareUrl if you want to share the YouTube link directly
+            const linkToCopy = url; 
+
+            navigator.clipboard.writeText(linkToCopy).then(() => {
                 // Show success message
                 const Toast = {
                     show: (message) => {
@@ -1728,7 +1740,7 @@
             }).catch(() => {
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
-                textArea.value = url;
+                textArea.value = linkToCopy;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
@@ -1764,7 +1776,7 @@
         // Load comments for a video
         async function loadComments(videoId) {
             try {
-                const response = await fetch(`/api/videos/${videoId}/comments`);
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1920,7 +1932,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`/api/videos/${videoId}/comments`, {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1953,7 +1965,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`/api/comments/${commentId}/like`, {
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}/like`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2020,7 +2032,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`/api/videos/${videoId}/comments`, {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2082,7 +2094,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch('/api/auth/logout', {
+                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2093,7 +2105,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    window.location.href = '/'; // Redirect to login/home
+                    window.location.href = `${BASE_URL}/`; // Redirect to login/home
                 } else {
                     console.error('Logout failed:', data.message);
                     // Optionally show a message to the user
@@ -2101,7 +2113,7 @@
             } catch (error) {
                 console.error('Error during logout:', error);
                 // Force redirect even if logout fails due to network error
-                window.location.href = '/';
+                window.location.href = `${BASE_URL}/`;
             }
         }
 
@@ -2148,7 +2160,7 @@
                 document.getElementById('comments-modal').style.display = 'block';
                 
                 // Assuming this is an admin-specific endpoint that might need an Admin check
-                const response = await fetch(`/api/admin/videos/${videoId}/comments`, {
+                const response = await fetch(`${BASE_URL}/api/admin/videos/${videoId}/comments`, {
                     headers: {
                         'X-CSRFToken': csrfToken // Include CSRF token for admin actions too
                     }
@@ -2220,7 +2232,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`/api/comments/${commentId}`, { // Corrected endpoint to match your app.py
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, { // Corrected endpoint to match your app.py
                     method: 'DELETE',
                     headers: {
                         'X-CSRFToken': csrfToken // Include CSRF token
@@ -2259,7 +2271,7 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`/api/comments/${commentId}`, {
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json', // Added content type
@@ -2349,7 +2361,7 @@
             `; // Show loading state
 
             try {
-                const response = await fetch('/api/videos/categorized?tag=Top Story');
+                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=Top Story`);
                 const data = await response.json();
 
                 if (data.success && data.videos.length > 0) {
@@ -2383,7 +2395,7 @@
             `; // Show loading state
 
             try {
-                const response = await fetch('/api/videos/categorized?tag=New Series');
+                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=New Series`);
                 const data = await response.json();
 
                 if (data.success && data.videos.length > 0) {
@@ -2444,7 +2456,7 @@
             feedbackMessageDiv.style.display = 'block';
 
             try {
-                const response = await fetch('/api/feedback', {
+                const response = await fetch(`${BASE_URL}/api/feedback`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2477,7 +2489,7 @@
 
             try {
                 // 1. Get current streak from backend
-                const getResponse = await fetch('/api/user/watch-streak', {
+                const getResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, {
                     method: 'GET',
                     headers: { 'X-CSRFToken': csrfToken }
                 });
@@ -2487,7 +2499,7 @@
                     streakCountElement.textContent = getData.streak;
 
                     // 2. Send POST to update streak for today (assuming a video was 'watched' by loading the dashboard)
-                    const postResponse = await fetch('/api/user/watch-streak', {
+                    const postResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
