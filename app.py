@@ -1,8 +1,11 @@
+# FILE LOCATION: /app.py (root of your GitHub repo)
+# Complete Flask application for subscription-based storytelling website
+
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta, date # Import date for last_watch_date
-import os
+import os # Import os module for path manipulation
 import re
 import stripe
 from functools import wraps
@@ -15,14 +18,25 @@ from flask_limiter.util import get_remote_address # Import get_remote_address
 # Initialize Flask app
 app = Flask(__name__)
 
+# --- NEW: Define the path for the persistent data directory ---
+# This directory will be created within your project structure.
+# Render's persistent disk will then mount to this specific directory.
+DATA_DIR = os.path.join(os.getcwd(), 'data') # Use 'data' as the subdirectory name
+
+# Ensure the data directory exists. This is crucial for local development and Render.
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+    print(f"Created persistent data directory: {DATA_DIR}")
+
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 
-# Use SQLite for now (works with Python 3.13)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stories.db'
+# --- MODIFIED: Update SQLALCHEMY_DATABASE_URI to point to the new data directory ---
+# The database file will now be located at ./data/stories.db
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(DATA_DIR, "stories.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-print("Using SQLite database for compatibility with Python 3.13")
+print(f"Using SQLite database at: {app.config['SQLALCHEMY_DATABASE_URI']}") # Updated print statement
 
 # Stripe configuration with better error handling
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
@@ -64,17 +78,12 @@ class User(db.Model):
     password_hash = db.Column(db.String(60), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # NEW: Fields for watch streak
     last_watch_date = db.Column(db.Date, nullable=True)
     watch_streak = db.Column(db.Integer, default=0)
     
-    # Relationship to subscription
     subscription = db.relationship('Subscription', backref='user', uselist=False)
-    # Relationship to comments
     comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
-    # Relationship to comment likes
     comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
-    # Relationship to video likes
     video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def check_password(self, password):
@@ -87,7 +96,6 @@ class User(db.Model):
                 self.subscription.current_period_end > datetime.utcnow())
     
     def get_display_name(self):
-        """Get display name from email"""
         return self.email.split('@')[0]
 
 class Subscription(db.Model):
@@ -118,13 +126,10 @@ class Video(db.Model):
     likes_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # NEW: Fields for categorization
-    genre = db.Column(db.String(100), nullable=True) # e.g., 'Thriller', 'Family', 'Sci-Fi'
-    featured_tag = db.Column(db.String(50), nullable=True) # e.g., 'Top Story', 'New Series', 'Hidden Gem'
+    genre = db.Column(db.String(100), nullable=True)
+    featured_tag = db.Column(db.String(50), nullable=True)
 
-    # Relationship to comments
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
-    # Relationship to likes
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
 
 class VideoLike(db.Model):
@@ -135,7 +140,6 @@ class VideoLike(db.Model):
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Ensure unique user-video combination and allow table extension
     __table_args__ = (
         db.UniqueConstraint('user_id', 'video_id'),
         {'extend_existing': True}
@@ -148,23 +152,20 @@ class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # For replies
+    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
     text = db.Column(db.Text, nullable=False)
     likes_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Self-referential relationship for replies
     replies = db.relationship('Comment', 
                              backref=db.backref('parent', remote_side=[id]),
                              lazy=True,
                              cascade='all, delete-orphan')
     
-    # Relationship to likes
     likes = db.relationship('CommentLike', backref='comment', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self, current_user_id=None):
-        """Convert comment to dictionary for JSON response"""
         liked_by_user = False
         if current_user_id:
             liked_by_user = any(like.user_id == current_user_id for like in self.likes)
@@ -181,7 +182,6 @@ class Comment(db.Model):
         }
     
     def get_time_ago(self):
-        """Get human-readable time ago"""
         now = datetime.utcnow()
         diff = now - self.created_at
         
@@ -204,13 +204,11 @@ class CommentLike(db.Model):
     comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Ensure unique user-comment combination
     __table_args__ = (
         db.UniqueConstraint('user_id', 'comment_id'),
         {'extend_existing': True}
     )
 
-# NEW: Feedback Model
 class Feedback(db.Model):
     __tablename__ = 'feedback'
     id = db.Column(db.Integer, primary_key=True)
@@ -218,7 +216,7 @@ class Feedback(db.Model):
     feedback_text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    user = db.relationship('User', backref='feedbacks') # Add backref for easy access to user from feedback
+    user = db.relationship('User', backref='feedbacks')
 
     def to_dict(self):
         return {
@@ -226,7 +224,7 @@ class Feedback(db.Model):
             'user_id': self.user_id,
             'feedback_text': self.feedback_text,
             'created_at': self.created_at.isoformat(),
-            'user_email': self.user.email # Assuming user relationship is available
+            'user_email': self.user.email
         }
 
 
@@ -302,7 +300,6 @@ def admin_required(f):
 @app.route('/')
 def index():
     """Main landing page"""
-    # Check if user is already logged in
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         if user:
@@ -324,24 +321,20 @@ def register():
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
         
-        # Validation
         if not email or not password:
             return jsonify({'success': False, 'message': 'Email and password are required'}), 400
         
         if len(password) < 8:
             return jsonify({'success': False, 'message': 'Password must be at least 8 characters long'}), 400
         
-        # Check if user already exists
         if User.query.filter_by(email=email).first():
             return jsonify({'success': False, 'message': 'An account with this email already exists'}), 400
         
-        # Create new user
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         user = User(email=email, password_hash=password_hash)
         db.session.add(user)
         db.session.commit()
         
-        # Log user in
         session['user_id'] = user.id
         session['user_email'] = user.email
         
@@ -364,15 +357,12 @@ def login():
         email = data.get('email', '').strip().lower()
         password = data.get('password', '')
         
-        # Validation
         if not email or not password:
             return jsonify({'success': False, 'message': 'Email and password are required'}), 400
         
-        # Find user
         user = User.query.filter_by(email=email).first()
         
         if user and user.check_password(password):
-            # Log user in
             session['user_id'] = user.id
             session['user_email'] = user.email
             
@@ -419,19 +409,16 @@ def toggle_video_like(video_id):
         video = Video.query.get_or_404(video_id)
         user_id = session['user_id']
         
-        # Check if user already liked this video
         existing_like = VideoLike.query.filter_by(
             user_id=user_id,
             video_id=video_id
         ).first()
         
         if existing_like:
-            # Unlike the video
             db.session.delete(existing_like)
             video.likes_count = max(0, video.likes_count - 1)
             liked = False
         else:
-            # Like the video
             new_like = VideoLike(user_id=user_id, video_id=video_id)
             db.session.add(new_like)
             video.likes_count += 1
@@ -452,7 +439,6 @@ def toggle_video_like(video_id):
 @app.route('/dashboard')
 def dashboard():
     """User dashboard"""
-    # Check if user is logged in
     if 'user_id' not in session:
         return redirect(url_for('index'))
     
@@ -474,7 +460,6 @@ def get_videos():
     
     video_list = []
     for video in videos:
-        # Check if current user liked this video
         user_liked = VideoLike.query.filter_by(
             user_id=current_user_id,
             video_id=video.id
@@ -490,8 +475,8 @@ def get_videos():
             'likes_count': video.likes_count,
             'user_liked': user_liked,
             'created_at': video.created_at.isoformat(),
-            'genre': video.genre, # Include genre
-            'featured_tag': video.featured_tag # Include featured_tag
+            'genre': video.genre,
+            'featured_tag': video.featured_tag
         })
     
     return jsonify({'success': True, 'videos': video_list})
@@ -502,10 +487,8 @@ def get_videos():
 def get_comments(video_id):
     """Get comments for a specific video"""
     try:
-        # Check if video exists
         video = Video.query.get_or_404(video_id)
         
-        # Get top-level comments (not replies)
         comments = Comment.query.filter_by(
             video_id=video_id, 
             parent_id=None
@@ -533,21 +516,18 @@ def post_comment(video_id):
     try:
         data = request.get_json()
         text = data.get('text', '').strip()
-        parent_id = data.get('parent_id')  # For replies
+        parent_id = data.get('parent_id')
         
         if not text:
             return jsonify({'success': False, 'message': 'Comment text is required'}), 400
         
-        # Check if video exists
         video = Video.query.get_or_404(video_id)
         
-        # Check if parent comment exists (for replies)
         if parent_id:
             parent_comment = Comment.query.get(parent_id)
             if not parent_comment or parent_comment.video_id != video_id:
                 return jsonify({'success': False, 'message': 'Invalid parent comment'}), 400
         
-        # Create new comment
         comment = Comment(
             video_id=video_id,
             user_id=session['user_id'],
@@ -576,19 +556,16 @@ def toggle_comment_like(comment_id):
         comment = Comment.query.get_or_404(comment_id)
         user_id = session['user_id']
         
-        # Check if user already liked this comment
         existing_like = CommentLike.query.filter_by(
             user_id=user_id,
             comment_id=comment_id
         ).first()
         
         if existing_like:
-            # Unlike the comment
             db.session.delete(existing_like)
             comment.likes_count = max(0, comment.likes_count - 1)
             liked = False
         else:
-            # Like the comment
             new_like = CommentLike(user_id=user_id, comment_id=comment_id)
             db.session.add(new_like)
             comment.likes_count += 1
@@ -614,7 +591,6 @@ def delete_comment(comment_id):
         comment = Comment.query.get_or_404(comment_id)
         user = User.query.get(session['user_id'])
         
-        # Check if user can delete this comment
         if comment.user_id != user.id and not user.is_admin:
             return jsonify({'success': False, 'message': 'Not authorized to delete this comment'}), 403
         
@@ -635,7 +611,6 @@ def edit_comment(comment_id):
         comment = Comment.query.get_or_404(comment_id)
         user_id = session['user_id']
         
-        # Check if user can edit this comment
         if comment.user_id != user_id:
             return jsonify({'success': False, 'message': 'Not authorized to edit this comment'}), 403
         
@@ -660,14 +635,12 @@ def edit_comment(comment_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
 
-# Add this new route for handling successful payments
 @app.route('/payment-success')
 @login_required
 def payment_success():
     """Handle successful payment - wait for webhook to process"""
     return render_template('payment_success.html')
 
-# Enhanced subscription route with better protection
 @app.route('/subscribe')
 @login_required
 def subscribe():
@@ -679,7 +652,6 @@ def subscribe():
             flash('Please log in to subscribe', 'error')
             return redirect(url_for('index'))
             
-        # Check if user already has an active subscription
         if user.subscription:
             if user.subscription.status == 'active' and user.subscription.current_period_end > datetime.utcnow():
                 flash('You already have an active subscription!', 'info')
@@ -697,39 +669,34 @@ def subscribe():
         flash('An error occurred. Please try again.', 'error')
         return redirect(url_for('index'))
 
-# Enhanced checkout session creation with comprehensive protection
 @app.route('/api/create-checkout-session', methods=['POST'])
 @csrf.exempt
 @login_required
 @limiter.limit("5 per minute")
 def create_checkout_session():
-    # Fix: Explicitly re-import session and request to avoid UnboundLocalError
-    # This ensures Python correctly treats them as references to the global Flask proxies.
+    # Explicitly re-import session and request to avoid UnboundLocalError
     from flask import session, request 
 
     if not request.is_json:
         return jsonify({'success': False, 'message': 'Request must be JSON'}), 400
 
     try:
-        # Validate Stripe configuration
         if not all([stripe.api_key, STRIPE_PRICE_ID]):
             logger.error("Stripe not properly configured")
             return jsonify({'success': False, 'message': 'Payment system unavailable'}), 500
         
-        user = User.query.get(session['user_id']) # Error occurred here previously
+        user = User.query.get(session['user_id'])
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
 
-        # Protection 1: DB subscription check
         if user.has_active_subscription():
             logger.info(f"User {user.id} already has active subscription")
             return jsonify({
                 'success': False, 
                 'message': 'Active subscription exists',
                 'redirect': '/dashboard'
-            }), 409  # 409 Conflict
+            }), 409
 
-        # Protection 2: Pending states
         if user.subscription and user.subscription.status in ['incomplete', 'incomplete_expired']:
             return jsonify({
                 'success': False,
@@ -737,19 +704,16 @@ def create_checkout_session():
                 'redirect': '/dashboard'
             }), 409
 
-        # Protection 3: Recent sessions
         if recent := check_recent_checkout_sessions(user):
             return jsonify({
                 'success': False,
                 'message': 'Complete your recent checkout first',
                 'checkout_url': recent['url']
-            }), 429  # 429 Too Many Requests
+            }), 429
 
-        # Get or create customer
         if not (customer_id := get_or_create_stripe_customer(user)):
             return jsonify({'success': False, 'message': 'Payment profile error'}), 500
 
-        # Protection 4: Stripe state verification
         if subs := stripe.Subscription.list(customer=customer_id, status='active', limit=1).data:
             sync_subscription_from_stripe(user, subs[0])
             return jsonify({
@@ -758,8 +722,7 @@ def create_checkout_session():
                 'redirect': '/dashboard'
             }), 409
 
-        # Create checkout session
-        session_stripe = stripe.checkout.Session.create( # Renamed 'session' to 'session_stripe' to avoid any potential conflict
+        session_stripe = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{'price': STRIPE_PRICE_ID, 'quantity': 1}],
             mode='subscription',
@@ -784,25 +747,19 @@ def create_checkout_session():
 def get_or_create_stripe_customer(user):
     """Get existing or create new Stripe customer"""
     try:
-        # Check if user already has a customer ID
         if user.subscription and user.subscription.stripe_customer_id and user.subscription.stripe_customer_id != 'manual_unlimited':
-            # Verify customer exists in Stripe
             try:
                 stripe.Customer.retrieve(user.subscription.stripe_customer_id)
                 return user.subscription.stripe_customer_id
             except stripe.error.InvalidRequestError:
-                # Customer doesn't exist, create new one
                 pass
         
-        # Search for existing customer by email
         existing_customers = stripe.Customer.list(email=user.email, limit=1)
         if existing_customers.data:
             customer = existing_customers.data[0]
-            # Update our database with the customer ID
             if user.subscription:
                 user.subscription.stripe_customer_id = customer.id
             else:
-                # Create subscription record
                 new_subscription = Subscription(
                     user_id=user.id,
                     stripe_customer_id=customer.id,
@@ -813,7 +770,6 @@ def get_or_create_stripe_customer(user):
             db.session.commit()
             return customer.id
         
-        # Create new customer
         customer = stripe.Customer.create(
             email=user.email,
             metadata={
@@ -822,7 +778,6 @@ def get_or_create_stripe_customer(user):
             }
         )
         
-        # Update database
         if user.subscription:
             user.subscription.stripe_customer_id = customer.id
         else:
@@ -844,7 +799,6 @@ def get_or_create_stripe_customer(user):
 def check_recent_checkout_sessions(user):
     """Check for recent incomplete checkout sessions"""
     try:
-        # Get customer ID
         if not user.subscription or not user.subscription.stripe_customer_id:
             return None
         
@@ -852,7 +806,6 @@ def check_recent_checkout_sessions(user):
         if customer_id == 'manual_unlimited':
             return None
         
-        # Check for recent checkout sessions (last 30 minutes)
         thirty_minutes_ago = int((datetime.utcnow() - timedelta(minutes=30)).timestamp())
         
         checkout_sessions = stripe.checkout.Session.list(
@@ -861,7 +814,7 @@ def check_recent_checkout_sessions(user):
             limit=5
         )
         
-        for session_obj in checkout_sessions.data: # Renamed session to session_obj
+        for session_obj in checkout_sessions.data:
             if session_obj.status == 'open':
                 return {
                     'id': session_obj.id,
@@ -891,7 +844,7 @@ def sync_subscription_from_stripe(user, stripe_subscription):
                 user_id=user.id,
                 stripe_customer_id=stripe_subscription.customer,
                 stripe_subscription_id=stripe_subscription.id,
-                status=stripe_subscription.status, # Complete the status assignment
+                status=stripe_subscription.status,
                 current_period_start=datetime.fromtimestamp(stripe_subscription.current_period_start),
                 current_period_end=datetime.fromtimestamp(stripe_subscription.current_period_end)
             )
@@ -900,19 +853,16 @@ def sync_subscription_from_stripe(user, stripe_subscription):
     except Exception as e:
         logger.error(f"Error syncing subscription from Stripe for user {user.id}: {e}", exc_info=True)
 
-# Enhanced subscription status check
 @app.route('/api/user/subscription-status')
 @login_required
 def subscription_status():
     """Check user's subscription status with Stripe sync"""
     user = User.query.get(session['user_id'])
     
-    # If user has subscription, sync with Stripe to ensure accuracy
     if user.subscription and user.subscription.stripe_subscription_id and user.subscription.stripe_subscription_id != 'manual_unlimited':
         try:
             stripe_subscription = stripe.Subscription.retrieve(user.subscription.stripe_subscription_id)
             
-            # Update local status if different
             if user.subscription.status != stripe_subscription.status:
                 user.subscription.status = stripe_subscription.status
                 user.subscription.current_period_start = datetime.fromtimestamp(stripe_subscription.current_period_start)
@@ -921,7 +871,6 @@ def subscription_status():
                 db.session.commit()
                 
         except stripe.error.InvalidRequestError:
-            # Subscription doesn't exist in Stripe
             user.subscription.status = 'canceled'
             db.session.commit()
         except Exception as e:
@@ -936,13 +885,11 @@ def subscription_status():
         } if user.subscription else None
     })
 
-# Add admin endpoint to check for duplicate subscriptions
 @app.route('/api/admin/check-duplicate-subscriptions')
 @admin_required
 def check_duplicate_subscriptions():
     """Check for users with duplicate subscriptions"""
     try:
-        # Find users with multiple subscription records
         duplicate_users = db.session.query(User).join(Subscription).group_by(User.id).having(func.count(Subscription.id) > 1).all()
         
         duplicates = []
@@ -968,7 +915,6 @@ def check_duplicate_subscriptions():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-# Add API endpoint to check subscription status
 @app.route('/api/check-subscription-status')
 @login_required
 def check_subscription_status():
@@ -979,10 +925,9 @@ def check_subscription_status():
     return jsonify({
         'success': True,
         'hasActiveSubscription': has_active,
-        'isProcessing': not has_active  # If no active subscription, still processing
+        'isProcessing': not has_active
     })
 
-# Improve webhook handling
 @app.route('/webhook/stripe', methods=['POST'])
 def stripe_webhook():
     """Handle Stripe webhooks"""
@@ -1001,12 +946,10 @@ def stripe_webhook():
         print(f"Invalid signature: {e}")
         return '', 400
     
-    # Handle different event types
     if event['type'] == 'checkout.session.completed':
         session_data = event['data']['object']
         print(f"Checkout session completed: {session_data['id']}")
         
-        # Get user ID from metadata
         user_id = session_data.get('metadata', {}).get('user_id')
         if not user_id:
             print("No user_id in session metadata")
@@ -1014,11 +957,9 @@ def stripe_webhook():
         
         user_id = int(user_id)
         
-        # Get subscription details
         subscription = stripe.Subscription.retrieve(session_data['subscription'])
         print(f"Subscription status: {subscription['status']}")
         
-        # Update user subscription
         user = User.query.get(user_id)
         if user:
             existing_subscription = Subscription.query.filter_by(user_id=user_id).first()
@@ -1051,7 +992,6 @@ def stripe_webhook():
                 return '', 500
     
     elif event['type'] == 'invoice.payment_succeeded':
-        # Handle successful payment
         invoice = event['data']['object']
         subscription_id = invoice['subscription']
         
@@ -1068,7 +1008,6 @@ def stripe_webhook():
                 print(f"Updated subscription status to active for subscription {subscription_id}")
     
     elif event['type'] == 'invoice.payment_failed':
-        # Handle failed payment
         invoice = event['data']['object']
         subscription_id = invoice['subscription']
         
@@ -1081,7 +1020,6 @@ def stripe_webhook():
                 print(f"Updated subscription status to past_due for subscription {subscription_id}")
     
     elif event['type'] == 'customer.subscription.updated':
-        # Handle subscription updates
         subscription_data = event['data']['object']
         
         db_subscription = Subscription.query.filter_by(stripe_subscription_id=subscription_data['id']).first()
@@ -1094,7 +1032,6 @@ def stripe_webhook():
             print(f"Updated subscription for subscription {subscription_data['id']}")
     
     elif event['type'] == 'customer.subscription.deleted':
-        # Handle subscription cancellation
         subscription_data = event['data']['object']
         
         db_subscription = Subscription.query.filter_by(stripe_subscription_id=subscription_data['id']).first()
@@ -1118,7 +1055,6 @@ def admin_dashboard():
 def admin_stats():
     """Get admin dashboard statistics"""
     try:
-        # Get current month start
         now = datetime.utcnow()
         month_start = datetime(now.year, now.month, 1)
         
@@ -1164,8 +1100,8 @@ def admin_get_videos():
                 'is_active': video.is_active,
                 'likes_count': video.likes_count,
                 'created_at': video.created_at.isoformat(),
-                'genre': video.genre, # Include genre
-                'featured_tag': video.featured_tag # Include featured_tag
+                'genre': video.genre,
+                'featured_tag': video.featured_tag
             })
         
         return jsonify({'success': True, 'videos': video_list})
@@ -1181,7 +1117,6 @@ def admin_get_video_likes(video_id):
     try:
         video = Video.query.get_or_404(video_id)
         
-        # Get all likes for this video with user information
         likes = db.session.query(VideoLike, User).join(User).filter(
             VideoLike.video_id == video_id
         ).order_by(VideoLike.created_at.desc()).all()
@@ -1213,14 +1148,12 @@ def admin_get_video_comments(video_id):
     try:
         video = Video.query.get_or_404(video_id)
         
-        # Get all comments for this video with user information
         comments = db.session.query(Comment, User).join(User).filter(
             Comment.video_id == video_id
         ).order_by(Comment.created_at.desc()).all()
         
         comment_list = []
         for comment, user in comments:
-            # Count replies for this comment
             replies_count = Comment.query.filter_by(parent_id=comment.id).count()
             
             comment_list.append({
@@ -1254,34 +1187,30 @@ def admin_add_video():
         title = data.get('title', '').strip()
         description = data.get('description', '').strip()
         youtube_url = data.get('youtube_url', '').strip()
-        genre = data.get('genre', '').strip() # NEW: Get genre
-        featured_tag = data.get('featured_tag', '').strip() # NEW: Get featured_tag
+        genre = data.get('genre', '').strip()
+        featured_tag = data.get('featured_tag', '').strip()
         
         if not title or not youtube_url:
             return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
         
-        # Extract video ID
         video_id = extract_youtube_video_id(youtube_url)
         if not video_id:
             return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
         
-        # Check if video already exists
         existing_video = Video.query.filter_by(youtube_video_id=video_id).first()
         if existing_video:
             return jsonify({'success': False, 'message': 'This video has already been added'}), 400
         
-        # Generate thumbnail URL
         thumbnail_url = get_youtube_thumbnail(video_id)
         
-        # Create video record
         video = Video(
             title=title,
             description=description if description else None,
             youtube_url=youtube_url,
             youtube_video_id=video_id,
             thumbnail_url=thumbnail_url,
-            genre=genre if genre else None, # NEW: Save genre
-            featured_tag=featured_tag if featured_tag else None # NEW: Save featured_tag
+            genre=genre if genre else None,
+            featured_tag=featured_tag if featured_tag else None
         )
         
         db.session.add(video)
@@ -1332,16 +1261,15 @@ def admin_update_video(video_id):
         video = Video.query.get_or_404(video_id)
         data = request.get_json()
         
-        # Update fields
         if 'title' in data:
             video.title = data['title'].strip()
         if 'description' in data:
             video.description = data['description'].strip() if data['description'] else None
         if 'is_active' in data:
             video.is_active = bool(data['is_active'])
-        if 'genre' in data: # NEW: Update genre
+        if 'genre' in data:
             video.genre = data['genre'].strip() if data['genre'] else None
-        if 'featured_tag' in data: # NEW: Update featured_tag
+        if 'featured_tag' in data:
             video.featured_tag = data['featured_tag'].strip() if data['featured_tag'] else None
         
         video.updated_at = datetime.utcnow()
@@ -1366,11 +1294,9 @@ def admin_get_comments():
         
         query = Comment.query
         
-        # Filter by video if specified
         if video_id:
             query = query.filter_by(video_id=video_id)
         
-        # Get paginated results
         comments = query.order_by(Comment.created_at.desc()).paginate(
             page=page, per_page=per_page, error_out=False
         )
@@ -1440,8 +1366,8 @@ def admin_get_users():
                 'subscription_status': user.subscription.status if user.subscription else None,
                 'subscription_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None,
                 'comment_count': Comment.query.filter_by(user_id=user.id).count(),
-                'watch_streak': user.watch_streak, # NEW: Include watch streak
-                'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None # NEW: Include last watch date
+                'watch_streak': user.watch_streak,
+                'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
             }
             user_list.append(user_data)
         
@@ -1470,7 +1396,6 @@ def admin_toggle_user_admin(user_id):
         user = User.query.get_or_404(user_id)
         current_admin = User.query.get(session['user_id'])
         
-        # Don't allow admin to remove their own admin status
         if user.id == current_admin.id:
             return jsonify({'success': False, 'message': 'Cannot modify your own admin status'}), 400
         
@@ -1506,8 +1431,8 @@ def get_user_profile():
             'subscription_status': user.subscription.status if user.subscription else None,
             'subscription_end': user.subscription.current_period_end.isoformat() if user.subscription and user.subscription.current_period_end else None,
             'comment_count': Comment.query.filter_by(user_id=user.id).count(),
-            'watch_streak': user.watch_streak, # NEW: Include watch streak
-            'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None # NEW: Include last watch date
+            'watch_streak': user.watch_streak,
+            'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
         }
         
         return jsonify({
@@ -1686,8 +1611,6 @@ def get_categorized_videos():
 
         video_list = []
         for video in videos:
-            # We don't need user_liked here since these are just for display in lists,
-            # not for individual video cards that show like status.
             video_list.append({
                 'id': video.id,
                 'title': video.title,
