@@ -703,7 +703,10 @@ def subscribe():
 @login_required
 @limiter.limit("5 per minute")
 def create_checkout_session():
-    """Create Stripe checkout session with multiple protection layers"""
+    # Fix: Explicitly re-import session and request to avoid UnboundLocalError
+    # This ensures Python correctly treats them as references to the global Flask proxies.
+    from flask import session, request 
+
     if not request.is_json:
         return jsonify({'success': False, 'message': 'Request must be JSON'}), 400
 
@@ -713,7 +716,7 @@ def create_checkout_session():
             logger.error("Stripe not properly configured")
             return jsonify({'success': False, 'message': 'Payment system unavailable'}), 500
         
-        user = User.query.get(session['user_id'])
+        user = User.query.get(session['user_id']) # Error occurred here previously
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
 
@@ -745,6 +748,38 @@ def create_checkout_session():
         # Get or create customer
         if not (customer_id := get_or_create_stripe_customer(user)):
             return jsonify({'success': False, 'message': 'Payment profile error'}), 500
+
+        # Protection 4: Stripe state verification
+        if subs := stripe.Subscription.list(customer=customer_id, status='active', limit=1).data:
+            sync_subscription_from_stripe(user, subs[0])
+            return jsonify({
+                'success': False,
+                'message': 'Subscription exists in payment system',
+                'redirect': '/dashboard'
+            }), 409
+
+        # Create checkout session
+        session_stripe = stripe.checkout.Session.create( # Renamed 'session' to 'session_stripe' to avoid any potential conflict
+            payment_method_types=['card'],
+            line_items=[{'price': STRIPE_PRICE_ID, 'quantity': 1}],
+            mode='subscription',
+            success_url=url_for('payment_success', _external=True),
+            cancel_url=url_for('subscribe', _external=True),
+            customer=customer_id,
+            metadata={'user_id': str(user.id)},
+            subscription_data={'metadata': {'user_id': str(user.id)}},
+            idempotency_key=f"{user.id}-{int(datetime.utcnow().timestamp())}"
+        )
+
+        logger.info(f"Created checkout session {session_stripe.id} for user {user.id}")
+        return jsonify({'success': True, 'checkout_url': session_stripe.url})
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Payment system error'}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': 'System error'}), 500
 
         # Protection 4: Stripe state verification
         if subs := stripe.Subscription.list(customer=customer_id, status='active', limit=1).data:
