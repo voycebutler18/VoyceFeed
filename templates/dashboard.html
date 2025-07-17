@@ -142,7 +142,7 @@
             line-height: 1.5;
         }
 
-        /* General Dashboard Section Styling */
+        /* NEW: General Dashboard Section Styling */
         .dashboard-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
@@ -252,6 +252,51 @@
             height: 100%;
             border: none;
         }
+
+        /* NEW: Video Overlay for Non-Subscribers */
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* Dark semi-transparent overlay */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 5; /* Above iframe, below share menu */
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .video-overlay:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+        .overlay-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .subscribe-overlay-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
+        }
+        .subscribe-overlay-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 107, 107, 0.6);
+        }
+
 
         .video-info {
             padding: 20px;
@@ -1226,6 +1271,17 @@
     </div>
 
     <div class="main-content">
+        <!-- NEW: Subscribe Prompt Section (Visible to non-subscribers) -->
+        <div class="dashboard-section subscribe-prompt-section" id="subscribe-prompt-section" style="display: none;">
+            <div class="section-header" style="color: #667eea;">Unlock the Full Experience!</div>
+            <p style="text-align: center; margin-bottom: 20px; opacity: 0.9;">
+                You're logged in, but to watch full stories and access all features, you need a premium subscription.
+            </p>
+            <button class="subscribe-overlay-btn" onclick="window.location.href='/subscribe'" style="width: 100%;">
+                Subscribe Now for $4.99/month
+            </button>
+        </div>
+
         <div class="welcome-section">
             <div class="welcome-title">Welcome to Voyce Stories</div>
             <div class="welcome-subtitle">
@@ -1335,6 +1391,7 @@
                     document.getElementById('user-email').textContent = currentUser.email;
                     currentUserName = currentUser.email.split('@')[0];
                     updateDailyWatchStreak(); // Update streak based on current user after login
+                    toggleSubscribePrompt(currentUser.has_active_subscription); // NEW: Show/hide subscribe prompt
                 } else {
                     window.location.href = '/';
                 }
@@ -1392,19 +1449,22 @@
                 const videoCard = createVideoCard(video);
                 videoFeed.appendChild(videoCard);
                 
-                // Set initial like state
-                const likeBtn = document.getElementById(`like-btn-${video.id}`);
-                const likeCount = document.getElementById(`like-count-${video.id}`);
-                
-                if (video.user_liked) {
-                    likeBtn.classList.add('liked');
+                // Set initial like state (only if user can watch)
+                if (video.can_watch) {
+                    const likeBtn = document.getElementById(`like-btn-${video.id}`);
+                    const likeCount = document.getElementById(`like-count-${video.id}`);
+                    if (video.user_liked) {
+                        likeBtn.classList.add('liked');
+                    }
+                    likeCount.textContent = video.likes_count || 0;
                 }
-                likeCount.textContent = video.likes_count || 0;
             });
 
-            // Load comments for each video
+            // Load comments for each video (only if user can watch)
             videosToShow.forEach(video => {
-                loadComments(video.id);
+                if (video.can_watch) {
+                    loadComments(video.id);
+                }
             });
         }
 
@@ -1419,31 +1479,126 @@
                 day: 'numeric'
             });
 
-            // CORRECTED YouTube URLs
             const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
             const youtubeShareUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
             const shareTitle = `${video.title} - Voyce Stories`;
             const shareText = `Check out this amazing story: ${video.title}`;
 
-            // Placeholder for Behind the Story content
-            const behindTheStoryContent = video.description ? `
-                <button class="behind-the-story-toggle" onclick="toggleBehindTheStory(${video.id})">Behind the Story</button>
-                <div class="behind-the-story-content" id="behind-the-story-${video.id}">
-                    <p>This story was inspired by [Creator's Insight for ${escapeHtml(video.title)}].</p>
-                    <p>My goal was to [Explain Creative Goal].</p>
-                    </div>
-            ` : '';
+            // Conditional content based on subscription status
+            const videoPlayerHtml = video.can_watch ? `
+                <iframe 
+                    src="${youtubeEmbedUrl}" 
+                    title="${escapeHtml(video.title)}"
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen
+                    onload="updateDailyWatchStreak()"> <!-- Call streak update on video load -->
+                </iframe>
+            ` : `
+                <div class="video-overlay" style="background-image: url('${video.thumbnail_url}'); background-size: cover; background-position: center;">
+                    <div class="overlay-text">Premium Content</div>
+                    <button class="subscribe-overlay-btn" onclick="window.location.href='/subscribe'">
+                        Subscribe to Watch
+                    </button>
+                </div>
+            `;
 
+            const videoActionsHtml = video.can_watch ? `
+                <div class="video-actions">
+                    <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
+                        <span>❤️</span>
+                        <span id="like-count-${video.id}">${video.likes_count || 0}</span>
+                    </button>
+                    
+                    <div class="share-menu">
+                        <button class="action-btn" onclick="toggleShareMenu(${video.id})">
+                            <span>🔗</span>
+                            Share
+                        </button>
+                        <div class="share-dropdown" id="share-menu-${video.id}">
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeShareUrl)}" 
+                                target="_blank" class="share-option">
+                                <span class="share-icon">📘</span>
+                                Facebook
+                            </a>
+                            <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeShareUrl)}&text=${encodeURIComponent(shareText)}" 
+                                target="_blank" class="share-option">
+                                <span class="share-icon">🐦</span>
+                                Twitter
+                            </a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeShareUrl)}" 
+                                target="_blank" class="share-option">
+                                <span class="share-icon">💼</span>
+                                LinkedIn
+                            </a>
+                            <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
+                                target="_blank" class="share-option">
+                                <span class="share-icon">💬</span>
+                                WhatsApp
+                            </a>
+                            <a href="${youtubeShareUrl}" 
+                                target="_blank" class="share-option">
+                                <span class="share-icon">📺</span>
+                                Watch on YouTube
+                            </a>
+                            <a href="mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
+                                class="share-option">
+                                <span class="share-icon">✉️</span>
+                                Email
+                            </a>
+                            <a href="#" onclick="copyToClipboard('${youtubeShareUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option">
+                                <span class="share-icon">📋</span>
+                                Copy YouTube Link
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div class="video-actions" style="justify-content: center; border-top: none; padding-top: 0;">
+                    <button class="subscribe-overlay-btn" onclick="window.location.href='/subscribe'">
+                        Subscribe to Unlock Features
+                    </button>
+                </div>
+            `;
+
+            const commentsSectionHtml = video.can_watch ? `
+                <div class="comments-section">
+                    <div class="comments-header">
+                        <div class="comments-count" id="comment-count-${video.id}" onclick="viewVideoComments(${video.id})">0 comments</div>
+                        <button class="comments-toggle" onclick="toggleComments(${video.id})">
+                            <span id="toggle-text-${video.id}">Show Comments</span>
+                        </button>
+                    </div>
+                    
+                    <div class="comments-container" id="comments-${video.id}" style="display: none;">
+                        <div class="comment-form">
+                            <div class="comment-avatar">${generateAvatar(currentUserName)}</div>
+                            <div class="comment-input-container">
+                                <textarea class="comment-input" 
+                                            id="comment-input-${video.id}" 
+                                            placeholder="Add a comment..."
+                                            rows="1"></textarea>
+                                <div class="comment-actions" id="comment-actions-${video.id}" style="display: none;">
+                                    <button class="cancel-btn" onclick="cancelComment(${video.id})">Cancel</button>
+                                    <button class="comment-btn" onclick="postComment(${video.id})">Post</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="comments-list" id="comments-list-${video.id}">
+                            <!-- Comments will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div class="comments-section" style="text-align: center; opacity: 0.7; padding-top: 20px;">
+                    <p>Subscribe to enable comments and interact!</p>
+                </div>
+            `;
 
             card.innerHTML = `
                 <div class="video-container">
-                    <iframe 
-                        src="${youtubeEmbedUrl}" 
-                        title="${escapeHtml(video.title)}"
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                        allowfullscreen>
-                    </iframe>
+                    ${videoPlayerHtml}
                 </div>
                 <div class="video-info">
                     <div class="video-title">${escapeHtml(video.title)}</div>
@@ -1453,103 +1608,37 @@
                         <span class="video-duration">New</span>
                     </div>
                     
-                    ${behindTheStoryContent}
+                    ${video.description ? `
+                        <button class="behind-the-story-toggle" onclick="toggleBehindTheStory(${video.id})">Behind the Story</button>
+                        <div class="behind-the-story-content" id="behind-the-story-${video.id}">
+                            <p>This story was inspired by [Creator's Insight for ${escapeHtml(video.title)}].</p>
+                            <p>My goal was to [Explain Creative Goal].</p>
+                        </div>
+                    ` : ''}
 
-                    <div class="video-actions">
-                        <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
-                            <span>❤️</span>
-                            <span id="like-count-${video.id}">${video.likes_count || 0}</span>
-                        </button>
-                        
-                        <div class="share-menu">
-                            <button class="action-btn" onclick="toggleShareMenu(${video.id})">
-                                <span>🔗</span>
-                                Share
-                            </button>
-                            <div class="share-dropdown" id="share-menu-${video.id}">
-                                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeShareUrl)}" 
-                                    target="_blank" class="share-option">
-                                    <span class="share-icon">📘</span>
-                                    Facebook
-                                </a>
-                                <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeShareUrl)}&text=${encodeURIComponent(shareText)}" 
-                                    target="_blank" class="share-option">
-                                    <span class="share-icon">🐦</span>
-                                    Twitter
-                                </a>
-                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeShareUrl)}" 
-                                    target="_blank" class="share-option">
-                                    <span class="share-icon">💼</span>
-                                    LinkedIn
-                                </a>
-                                <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
-                                    target="_blank" class="share-option">
-                                    <span class="share-icon">💬</span>
-                                    WhatsApp
-                                </a>
-                                <a href="${youtubeShareUrl}" 
-                                    target="_blank" class="share-option">
-                                    <span class="share-icon">📺</span>
-                                    Watch on YouTube
-                                </a>
-                                <a href="mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
-                                    class="share-option">
-                                    <span class="share-icon">✉️</span>
-                                    Email
-                                </a>
-                                <a href="#" onclick="copyToClipboard('${youtubeShareUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option">
-                                    <span class="share-icon">📋</span>
-                                    Copy YouTube Link
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    ${videoActionsHtml}
                     
-                    <div class="comments-section">
-                        <div class="comments-header">
-                            <div class="comments-count" id="comment-count-${video.id}" onclick="viewVideoComments(${video.id})">0 comments</div>
-                            <button class="comments-toggle" onclick="toggleComments(${video.id})">
-                                <span id="toggle-text-${video.id}">Show Comments</span>
-                            </button>
-                        </div>
-                        
-                        <div class="comments-container" id="comments-${video.id}" style="display: none;">
-                            <div class="comment-form">
-                                <div class="comment-avatar">${generateAvatar(currentUserName)}</div>
-                                <div class="comment-input-container">
-                                    <textarea class="comment-input" 
-                                              id="comment-input-${video.id}" 
-                                              placeholder="Add a comment..."
-                                              rows="1"></textarea>
-                                    <div class="comment-actions" id="comment-actions-${video.id}" style="display: none;">
-                                        <button class="cancel-btn" onclick="cancelComment(${video.id})">Cancel</button>
-                                        <button class="comment-btn" onclick="postComment(${video.id})">Post</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="comments-list" id="comments-list-${video.id}">
-                                </div>
-                        </div>
-                    </div>
+                    ${commentsSectionHtml}
                 </div>
             `;
 
-            // Add event listeners for comment input
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() {
-                showCommentActions(video.id);
-            });
+            // Add event listeners for comment input (only if comments are enabled)
+            if (video.can_watch) {
+                card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() {
+                    showCommentActions(video.id);
+                });
 
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() {
-                autoResizeTextarea(this);
-            });
+                card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() {
+                    autoResizeTextarea(this);
+                });
 
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    postComment(video.id);
-                }
-            });
+                card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        postComment(video.id);
+                    }
+                });
+            }
 
             return card;
         }
@@ -2029,7 +2118,7 @@
             // Close modals when clicking outside the modal content
             const likesModal = document.getElementById('likes-modal');
             const commentsModal = document.getElementById('comments-modal');
-            const feedbackModal = document.getElementById('feedback-modal'); // NEW: Feedback modal
+            const feedbackModal = document.getElementById('feedback-modal');
 
             if (likesModal.style.display === 'block' && !e.target.closest('.modal-content')) {
                 closeLikesModal();
@@ -2037,7 +2126,7 @@
             if (commentsModal.style.display === 'block' && !e.target.closest('.modal-content')) {
                 closeCommentsModal();
             }
-            if (feedbackModal.style.display === 'block' && !e.target.closest('.modal-content') && !e.target.closest('.feedback-button-container')) { // NEW: Feedback modal
+            if (feedbackModal.style.display === 'block' && !e.target.closest('.modal-content') && !e.target.closest('.feedback-button-container')) {
                 closeFeedbackModal();
             }
         });
@@ -2390,7 +2479,7 @@
                 // 1. Get current streak from backend
                 const getResponse = await fetch('/api/user/watch-streak', {
                     method: 'GET',
-                    headers: { 'X-CSRFToken': csrfToken } // GET requests often don't need CSRF, but safer to include for consistency
+                    headers: { 'X-CSRFToken': csrfToken }
                 });
                 const getData = await getResponse.json();
 
@@ -2429,6 +2518,18 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // NEW: Function to toggle subscribe prompt visibility
+        function toggleSubscribePrompt(hasActiveSubscription) {
+            const subscribePromptSection = document.getElementById('subscribe-prompt-section');
+            if (subscribePromptSection) {
+                if (hasActiveSubscription) {
+                    subscribePromptSection.style.display = 'none';
+                } else {
+                    subscribePromptSection.style.display = 'block';
+                }
+            }
         }
     </script>
 </body>
