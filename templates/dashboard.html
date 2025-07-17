@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voyce Stories - Your Premium Feed</title>
+    <title>Voyce Stories - Your Free Feed</title>
     <style>
         * {
             margin: 0;
@@ -253,24 +253,25 @@
             border: none;
         }
 
-        /* NEW: Video Overlay for Non-Subscribers */
+        /* REMOVED: Video Overlay for Non-Subscribers */
+        /*
         .video-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7); /* Dark semi-transparent overlay */
+            background: rgba(0, 0, 0, 0.7);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            z-index: 5; /* Above iframe, below share menu */
+            z-index: 5;
             cursor: pointer;
             transition: background 0.3s ease;
-            background-size: cover; /* Ensure background image covers the area */
-            background-position: center; /* Center the background image */
+            background-size: cover;
+            background-position: center;
         }
         .video-overlay:hover {
             background: rgba(0, 0, 0, 0.8);
@@ -298,6 +299,7 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(255, 107, 107, 0.6);
         }
+        */
 
 
         .video-info {
@@ -1219,22 +1221,11 @@
     </div>
 
     <div class="main-content">
-        <!-- NEW: Subscribe Prompt Section (Visible to non-subscribers) -->
-        <div class="dashboard-section subscribe-prompt-section" id="subscribe-prompt-section" style="display: none;">
-            <div class="section-header" style="color: #667eea;">Unlock the Full Experience!</div>
-            <p style="text-align: center; margin-bottom: 20px; opacity: 0.9;">
-                You're logged in, but to watch full stories and access all features, you need a premium subscription.
-            </p>
-            <button class="subscribe-overlay-btn" onclick="window.location.href='${BASE_URL}/subscribe'" style="width: 100%;">
-                Subscribe Now for $4.99/month
-            </button>
-        </div>
-
         <div class="welcome-section">
             <div class="welcome-title">Welcome to Voyce Stories</div>
             <div class="welcome-subtitle">
                 Discover captivating mysteries and emotional narratives.<br>
-                Your premium storytelling experience awaits.
+                Your free storytelling experience awaits.
             </div>
         </div>
 
@@ -1314,9 +1305,7 @@
 
     <script>
         // Define BASE_URL globally
-        // This is crucial for environments where the HTML might be served from a blob: URL or file://
-        // In production on Render, this will correctly resolve to your app's domain.
-        const BASE_URL = window.location.origin; // Removed || '' as it's not needed if origin is always available in production
+        const BASE_URL = window.location.origin;
 
         // Global variables
         let videos = [];
@@ -1344,7 +1333,7 @@
                     document.getElementById('user-email').textContent = currentUser.email;
                     currentUserName = currentUser.email.split('@')[0];
                     updateDailyWatchStreak(); // Update streak based on current user after login
-                    toggleSubscribePrompt(currentUser.has_active_subscription); // NEW: Show/hide subscribe prompt
+                    // Removed: toggleSubscribePrompt(currentUser.has_active_subscription); // No longer needed
                 } else {
                     // If auth check fails, redirect to login page
                     window.location.href = `${BASE_URL}/`; 
@@ -1404,22 +1393,18 @@
                 const videoCard = createVideoCard(video);
                 videoFeed.appendChild(videoCard);
                 
-                // Set initial like state (only if user can watch)
-                if (video.can_watch) {
-                    const likeBtn = document.getElementById(`like-btn-${video.id}`);
-                    const likeCount = document.getElementById(`like-count-${video.id}`);
-                    if (video.user_liked) {
-                        likeBtn.classList.add('liked');
-                    }
-                    likeCount.textContent = video.likes_count || 0;
+                // Set initial like state (always as content is free)
+                const likeBtn = document.getElementById(`like-btn-${video.id}`);
+                const likeCount = document.getElementById(`like-count-${video.id}`);
+                if (video.user_liked) {
+                    likeBtn.classList.add('liked');
                 }
+                likeCount.textContent = video.likes_count || 0;
             });
 
-            // Load comments for each video (only if user can watch)
+            // Load comments for each video (always as content is free)
             videosToShow.forEach(video => {
-                if (video.can_watch) {
-                    loadComments(video.id);
-                }
+                loadComments(video.id);
             });
         }
 
@@ -1434,31 +1419,24 @@
                 day: 'numeric'
             });
 
-            const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
-            const youtubeShareUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            const youtubeEmbedUrl = `https://www.youtube.com/embed/$${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
+            const youtubeShareUrl = `https://www.youtube.com/watch?v=$${video.youtube_video_id}`;
             const shareTitle = `${video.title} - Voyce Stories`;
             const shareText = `Check out this amazing story: ${video.title}`;
 
-            // Conditional content based on subscription status
-            const videoPlayerHtml = video.can_watch ? `
+            // Simplified video player HTML: always direct play
+            const videoPlayerHtml = `
                 <iframe 
                     src="${youtubeEmbedUrl}" 
                     title="${escapeHtml(video.title)}"
                     frameborder="0" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                     allowfullscreen
-                    onload="updateDailyWatchStreak()"> <!-- Call streak update on video load -->
-                </iframe>
-            ` : `
-                <div class="video-overlay" style="background-image: url('${video.thumbnail_url}'); background-size: cover; background-position: center;">
-                    <div class="overlay-text">Premium Content</div>
-                    <button class="subscribe-overlay-btn" onclick="window.location.href='${BASE_URL}/subscribe'">
-                        Subscribe to Watch
-                    </button>
-                </div>
+                    onload="updateDailyWatchStreak()"> </iframe>
             `;
 
-            const videoActionsHtml = video.can_watch ? `
+            // Simplified video actions HTML: always show like/share
+            const videoActionsHtml = `
                 <div class="video-actions">
                     <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
                         <span>❤️</span>
@@ -1508,15 +1486,10 @@
                         </div>
                     </div>
                 </div>
-            ` : `
-                <div class="video-actions" style="justify-content: center; border-top: none; padding-top: 0;">
-                    <button class="subscribe-overlay-btn" onclick="window.location.href='${BASE_URL}/subscribe'">
-                        Subscribe to Unlock Features
-                    </button>
-                </div>
             `;
 
-            const commentsSectionHtml = video.can_watch ? `
+            // Simplified comments section HTML: always show full comments
+            const commentsSectionHtml = `
                 <div class="comments-section">
                     <div class="comments-header">
                         <div class="comments-count" id="comment-count-${video.id}" onclick="viewVideoComments(${video.id})">0 comments</div>
@@ -1541,13 +1514,8 @@
                         </div>
                         
                         <div class="comments-list" id="comments-list-${video.id}">
-                            <!-- Comments will be loaded here -->
-                        </div>
+                            </div>
                     </div>
-                </div>
-            ` : `
-                <div class="comments-section" style="text-align: center; opacity: 0.7; padding-top: 20px;">
-                    <p>Subscribe to enable comments and interact!</p>
                 </div>
             `;
 
@@ -1577,23 +1545,21 @@
                 </div>
             `;
 
-            // Add event listeners for comment input (only if comments are enabled)
-            if (video.can_watch) {
-                card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() {
-                    showCommentActions(video.id);
-                });
+            // Add event listeners for comment input (always enabled now)
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() {
+                showCommentActions(video.id);
+            });
 
-                card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() {
-                    autoResizeTextarea(this);
-                });
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
 
-                card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        postComment(video.id);
-                    }
-                });
-            }
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    postComment(video.id);
+                }
+            });
 
             return card;
         }
@@ -1613,8 +1579,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
-                    }
+                        'X-CSRFToken': csrfToken
+                    },
                 });
 
                 const data = await response.json();
@@ -1656,7 +1622,7 @@
         function copyToClipboard(url, title) {
             // Use window.location.origin to ensure absolute URL for sharing
             // The original youtubeShareUrl is already an absolute YouTube URL, so we can use that directly.
-            const linkToCopy = url; 
+            const linkToCopy = url;
 
             navigator.clipboard.writeText(linkToCopy).then(() => {
                 // Show success message
@@ -1757,11 +1723,11 @@
 
         // Render a single comment
         function renderComment(comment, videoId) {
-            const repliesHtml = comment.repllies.map(reply => renderReply(reply, videoId)).join(''); // Corrected from comment.repllies
+            const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join(''); // Corrected from comment.repllies
             
             // Determine if the current user can delete this comment (if it's their comment OR if they are an admin)
             const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.is_admin);
-            const deleteButton = canDelete ? 
+            const deleteButton = canDelete ?
                 `<button class="delete-comment-btn" onclick="deleteComment(${comment.id}, ${videoId})">Delete</button>` : '';
 
             return `
@@ -1805,7 +1771,7 @@
         function renderReply(reply, videoId) {
             // Determine if the current user can delete this reply (if it's their reply OR if they are an admin)
             const canDelete = currentUser && (currentUser.id === reply.user_id || currentUser.is_admin);
-            const deleteButton = canDelete ? 
+            const deleteButton = canDelete ?
                 `<button class="delete-comment-btn" onclick="deleteComment(${reply.id}, ${videoId})">Delete</button>` : '';
 
             return `
@@ -1883,7 +1849,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify({ text })
                 });
@@ -1916,8 +1882,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
-                    }
+                        'X-CSRFToken': csrfToken
+                    },
                 });
 
                 const data = await response.json();
@@ -1983,11 +1949,11 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                         text,
-                        parent_id: commentId 
+                        parent_id: commentId
                     })
                 });
 
@@ -2045,7 +2011,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     }
                 });
 
@@ -2109,7 +2075,7 @@
                 // Assuming this is an admin-specific endpoint that might need an Admin check
                 const response = await fetch(`${BASE_URL}/api/admin/videos/${videoId}/comments`, {
                     headers: {
-                        'X-CSRFToken': csrfToken // Include CSRF token for admin actions too
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 const data = await response.json();
@@ -2179,10 +2145,10 @@
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, { // Corrected endpoint to match your app.py
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRFToken': csrfToken // Include CSRF token
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 
@@ -2221,7 +2187,7 @@
                 const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json', // Added content type
+                        'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
                     }
                 });
@@ -2273,7 +2239,7 @@
 
         // Helper function to render a story item (for Top Stories and New Series sections)
         function renderStoryItemHtml(video, type) {
-            const youtubeShareUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            const youtubeShareUrl = `https://www.youtube.com/watch?v=$${video.youtube_video_id}`;
             let metaInfo = '';
             if (type === 'top-story') {
                 metaInfo = `Likes: ${video.likes_count || 0}`;
@@ -2407,7 +2373,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include CSRF token
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify({ feedback: feedbackText })
                 });
@@ -2450,7 +2416,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken // POST request absolutely needs CSRF
+                            'X-CSRFToken': csrfToken
                         }
                     });
                     const postData = await postResponse.json();
@@ -2472,14 +2438,8 @@
             }
         }
 
-        // Escape HTML function (already present)
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // NEW: Function to toggle subscribe prompt visibility
+        // Removed: Function to toggle subscribe prompt visibility
+        /*
         function toggleSubscribePrompt(hasActiveSubscription) {
             const subscribePromptSection = document.getElementById('subscribe-prompt-section');
             if (subscribePromptSection) {
@@ -2490,6 +2450,7 @@
                 }
             }
         }
+        */
     </script>
 </body>
 </html>
