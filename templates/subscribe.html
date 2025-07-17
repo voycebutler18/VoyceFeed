@@ -281,36 +281,40 @@
         }
 
         async function createCheckoutSession() {
-            if (isProcessing) return;
-            
-            setButtonLoading(true);
-            
-            try {
-                const response = await fetch('/api/create-checkout-session', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.checkout_url) {
-                    window.location.href = data.checkout_url;
-                } else {
-                    throw new Error(data.message || 'Failed to create checkout session');
-                }
-            } catch (error) {
-                console.error('Error creating checkout session:', error);
-                showError('Unable to start subscription. Please try again.');
-                setButtonLoading(false);
+    if (isProcessing) return;
+    
+    setButtonLoading(true);
+    
+    try {
+        const response = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // IMPORTANT: Ensure you are sending the CSRF token from subscribe.html as well!
+                // If subscribe.html has an input like <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+                // Then add: 'X-CSRFToken': document.getElementById('csrf_token').value
             }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.checkout_url) {
+            // Success: redirect to Stripe checkout
+            window.location.href = data.checkout_url;
+        } else if (!response.ok && data.redirect) { // NEW: Handle server-sent redirect
+            // Server returned a 409 (or other non-2xx) with a redirect URL
+            console.warn('Redirecting due to backend message:', data.message);
+            window.location.href = data.redirect;
+        } else {
+            // General error or unknown redirect
+            throw new Error(data.message || 'Failed to create checkout session');
         }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !isProcessing) {
-                createCheckoutSession();
-            }
+    } catch (error) {
+        console.error('Error creating checkout session:', error);
+        showError('Unable to start subscription. Please try again.');
+        setButtonLoading(false);
+    }
+}
         });
     </script>
 </body>
