@@ -437,31 +437,27 @@ def toggle_video_like(video_id):
         return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 @app.route('/dashboard')
+@login_required # MODIFIED: Only login_required, not subscription_required
 def dashboard():
     """User dashboard"""
-    if 'user_id' not in session:
-        return redirect(url_for('index'))
-    
-    user = User.query.get(session['user_id'])
-    if not user:
-        return redirect(url_for('index'))
-    
-    if not user.has_active_subscription():
-        return redirect(url_for('subscribe'))
-    
+    # The login_required decorator already handles redirection if not logged in.
+    # No further redirects here to allow non-subscribers to view the dashboard.
     return render_template('dashboard.html')
 
 @app.route('/api/videos')
-@subscription_required
+@login_required # MODIFIED: Only login_required, not subscription_required
 def get_videos():
-    """Get all active videos for feed"""
+    """
+    Get all active videos for feed.
+    Includes 'can_watch' flag based on user's subscription status.
+    """
     videos = Video.query.filter_by(is_active=True).order_by(Video.created_at.desc()).all()
-    current_user_id = session['user_id']
-    
+    current_user = User.query.get(session['user_id']) # Get current user object
+
     video_list = []
     for video in videos:
         user_liked = VideoLike.query.filter_by(
-            user_id=current_user_id,
+            user_id=current_user.id,
             video_id=video.id
         ).first() is not None
         
@@ -476,14 +472,15 @@ def get_videos():
             'user_liked': user_liked,
             'created_at': video.created_at.isoformat(),
             'genre': video.genre,
-            'featured_tag': video.featured_tag
+            'featured_tag': video.featured_tag,
+            'can_watch': current_user.has_active_subscription() # NEW: Can watch flag
         })
     
     return jsonify({'success': True, 'videos': video_list})
 
 # Comment System Routes
 @app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
-@subscription_required
+@subscription_required # Keep subscription_required for comments
 def get_comments(video_id):
     """Get comments for a specific video"""
     try:
@@ -510,7 +507,7 @@ def get_comments(video_id):
         return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
 
 @app.route('/api/videos/<int:video_id>/comments', methods=['POST'])
-@subscription_required
+@subscription_required # Keep subscription_required for posting comments
 def post_comment(video_id):
     """Post a new comment on a video"""
     try:
@@ -549,7 +546,7 @@ def post_comment(video_id):
         return jsonify({'success': False, 'message': 'Failed to post comment'}), 500
 
 @app.route('/api/comments/<int:comment_id>/like', methods=['POST'])
-@subscription_required
+@subscription_required # Keep subscription_required for liking comments
 def toggle_comment_like(comment_id):
     """Toggle like on a comment"""
     try:
@@ -584,7 +581,7 @@ def toggle_comment_like(comment_id):
         return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
 @app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
-@subscription_required
+@subscription_required # Keep subscription_required for deleting comments
 def delete_comment(comment_id):
     """Delete a comment (only by the author or admin)"""
     try:
@@ -604,7 +601,7 @@ def delete_comment(comment_id):
         return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
 
 @app.route('/api/comments/<int:comment_id>', methods=['PUT'])
-@subscription_required
+@subscription_required # Keep subscription_required for editing comments
 def edit_comment(comment_id):
     """Edit a comment (only by the author)"""
     try:
@@ -652,15 +649,14 @@ def subscribe():
             flash('Please log in to subscribe', 'error')
             return redirect(url_for('index'))
             
-        if user.subscription:
-            if user.subscription.status == 'active' and user.subscription.current_period_end > datetime.utcnow():
-                flash('You already have an active subscription!', 'info')
-                return redirect(url_for('dashboard'))
-            elif user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
-                flash('You have a pending subscription. Please complete the payment process.', 'warning')
-                return redirect(url_for('dashboard'))
-            elif user.subscription.status == 'past_due':
-                flash('Your subscription payment is past due. Please update your payment method.', 'warning')
+        if user.has_active_subscription(): # Check if user has active subscription
+            flash('You already have an active subscription!', 'info')
+            return redirect(url_for('dashboard')) # Redirect to dashboard if already subscribed
+        elif user.subscription and user.subscription.status in ['incomplete', 'incomplete_expired', 'trialing']:
+            flash('You have a pending subscription. Please complete the payment process.', 'warning')
+            return redirect(url_for('dashboard'))
+        elif user.subscription and user.subscription.status == 'past_due':
+            flash('Your subscription payment is past due. Please update your payment method.', 'warning')
         
         return render_template('subscribe.html', stripe_key=STRIPE_PUBLISHABLE_KEY)
         
@@ -674,7 +670,6 @@ def subscribe():
 @login_required
 @limiter.limit("5 per minute")
 def create_checkout_session():
-    # Explicitly re-import session and request to avoid UnboundLocalError
     from flask import session, request 
 
     if not request.is_json:
@@ -975,7 +970,7 @@ def stripe_webhook():
                 new_subscription = Subscription(
                     user_id=user_id,
                     stripe_customer_id=session_data['customer'],
-                    stripe_subscription_id=session_data['subscription'],
+                    stripe_subscription_id=session['subscription'],
                     status=subscription['status'],
                     current_period_start=datetime.fromtimestamp(subscription['current_period_start']),
                     current_period_end=datetime.fromtimestamp(subscription['current_period_end'])
@@ -1582,7 +1577,7 @@ def internal_error(error):
 # NEW FEATURE ROUTES START HERE
 
 @app.route('/api/videos/categorized', methods=['GET'])
-@subscription_required
+@login_required # MODIFIED: Only login_required
 def get_categorized_videos():
     """
     API to get videos based on their featured_tag.
@@ -1593,6 +1588,7 @@ def get_categorized_videos():
     try:
         tag = request.args.get('tag', '').strip()
         genre = request.args.get('genre', '').strip()
+        current_user = User.query.get(session['user_id']) # Get current user to check subscription
 
         if not tag:
             return jsonify({'success': False, 'message': 'Tag parameter is required'}), 400
@@ -1600,15 +1596,12 @@ def get_categorized_videos():
         query = Video.query.filter_by(is_active=True, featured_tag=tag)
 
         if tag == 'Top Story':
-            # For top stories, order by likes_count and limit
             videos = query.order_by(Video.likes_count.desc()).limit(10).all()
         elif tag == 'New Series':
-            # For new series, order by creation date
             if genre:
                 query = query.filter_by(genre=genre)
             videos = query.order_by(Video.created_at.desc()).limit(10).all()
         else:
-            # For any other custom tags, order by creation date
             videos = query.order_by(Video.created_at.desc()).limit(10).all()
 
         video_list = []
@@ -1622,7 +1615,8 @@ def get_categorized_videos():
                 'likes_count': video.likes_count,
                 'created_at': video.created_at.isoformat(),
                 'genre': video.genre,
-                'featured_tag': video.featured_tag
+                'featured_tag': video.featured_tag,
+                'can_watch': current_user.has_active_subscription() # NEW: Can watch flag
             })
         
         return jsonify({'success': True, 'videos': video_list})
@@ -1632,7 +1626,6 @@ def get_categorized_videos():
 
 @app.route('/api/feedback', methods=['POST'])
 @login_required
-# @csrf.exempt # Removed @csrf.exempt as frontend now sends X-CSRFToken
 def submit_feedback():
     """
     API to submit user feedback or story suggestions.
