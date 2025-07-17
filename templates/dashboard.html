@@ -383,20 +383,6 @@
             display: inline-block;
         }
 
-        .share-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: rgba(20, 20, 20, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            min-width: 200px;
-            z-index: 100;
-            display: none;
-            margin-top: 5px;
-        }
-
         .share-dropdown.active {
             display: block;
         }
@@ -1279,7 +1265,7 @@
             <p style="text-align: center; margin-bottom: 20px; opacity: 0.9;">
                 You're logged in, but to watch full stories and access all features, you need a premium subscription.
             </p>
-            <button class="subscribe-overlay-btn" onclick="window.location.href='/subscribe'" style="width: 100%;">
+            <button class="subscribe-overlay-btn" onclick="window.location.href='${BASE_URL}/subscribe'" style="width: 100%;">
                 Subscribe Now for $4.99/month
             </button>
         </div>
@@ -1296,7 +1282,7 @@
             <div class="section-header">This Month's Top Stories</div>
             <div class="section-content" id="top-stories-list">
                 <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
                         <div class="story-title">Loading Top Stories...</div>
                         <div class="story-meta">Views: Loading</div>
@@ -1309,7 +1295,7 @@
             <div class="section-header">Start a New Series</div>
             <div class="section-content" id="new-series-list">
                 <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
                         <div class="story-title">Discovering New Series...</div>
                         <div class="story-meta">Genre: Loading</div>
@@ -1400,11 +1386,13 @@
                     updateDailyWatchStreak(); // Update streak based on current user after login
                     toggleSubscribePrompt(currentUser.has_active_subscription); // NEW: Show/hide subscribe prompt
                 } else {
-                    window.location.href = `${BASE_URL}/`; // Redirect to base URL
+                    // If auth check fails, redirect to login page
+                    window.location.href = `${BASE_URL}/`; 
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
-                window.location.href = `${BASE_URL}/`; // Redirect to base URL on error
+                // If there's a network error or other issue, redirect to login page
+                window.location.href = `${BASE_URL}/`; 
             }
         }
 
@@ -1707,8 +1695,7 @@
         // Copy to clipboard
         function copyToClipboard(url, title) {
             // Use window.location.origin to ensure absolute URL for sharing
-            const fullUrl = `${BASE_URL}/videos/${video.youtube_video_id}`; // Example: if you have a video detail page
-            // Or simply use the youtubeShareUrl if you want to share the YouTube link directly
+            // The original youtubeShareUrl is already an absolute YouTube URL, so we can use that directly.
             const linkToCopy = url; 
 
             navigator.clipboard.writeText(linkToCopy).then(() => {
@@ -2338,7 +2325,7 @@
 
             return `
                 <div class="story-item" onclick="window.open('${youtubeShareUrl}', '_blank');">
-                    <div class="story-thumbnail"><img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://via.placeholder.com/80x45/1a1a1a/888?text=Video'"></div>
+                    <div class="story-thumbnail"><img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/80x45/1a1a1a/888?text=Video'"></div>
                     <div class="story-details">
                         <div class="story-title">${escapeHtml(video.title)}</div>
                         <div class="story-meta">${metaInfo}</div>
@@ -2352,7 +2339,7 @@
             const topStoriesList = document.getElementById('top-stories-list');
             topStoriesList.innerHTML = `
                 <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
                         <div class="story-title">Loading Top Stories...</div>
                         <div class="story-meta"></div>
@@ -2386,7 +2373,7 @@
             const newSeriesList = document.getElementById('new-series-list');
             newSeriesList.innerHTML = `
                 <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://via.placeholder.com/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
                         <div class="story-title">Discovering New Series...</div>
                         <div class="story-meta"></div>
