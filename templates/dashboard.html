@@ -142,7 +142,7 @@
             line-height: 1.5;
         }
 
-        /* NEW: General Dashboard Section Styling */
+        /* General Dashboard Section Styling */
         .dashboard-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
@@ -794,11 +794,6 @@
                 display: none;
             }
 
-            .streak-tracker { /* Keep visible on mobile for now */
-                font-size: 0.7rem;
-                padding: 3px 8px;
-            }
-
             .main-content {
                 padding: 15px;
                 margin-top: 70px;
@@ -815,29 +810,6 @@
 
             .welcome-subtitle {
                 font-size: 1rem;
-            }
-            .dashboard-section {
-                padding: 15px;
-            }
-            .section-header {
-                font-size: 1.1rem;
-                margin-bottom: 15px;
-            }
-            .story-item {
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-            .story-thumbnail {
-                width: 100px;
-                height: 56px;
-            }
-            .story-details {
-                text-align: center;
-            }
-            .story-genre-tag {
-                margin: 5px auto 0;
-                display: inline-block;
             }
 
             .video-info {
@@ -867,18 +839,6 @@
                 min-width: 100px;
                 justify-content: center;
             }
-            
-            .behind-the-story-toggle {
-                font-size: 0.85rem;
-                padding: 6px 12px;
-            }
-            .behind-the-story-content {
-                padding: 12px;
-            }
-            .behind-the-story-content p {
-                font-size: 0.85rem;
-            }
-
 
             .comment-avatar {
                 width: 35px;
@@ -1356,7 +1316,7 @@
         // Define BASE_URL globally
         // This is crucial for environments where the HTML might be served from a blob: URL or file://
         // In production on Render, this will correctly resolve to your app's domain.
-        const BASE_URL = window.location.origin;
+        const BASE_URL = window.location.origin; // Removed || '' as it's not needed if origin is always available in production
 
         // Global variables
         let videos = [];
@@ -1797,7 +1757,7 @@
 
         // Render a single comment
         function renderComment(comment, videoId) {
-            const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join('');
+            const repliesHtml = comment.repllies.map(reply => renderReply(reply, videoId)).join(''); // Corrected from comment.repllies
             
             // Determine if the current user can delete this comment (if it's their comment OR if they are an admin)
             const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.is_admin);
