@@ -1124,22 +1124,31 @@ function displayVideos(videos) {
                 formData.append('duration_seconds', document.getElementById('duration-seconds').value.trim() || ''); // Can be empty for YT
                 
                 // If adding YouTube URL, send JSON
-                const data = Object.fromEntries(formData.entries()); // Convert FormData to plain object for JSON
-                setButtonLoading(true);
-                try {
-                    const response = await fetch('/api/admin/videos', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json', // Important for JSON payload
-                            'X-CSRFToken': document.getElementById('csrf_token').value
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.json();
-                    if (result.success) { showMessage('Video added successfully!', 'success'); form.reset(); loadVideos(); loadStats(); }
-                    else { showMessage(result.message || 'Failed to add video', 'error'); }
-                } catch (error) { console.error('Error adding video:', error); showMessage('Failed to add video. Please try again.', 'error'); }
-                finally { setButtonLoading(false); }
+                // Send as FormData, not JSON
+setButtonLoading(true);
+try {
+    const response = await fetch('/api/admin/videos', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.getElementById('csrf_token').value
+        },
+        body: formData  // Send FormData directly, not JSON
+    });
+    const result = await response.json();
+    if (result.success) { 
+        showMessage('Video added successfully!', 'success'); 
+        form.reset(); 
+        loadVideos(); 
+        loadStats(); 
+    } else { 
+        showMessage(result.message || 'Failed to add video', 'error'); 
+    }
+} catch (error) { 
+    console.error('Error adding video:', error); 
+    showMessage('Failed to add video. Please try again.', 'error'); 
+} finally { 
+    setButtonLoading(false); 
+}
 
             } else if (sourceType === 'file_upload') {
                 const videoFile = document.getElementById('video-file').files[0];
