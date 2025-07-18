@@ -1499,7 +1499,166 @@
             }
         });
 
+        // --- LIKE & COMMENT FUNCTIONS ---
 
+/**
+ * Toggles the "like" status for a video.
+ * It sends a request to the server and updates the like button and count on success.
+ * @param {number} videoId The ID of the video to like/unlike.
+ */
+async function toggleVideoLike(videoId) {
+    if (!currentUser) {
+        alert("You must be logged in to like videos.");
+        return;
+    }
+    const csrfToken = document.getElementById('csrf_token').value;
+    const likeButton = document.querySelector(`.content-tile[data-video-id="${videoId}"] .tile-action-btn`);
+    const likesCountSpan = document.getElementById(`likes-count-${videoId}`);
+
+    try {
+        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update like status.');
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            // Update UI with the new data from the server
+            likesCountSpan.textContent = data.likes_count;
+            if (data.liked) {
+                likeButton.classList.add('liked');
+            } else {
+                likeButton.classList.remove('liked');
+            }
+        } else {
+            throw new Error(data.message || 'An error occurred.');
+        }
+    } catch (error) {
+        console.error('Error toggling video like:', error);
+        alert('Could not update like. Please try again.');
+    }
+}
+
+/**
+ * Opens a modal to display comments for a specific video and allows adding a new one.
+ * @param {number} videoId The ID of the video whose comments are to be viewed.
+ */
+async function viewVideoComments(videoId) {
+    pauseCurrentlyPlayingVideo(); // Pause any playing video when opening the modal
+    const modal = document.getElementById('comments-modal');
+    const contentDiv = document.getElementById('comments-content');
+    modal.style.display = 'flex';
+    contentDiv.innerHTML = '<div class="loading-small" style="padding: 40px; text-align: center;">Loading comments...</div>';
+
+    try {
+        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
+        if (!response.ok) throw new Error('Failed to fetch comments.');
+
+        const data = await response.json();
+        if (data.success) {
+            let commentsHtml = '';
+            // Generate HTML for each comment
+            if (data.comments && data.comments.length > 0) {
+                commentsHtml = data.comments.map(comment => `
+                    <div class="comment-item">
+                        <div class="user-info">
+                            <div class="user-avatar">${escapeHtml(comment.user_name).charAt(0).toUpperCase()}</div>
+                            <div class="user-details">
+                                <div class="user-name">${escapeHtml(comment.user_name)}</div>
+                                <div class="comment-text">${escapeHtml(comment.text)}</div>
+                                <div class="comment-meta">
+                                    <span class="comment-time">${new Date(comment.timestamp).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                commentsHtml = '<div class="empty-state-small" style="text-align:center; padding: 20px;"><div class="empty-icon">🤫</div>No comments yet. Be the first!</div>';
+            }
+
+            // HTML for the "Add Comment" form
+            const formHtml = `
+                <div class="add-comment-form" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <form onsubmit="event.preventDefault(); addComment(${videoId}, this);">
+                        <textarea name="comment_text" placeholder="Add a comment..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; min-height: 60px; resize: vertical; margin-bottom: 10px;"></textarea>
+                        <button type="submit" style="width: 100%; padding: 10px; background: linear-gradient(45deg, #6366f1, #a855f7); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">Post Comment</button>
+                    </form>
+                </div>
+            `;
+
+            contentDiv.innerHTML = commentsHtml + formHtml;
+        } else {
+            throw new Error(data.message || 'Could not load comments.');
+        }
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        contentDiv.innerHTML = `<div class="empty-state-small" style="text-align:center; padding: 20px;">${error.message}</div>`;
+    }
+}
+
+/**
+ * Submits a new comment for a video.
+ * @param {number} videoId The ID of the video to comment on.
+ * @param {HTMLFormElement} formElement The form element that was submitted.
+ */
+async function addComment(videoId, formElement) {
+    const textarea = formElement.querySelector('textarea[name="comment_text"]');
+    const commentText = textarea.value.trim();
+    if (!commentText) return;
+
+    const csrfToken = document.getElementById('csrf_token').value;
+    const submitButton = formElement.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Posting...';
+
+    try {
+        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ text: commentText })
+        });
+
+        if (!response.ok) throw new Error('Failed to post comment.');
+
+        const data = await response.json();
+        if (data.success) {
+            // Update the comment count on the video tile without a full page reload
+            const commentsCountSpan = document.getElementById(`comments-count-${videoId}`);
+            commentsCountSpan.textContent = parseInt(commentsCountSpan.textContent) + 1;
+            
+            // Refresh the comments list to show the new comment
+            viewVideoComments(videoId);
+        } else {
+            throw new Error(data.message || 'Server returned an error.');
+        }
+    } catch (error) {
+        console.error('Error adding comment:', error);
+        alert(`Could not add comment: ${error.message}`);
+        submitButton.disabled = false;
+        submitButton.textContent = 'Post Comment';
+    }
+}
+
+// Closes the Likes modal
+function closeLikesModal() {
+    document.getElementById('likes-modal').style.display = 'none';
+}
+
+// Closes the Comments modal
+function closeCommentsModal() {
+    document.getElementById('comments-modal').style.display = 'none';
+}
         // Feedback modal (unchanged)
         function showFeedbackModal() { document.getElementById('feedback-modal').style.display = 'flex'; }
         function closeFeedbackModal() { document.getElementById('feedback-modal').style.display = 'none'; }
