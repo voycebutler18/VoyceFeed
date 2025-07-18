@@ -714,50 +714,109 @@ def admin_stats():
         logger.error(f"Error fetching admin stats: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/admin/videos', methods=['GET'])
+@app.route('/api/admin/videos', methods=['POST'])
 @admin_required
-def admin_get_videos():
-    """Get all videos for admin"""
+def admin_add_video():
+    """Add new video (admin only)"""
     try:
-        videos = Video.query.order_by(Video.created_at.desc()).all()
-        
-        video_list = []
-        for video in videos:
-            comment_count = Comment.query.filter_by(video_id=video.id).count()
+        data = request.form
+        video_source_type = data.get('video_source_type')
+        title = data.get('title', '').strip()
+        # ... (other variables are the same)
+
+        # We will now IGNORE the duration from the form for file uploads
+        # and detect it automatically on the backend.
+
+        if video_source_type == 'file_upload':
+            if 'video_file' not in request.files:
+                return jsonify({'success': False, 'message': 'No video file part for upload'}), 400
             
-            # Determine source URL for admin view
-            source_url_for_admin = None
-            if video.local_file_path:
-                source_url_for_admin = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
-            elif video.youtube_url: # This now holds the YouTube URL (for YouTube videos)
-                source_url_for_admin = video.youtube_url
+            video_file = request.files['video_file']
+            if video_file.filename == '':
+                return jsonify({'success': False, 'message': 'No selected video file'}), 400
+            
+            if not title:
+                return jsonify({'success': False, 'message': 'Title is required for uploaded video'}), 400
 
-            video_list.append({
-                'id': video.id,
-                'title': video.title,
-                'description': video.description,
-                'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
-                'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
-                'thumbnail_url': video.thumbnail_url,
-                'is_active': video.is_active,
-                'likes_count': video.likes_count,
-                'created_at': video.created_at.isoformat(),
-                'genre': video.genre,
-                'featured_tag': video.featured_tag,
-                'local_file_path': source_url_for_admin, # This is the source URL for admin view/playback
-                'duration_seconds': video.duration_seconds,
-                'is_short': video.is_short,
-                'views_count': video.views_count,
-                'hashtags': video.hashtags,
-                'comment_count': comment_count
-            })
-        
-        return jsonify({'success': True, 'videos': video_list})
-        
+            filename = secure_filename(video_file.filename)
+            # Use a unique name to prevent conflicts
+            unique_filename = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+            local_file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            video_file.save(local_file_path)
+
+            # --- NEW: AUTOMATIC DURATION DETECTION ---
+            try:
+                probe = ffmpeg.probe(local_file_path)
+                duration_seconds = int(float(probe['format']['duration']))
+                is_short = duration_seconds < 60
+            except ffmpeg.Error as e:
+                logger.error(f"FFmpeg error processing {local_file_path}: {e.stderr}")
+                # If duration detection fails, fall back to form data or None
+                duration_seconds = int(data.get('duration_seconds')) if data.get('duration_seconds') else None
+                is_short = data.get('is_short', 'false').lower() == 'true'
+            # --- END OF NEW CODE ---
+
+            thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Default thumbnail for now
+            
+            # Create the Video object with the DETECTED duration
+            new_video = Video(
+                title=title,
+                description=data.get('description', '').strip(),
+                youtube_url=url_for('uploaded_file', filename=unique_filename),
+                local_file_path=local_file_path,
+                thumbnail_url=thumbnail_url,
+                genre=data.get('genre', '').strip(),
+                featured_tag=data.get('featured_tag', '').strip(),
+                hashtags=data.get('hashtags', '').strip(),
+                duration_seconds=duration_seconds, # Use the detected duration
+                is_short=is_short, # Use the detected is_short status
+                views_count=0
+            )
+
+            db.session.add(new_video)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Video uploaded successfully!', 'video': {'id': new_video.id, 'title': new_video.title}})
+
+        elif video_source_type == 'youtube_url':
+            # YouTube URL logic remains the same
+            youtube_url_input = data.get('youtube_url', '').strip()
+            if not title or not youtube_url_input:
+                return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
+            
+            video_id = extract_youtube_video_id(youtube_url_input)
+            if not video_id:
+                return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
+            
+            # Note: YouTube API would be needed for accurate duration. For now, manual is the fallback.
+            duration_seconds = int(data.get('duration_seconds')) if data.get('duration_seconds') else None
+            is_short = data.get('is_short', 'false').lower() == 'true' or (duration_seconds is not None and duration_seconds < 60)
+            
+            new_video = Video(
+                title=title,
+                description=data.get('description', '').strip(),
+                youtube_url=youtube_url_input,
+                youtube_video_id=video_id,
+                thumbnail_url=get_youtube_thumbnail(video_id),
+                genre=data.get('genre', '').strip(),
+                featured_tag=data.get('featured_tag', '').strip(),
+                hashtags=data.get('hashtags', '').strip(),
+                duration_seconds=duration_seconds,
+                is_short=is_short,
+                views_count=0
+            )
+            db.session.add(new_video)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Video added successfully!', 'video': {'id': new_video.id, 'title': new_video.title}})
+
+        else:
+            return jsonify({'success': False, 'message': 'Invalid video source type'}), 400
+
     except Exception as e:
-        logger.error(f"Error fetching admin videos: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': str(e)}), 500
-
+        db.session.rollback()
+        logger.error(f"Error adding video for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to add video. ' + str(e)}), 500
+        
 @app.route('/api/admin/videos/<int:video_id>/likes', methods=['GET'])
 @admin_required
 def admin_get_video_likes(video_id):
