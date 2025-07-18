@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voyce Stories - Your Free Feed</title>
+    <title>Snayvu – The Super Platform</title>
     <style>
+        /* General Styles */
         * {
             margin: 0;
             padding: 0;
@@ -16,6 +17,7 @@
             background: #0a0a0a;
             color: white;
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
         /* Header */
@@ -40,13 +42,14 @@
         }
 
         .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            font-size: 1.8rem; /* Slightly larger for emphasis */
+            font-weight: 800; /* Bolder */
+            background: linear-gradient(45deg, #a855f7, #6366f1); /* Snayvu brand gradient */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             cursor: pointer;
+            text-shadow: 0 0 15px rgba(168, 85, 247, 0.4); /* Glow effect */
         }
 
         .user-menu {
@@ -55,12 +58,11 @@
             gap: 15px;
         }
 
-        /* User Info Group for Email + Streak */
         .user-info-group {
             display: flex;
             flex-direction: column;
-            align-items: flex-end; /* Align items to the right */
-            gap: 5px; /* Space between email and streak */
+            align-items: flex-end;
+            gap: 5px;
         }
 
         .user-email {
@@ -68,17 +70,16 @@
             opacity: 0.7;
         }
 
-        /* Streak Tracker Badge */
         .streak-tracker {
-            display: inline-flex; /* Use inline-flex to keep content on one line */
+            display: inline-flex;
             align-items: center;
-            background: rgba(255, 215, 0, 0.2); /* Gold-ish background */
+            background: rgba(255, 215, 0, 0.2);
             border: 1px solid rgba(255, 215, 0, 0.4);
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 600;
-            color: #ffd700; /* Gold text */
+            color: #ffd700;
             box-shadow: 0 2px 5px rgba(255, 215, 0, 0.1);
             transition: all 0.2s ease;
         }
@@ -88,9 +89,8 @@
         }
         .streak-icon {
             margin-right: 5px;
-            font-size: 1em; /* Adjust icon size relative to text */
+            font-size: 1em;
         }
-
 
         .logout-btn {
             background: rgba(255, 255, 255, 0.1);
@@ -102,7 +102,6 @@
             font-size: 0.9rem;
             transition: all 0.3s ease;
         }
-
         .logout-btn:hover {
             background: rgba(255, 255, 255, 0.2);
             transform: translateY(-1px);
@@ -121,7 +120,7 @@
             text-align: center;
             margin-bottom: 40px;
             padding: 30px 20px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); /* Snayvu gradient with transparency */
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -130,7 +129,7 @@
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #6366f1, #a855f7); /* Snayvu gradient */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -147,7 +146,7 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
             padding: 20px;
-            margin-bottom: 30px; /* Space between sections */
+            margin-bottom: 30px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
@@ -156,14 +155,14 @@
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #ff6b6b; /* Accent color for headers */
+            color: #a855f7; /* Snayvu accent color */
             text-align: center;
         }
 
         .section-content {
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Space between items in a section */
+            gap: 15px;
         }
 
         .story-item {
@@ -182,10 +181,10 @@
         }
         .story-thumbnail {
             width: 80px;
-            height: 45px; /* 16:9 aspect ratio for 80px width */
+            height: 45px;
             border-radius: 8px;
             overflow: hidden;
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0;
         }
         .story-thumbnail img {
             width: 100%;
@@ -206,16 +205,15 @@
             opacity: 0.7;
         }
         .story-genre-tag {
-            background: rgba(102, 126, 234, 0.2);
-            color: #667eea;
+            background: rgba(99, 102, 241, 0.2); /* Matching Snayvu accent */
+            color: #6366f1;
             padding: 3px 8px;
             border-radius: 5px;
             font-size: 0.75em;
             margin-left: 5px;
         }
 
-
-        /* Video Feed */
+        /* Video Feed (General Stream) */
         .video-feed {
             display: flex;
             flex-direction: column;
@@ -229,7 +227,6 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
         }
-
         .video-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -243,7 +240,6 @@
             padding-bottom: 56.25%; /* 16:9 aspect ratio */
             background: #000;
         }
-
         .video-container iframe {
             position: absolute;
             top: 0;
@@ -252,55 +248,6 @@
             height: 100%;
             border: none;
         }
-
-        /* REMOVED: Video Overlay for Non-Subscribers */
-        /*
-        .video-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            z-index: 5;
-            cursor: pointer;
-            transition: background 0.3s ease;
-            background-size: cover;
-            background-position: center;
-        }
-        .video-overlay:hover {
-            background: rgba(0, 0, 0, 0.8);
-        }
-        .overlay-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: white;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-        .subscribe-overlay-btn {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
-        }
-        .subscribe-overlay-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(255, 107, 107, 0.6);
-        }
-        */
-
 
         .video-info {
             padding: 20px;
@@ -371,13 +318,12 @@
         }
 
         .action-btn.liked {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            border-color: rgba(255, 107, 107, 0.3);
+            background: rgba(168, 85, 247, 0.2); /* Snayvu accent for liked state */
+            color: #a855f7;
+            border-color: rgba(168, 85, 247, 0.3);
         }
-
         .action-btn.liked:hover {
-            background: rgba(255, 107, 107, 0.3);
+            background: rgba(168, 85, 247, 0.3);
         }
 
         .share-menu {
@@ -385,6 +331,21 @@
             display: inline-block;
         }
 
+        .share-dropdown {
+            display: none;
+            position: absolute;
+            bottom: 100%; /* Position above button */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(25, 25, 25, 0.95); /* Darker background for dropdown */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            padding: 10px 0;
+            min-width: 200px;
+            z-index: 10;
+            animation: fadeIn 0.2s ease-out;
+        }
         .share-dropdown.active {
             display: block;
         }
@@ -396,49 +357,46 @@
             padding: 12px 16px;
             color: white;
             text-decoration: none;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-
         .share-option:last-child {
             border-bottom: none;
         }
-
         .share-option:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-
         .share-icon {
             font-size: 1.2rem;
         }
 
         /* Behind the Story */
         .behind-the-story-toggle {
-            display: block; /* Make it a block button */
-            width: fit-content; /* Fit to content width */
-            margin: 0 auto 15px; /* Center and add margin below */
+            display: block;
+            width: fit-content;
+            margin: 0 auto 15px;
             padding: 8px 15px;
-            background: rgba(102, 126, 234, 0.2); /* Light blue gradient color */
-            border: 1px solid rgba(102, 126, 234, 0.4);
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
             border-radius: 8px;
-            color: #667eea; /* Matching text color */
+            color: #6366f1;
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
         }
         .behind-the-story-toggle:hover {
-            background: rgba(102, 126, 234, 0.3);
+            background: rgba(99, 102, 241, 0.3);
             transform: translateY(-1px);
         }
         .behind-the-story-content {
-            background: rgba(255, 255, 255, 0.02); /* Very subtle background */
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 12px;
             padding: 15px;
             margin-top: 15px;
             border: 1px solid rgba(255, 255, 255, 0.05);
-            display: none; /* Hidden by default, toggled by JS */
-            animation: fadeIn 0.3s ease-out; /* Add a fade-in animation */
+            display: none;
+            animation: fadeIn 0.3s ease-out;
         }
         .behind-the-story-content p {
             font-size: 0.95rem;
@@ -449,7 +407,6 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
 
         /* Comments System */
         .comments-section {
@@ -467,7 +424,13 @@
         .comments-count {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #ff6b6b;
+            color: #a855f7; /* Snayvu accent for comments */
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .comments-count:hover {
+            opacity: 1;
+            transform: translateY(-1px);
         }
 
         .comments-toggle {
@@ -480,7 +443,6 @@
             font-size: 0.9rem;
             transition: all 0.3s ease;
         }
-
         .comments-toggle:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.3);
@@ -497,7 +459,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #6366f1, #a855f7); /* Snayvu gradient */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -524,13 +486,11 @@
             min-height: 44px;
             transition: all 0.3s ease;
         }
-
         .comment-input:focus {
             outline: none;
-            border-color: #ff6b6b;
+            border-color: #a855f7; /* Snayvu accent color */
             background: rgba(255, 255, 255, 0.15);
         }
-
         .comment-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
@@ -543,7 +503,7 @@
         }
 
         .comment-btn {
-            background: #ff6b6b;
+            background: #a855f7; /* Snayvu accent color */
             border: none;
             color: white;
             padding: 8px 16px;
@@ -553,12 +513,10 @@
             font-weight: 500;
             transition: all 0.3s ease;
         }
-
         .comment-btn:hover {
-            background: #ff5252;
+            background: #9333ea; /* Darker Snayvu accent */
             transform: translateY(-1px);
         }
-
         .comment-btn:disabled {
             background: rgba(255, 255, 255, 0.1);
             cursor: not-allowed;
@@ -575,7 +533,6 @@
             font-size: 0.9rem;
             transition: all 0.3s ease;
         }
-
         .cancel-btn:hover {
             background: rgba(255, 255, 255, 0.1);
         }
@@ -595,7 +552,6 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
         }
-
         .comment:hover {
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(255, 255, 255, 0.1);
@@ -614,7 +570,7 @@
 
         .comment-author {
             font-weight: 600;
-            color: #ff6b6b;
+            color: #a855f7; /* Snayvu accent color */
             font-size: 0.95rem;
         }
 
@@ -649,18 +605,15 @@
             border-radius: 6px;
             transition: all 0.3s ease;
         }
-
         .comment-like-btn:hover, .comment-reply-btn:hover {
             background: rgba(255, 255, 255, 0.1);
             color: white;
         }
-
         .comment-like-btn.liked {
-            color: #ff6b6b;
+            color: #a855f7; /* Snayvu accent color */
         }
-
         .comment-like-btn.liked:hover {
-            color: #ff5252;
+            color: #9333ea; /* Darker Snayvu accent */
         }
 
         .replies {
@@ -694,67 +647,49 @@
             margin-bottom: 10px;
             transition: all 0.3s ease;
         }
-
         .reply-input:focus {
             outline: none;
-            border-color: #ff6b6b;
+            border-color: #a855f7; /* Snayvu accent color */
             background: rgba(255, 255, 255, 0.15);
         }
-
         .reply-input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Loading State */
-        .loading {
+        /* Loading/Empty/Error States */
+        .loading, .empty-state {
             text-align: center;
             padding: 60px 20px;
+            opacity: 0.7;
         }
-
         .loading-spinner {
             width: 50px;
             height: 50px;
             border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #ff6b6b;
+            border-top: 3px solid #a855f7; /* Snayvu accent color */
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
         .loading-text {
             font-size: 1.1rem;
-            opacity: 0.7;
         }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            opacity: 0.7;
-        }
-
         .empty-icon {
             font-size: 4rem;
             margin-bottom: 20px;
         }
-
         .empty-title {
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 10px;
         }
-
         .empty-subtitle {
             font-size: 1rem;
-            line-height: 1.5;
         }
-
-        /* Error State */
         .error-message {
             background: rgba(255, 107, 107, 0.1);
             border: 1px solid rgba(255, 107, 107, 0.3);
@@ -764,23 +699,19 @@
             margin: 20px 0;
             text-align: center;
         }
-
         .comments-empty {
             text-align: center;
             padding: 30px 20px;
             opacity: 0.6;
         }
-
         .comments-empty-icon {
             font-size: 2.5rem;
             margin-bottom: 15px;
         }
-
         .comments-empty-text {
             font-size: 1rem;
             margin-bottom: 5px;
         }
-
         .comments-empty-subtitle {
             font-size: 0.9rem;
             opacity: 0.8;
@@ -791,152 +722,79 @@
             .header-content {
                 padding: 0 10px;
             }
-
             .user-email {
                 display: none;
             }
-
             .main-content {
                 padding: 15px;
                 margin-top: 70px;
             }
-
             .welcome-section {
                 margin-bottom: 30px;
                 padding: 20px 15px;
             }
-
             .welcome-title {
                 font-size: 1.5rem;
             }
-
             .welcome-subtitle {
                 font-size: 1rem;
             }
-
             .video-info {
                 padding: 15px;
             }
-
             .video-title {
                 font-size: 1.2rem;
             }
-
             .video-description {
                 font-size: 0.9rem;
             }
-
             .video-meta {
                 font-size: 0.8rem;
             }
-
             .video-actions {
                 flex-wrap: wrap;
                 gap: 10px;
-                align-items: flex-start; /* Changed from center to flex-start */
+                align-items: flex-start;
             }
-
             .action-btn {
                 flex: 1;
                 min-width: 100px;
                 justify-content: center;
             }
-
             .comment-avatar {
                 width: 35px;
                 height: 35px;
                 font-size: 1rem;
             }
-
             .comment-input {
                 font-size: 0.9rem;
                 padding: 10px 14px;
             }
-
             .comment-text {
                 font-size: 0.9rem;
             }
-
             .replies {
                 margin-left: 35px;
                 padding-left: 15px;
             }
-
             .reply-form {
                 margin-left: 35px;
             }
-
             .comments-header {
                 flex-direction: column;
                 gap: 15px;
                 align-items: flex-start;
             }
-
             .comment-footer {
                 gap: 10px;
             }
-
             .comment-like-btn, .comment-reply-btn {
                 padding: 4px 8px;
                 font-size: 0.8rem;
             }
         }
 
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .comment, .reply {
-            animation: slideIn 0.3s ease;
-        }
-
-        /* Like button animation */
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .comment-like-btn.liked {
-            animation: heartBeat 0.3s ease;
-        }
-
-        .action-btn.liked {
-            animation: heartBeat 0.3s ease;
-        }
-
-        /* Modal Styles */
+        /* Modals */
         .modal {
             position: fixed;
             z-index: 1000;
@@ -946,14 +804,13 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(5px);
-            display: flex; /* Added to center content */
-            justify-content: center; /* Added to center content */
-            align-items: center; /* Added to center content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-
         .modal-content {
             background: #0a0a0a;
-            margin: auto; /* Changed from 5% auto to auto */
+            margin: auto;
             padding: 30px;
             border-radius: 20px;
             width: 90%;
@@ -962,19 +819,16 @@
             max-height: 80vh;
             overflow-y: auto;
         }
-
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
         }
-
         .modal-title {
             font-size: 1.5rem;
             font-weight: 600;
         }
-
         .close-btn {
             background: none;
             border: none;
@@ -984,20 +838,16 @@
             opacity: 0.7;
             transition: opacity 0.3s ease;
         }
-
         .close-btn:hover {
             opacity: 1;
         }
 
         /* Likes and Comments Modal Content */
-        .likes-content,
-        .comments-content {
+        .likes-content, .comments-content {
             max-height: 400px;
             overflow-y: auto;
         }
-
-        .like-item,
-        .comment-item {
+        .like-item, .comment-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1007,52 +857,42 @@
             margin-bottom: 10px;
             border-radius: 12px;
         }
-
-        .like-item:last-child,
-        .comment-item:last-child {
+        .like-item:last-child, .comment-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-
         .user-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #6366f1, #a855f7); /* Snayvu gradient */
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             font-size: 1.1rem;
         }
-
         .user-details {
             flex: 1;
         }
-
         .user-name {
             font-weight: 600;
             font-size: 1rem;
             margin-bottom: 3px;
         }
-
         .user-email {
             font-size: 0.85rem;
             opacity: 0.7;
         }
-
-        .like-time,
-        .comment-time {
+        .like-time, .comment-time {
             font-size: 0.8rem;
             opacity: 0.6;
         }
-
         .comment-text {
             margin-top: 10px;
             padding: 10px;
@@ -1061,7 +901,6 @@
             font-size: 0.9rem;
             line-height: 1.4;
         }
-
         .comment-meta {
             display: flex;
             align-items: center;
@@ -1070,13 +909,11 @@
             font-size: 0.8rem;
             opacity: 0.7;
         }
-
         .comment-likes {
             display: flex;
             align-items: center;
             gap: 5px;
         }
-
         .delete-comment-btn {
             background: rgba(255, 107, 107, 0.2);
             border: 1px solid rgba(255, 107, 107, 0.3);
@@ -1087,46 +924,30 @@
             font-size: 0.8rem;
             transition: all 0.3s ease;
         }
-
         .delete-comment-btn:hover {
             background: rgba(255, 107, 107, 0.3);
             transform: translateY(-1px);
         }
-
         .empty-state-small {
             text-align: center;
             padding: 40px 20px;
             opacity: 0.6;
         }
-
         .empty-state-small .empty-icon {
             font-size: 2rem;
             margin-bottom: 15px;
         }
-
         .loading-small {
             text-align: center;
             padding: 40px 20px;
         }
-
         .loading-small .loading-spinner {
             width: 30px;
             height: 30px;
             margin: 0 auto 15px;
         }
 
-        /* Make comment count clickable */
-        .comments-count {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .comments-count:hover {
-            opacity: 1;
-            transform: translateY(-1px);
-        }
-
-        /* NEW: Floating Feedback Button */
+        /* Floating Feedback Button */
         .feedback-button-container {
             position: fixed;
             bottom: 20px;
@@ -1134,10 +955,10 @@
             z-index: 999;
         }
         .feedback-button {
-            background: linear-gradient(45deg, #4ade80, #22c55e); /* Green gradient */
+            background: linear-gradient(45deg, #4ade80, #22c55e);
             color: white;
             border: none;
-            border-radius: 50%; /* Circular button */
+            border-radius: 50%;
             width: 60px;
             height: 60px;
             font-size: 1.8rem;
@@ -1152,7 +973,7 @@
             transform: translateY(-3px) scale(1.05);
             box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
         }
-        /* NEW: Feedback Modal */
+        /* Feedback Modal */
         #feedback-modal .modal-content {
             max-width: 450px;
             padding: 30px;
@@ -1202,6 +1023,38 @@
             font-size: 0.9rem;
         }
 
+        /* NEW SNVYU Specific Styles */
+        .close-circle-tab {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-circle-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Placeholder for new UI elements */
+        .feature-placeholder {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px dashed rgba(99, 102, 241, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            color: #6366f1;
+        }
     </style>
 </head>
 <body>
@@ -1209,7 +1062,7 @@
 
     <div class="header">
         <div class="header-content">
-            <div class="logo">Stories</div>
+            <div class="logo">Snayvu</div>
             <div class="user-menu">
                 <div class="user-info-group">
                     <span class="user-email" id="user-email">Loading...</span>
@@ -1222,43 +1075,72 @@
 
     <div class="main-content">
         <div class="welcome-section">
-            <div class="welcome-title">Welcome to Voyce Stories</div>
+            <div class="welcome-title">Welcome to Snayvu</div>
             <div class="welcome-subtitle">
-                Discover captivating mysteries and emotional narratives.<br>
-                Your free storytelling experience awaits.
+                The super-platform for stories, streams, and shorts.<br>
+                One app. All formats. Maximum freedom.
+            </div>
+            <div class="feature-placeholder">
+                <p>💡 **Concept: If Netflix, TikTok, and YouTube had a baby, it’d be Snayvu.**</p>
+                <p style="margin-top: 10px;">Future integrations for multi-view, emotional reactions, and more coming soon!</p>
             </div>
         </div>
 
         <div class="dashboard-section">
-            <div class="section-header">This Month's Top Stories</div>
-            <div class="section-content" id="top-stories-list">
+            <div class="section-header">🎥 Premium Series (Netflix-style)</div>
+            <div class="section-content" id="premium-series-list">
                 <div class="story-item placeholder">
                     <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
-                        <div class="story-title">Loading Top Stories...</div>
-                        <div class="story-meta">Views: Loading</div>
+                        <div class="story-title">Loading Premium Series...</div>
+                        <div class="story-meta">Watch streaks, "Continue Watching", and trailers.</div>
                     </div>
+                </div>
+                <div class="feature-placeholder">
+                    <p>Track your binge-watching and discover new episodic content here.</p>
                 </div>
             </div>
         </div>
 
         <div class="dashboard-section">
-            <div class="section-header">Start a New Series</div>
-            <div class="section-content" id="new-series-list">
+            <div class="section-header">⏱ Shorts Feed (TikTok-style)</div>
+            <div class="section-content" id="shorts-feed-list">
                 <div class="story-item placeholder">
                     <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
-                        <div class="story-title">Discovering New Series...</div>
-                        <div class="story-meta">Genre: Loading</div>
+                        <div class="story-title">Discovering Viral Shorts...</div>
+                        <div class="story-meta">Instant reactions & mood-based algorithm.</div>
                     </div>
+                </div>
+                <div class="feature-placeholder">
+                    <p>Experience up to 90-second vertical videos. Look out for reaction clips and duets!</p>
                 </div>
             </div>
         </div>
 
-        <div class="video-feed" id="video-feed">
-            <div class="loading" id="loading">
-                <div class="loading-spinner"></div>
-                <div class="loading-text">Loading your stories...</div>
+        <div class="dashboard-section">
+            <div class="section-header">📺 Channels (YouTube-style)</div>
+            <div class="section-content" id="channels-list">
+                <div class="story-item placeholder">
+                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-details">
+                        <div class="story-title">Exploring Creator Channels...</div>
+                        <div class="story-meta">Long-form videos, live streams, and playlists.</div>
+                    </div>
+                </div>
+                <div class="feature-placeholder">
+                    <p>Dive deep into your favorite creators' worlds with their full content libraries and live events.</p>
+                    <button class="close-circle-tab">Explore Close Circle</button> </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-header">✨ Your Personalized Feed</div>
+            <div class="video-feed" id="video-feed">
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading your stories...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1269,9 +1151,7 @@
                 <div class="modal-title">Video Likes</div>
                 <button class="close-btn" onclick="closeLikesModal()">×</button>
             </div>
-            
-            <div class="likes-content" id="likes-content">
-                </div>
+            <div class="likes-content" id="likes-content"></div>
         </div>
     </div>
 
@@ -1281,9 +1161,7 @@
                 <div class="modal-title">Video Comments</div>
                 <button class="close-btn" onclick="closeCommentsModal()">×</button>
             </div>
-            
-            <div class="comments-content" id="comments-content">
-                </div>
+            <div class="comments-content" id="comments-content"></div>
         </div>
     </div>
 
@@ -1304,53 +1182,43 @@
     </div>
 
     <script>
-        // Define BASE_URL globally
         const BASE_URL = window.location.origin;
-
-        // Global variables
         let videos = [];
         let currentUser = null;
-        let videoLikes = {}; // Track video likes
-        let activeReplyForms = {}; // Track active reply forms
-        let currentUserName = 'User'; // Default username
+        let videoLikes = {};
+        let activeReplyForms = {};
+        let currentUserName = 'User';
 
-        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
             loadVideos();
-            loadTopStories(); // Load top stories from backend
-            loadNewSeries();  // Load new series from backend
+            loadPremiumSeries(); // New function for Netflix-style content
+            loadShortsFeed();    // New function for TikTok-style content
+            loadChannels();      // New function for YouTube-style content
         });
 
-        // Load user information
         async function loadUserInfo() {
             try {
                 const response = await fetch(`${BASE_URL}/api/auth/check`);
                 const data = await response.json();
-                
                 if (data.success) {
                     currentUser = data.user;
                     document.getElementById('user-email').textContent = currentUser.email;
                     currentUserName = currentUser.email.split('@')[0];
-                    updateDailyWatchStreak(); // Update streak based on current user after login
-                    // Removed: toggleSubscribePrompt(currentUser.has_active_subscription); // No longer needed
+                    updateDailyWatchStreak();
                 } else {
-                    // If auth check fails, redirect to login page
-                    window.location.href = `${BASE_URL}/`; 
+                    window.location.href = `${BASE_URL}/`;
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
-                // If there's a network error or other issue, redirect to login page
-                window.location.href = `${BASE_URL}/`; 
+                window.location.href = `${BASE_URL}/`;
             }
         }
 
-        // Load videos from API
         async function loadVideos() {
             try {
                 const response = await fetch(`${BASE_URL}/api/videos`);
                 const data = await response.json();
-                
                 if (data.success) {
                     videos = data.videos;
                     displayVideos(videos);
@@ -1363,12 +1231,9 @@
             }
         }
 
-        // Display videos in the feed
         function displayVideos(videosToShow) {
             const videoFeed = document.getElementById('video-feed');
             const loading = document.getElementById('loading');
-
-            // Hide loading
             loading.style.display = 'none';
 
             if (videosToShow.length === 0) {
@@ -1376,24 +1241,16 @@
                     <div class="empty-state">
                         <div class="empty-icon">🎬</div>
                         <div class="empty-title">No stories yet</div>
-                        <div class="empty-subtitle">
-                            New stories will appear here as they're added.<br>
-                            Check back soon for captivating content!
-                        </div>
+                        <div class="empty-subtitle">New content will appear here as it's added.</div>
                     </div>
                 `;
                 return;
             }
 
-            // Clear existing content
             videoFeed.innerHTML = '';
-
-            // Add videos to feed
             videosToShow.forEach(video => {
                 const videoCard = createVideoCard(video);
                 videoFeed.appendChild(videoCard);
-                
-                // Set initial like state (always as content is free)
                 const likeBtn = document.getElementById(`like-btn-${video.id}`);
                 const likeCount = document.getElementById(`like-count-${video.id}`);
                 if (video.user_liked) {
@@ -1401,94 +1258,52 @@
                 }
                 likeCount.textContent = video.likes_count || 0;
             });
-
-            // Load comments for each video (always as content is free)
             videosToShow.forEach(video => {
                 loadComments(video.id);
             });
         }
 
-        // Create video card element
         function createVideoCard(video) {
             const card = document.createElement('div');
             card.className = 'video-card';
+            const createdDate = new Date(video.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
+            const youtubeShareUrl = `https://youtu.be/${video.youtube_video_id}`;
+            const shareTitle = `${video.title} - Snayvu`;
+            const shareText = `Check out this amazing content on Snayvu: ${video.title}`;
 
-            const createdDate = new Date(video.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            const youtubeEmbedUrl = `https://www.youtube.com/embed/$${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
-            const youtubeShareUrl = `https://www.youtube.com/watch?v=$${video.youtube_video_id}`;
-            const shareTitle = `${video.title} - Voyce Stories`;
-            const shareText = `Check out this amazing story: ${video.title}`;
-
-            // Simplified video player HTML: always direct play
+            // All content is free, so no overlay needed
             const videoPlayerHtml = `
-                <iframe 
-                    src="${youtubeEmbedUrl}" 
-                    title="${escapeHtml(video.title)}"
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    allowfullscreen
-                    onload="updateDailyWatchStreak()"> </iframe>
+                <iframe src="${youtubeEmbedUrl}"
+                        title="${escapeHtml(video.title)}"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                        onload="updateDailyWatchStreak()"></iframe>
             `;
 
-            // Simplified video actions HTML: always show like/share
             const videoActionsHtml = `
                 <div class="video-actions">
                     <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
                         <span>❤️</span>
                         <span id="like-count-${video.id}">${video.likes_count || 0}</span>
                     </button>
-                    
                     <div class="share-menu">
                         <button class="action-btn" onclick="toggleShareMenu(${video.id})">
-                            <span>🔗</span>
-                            Share
+                            <span>🔗</span> Share
                         </button>
                         <div class="share-dropdown" id="share-menu-${video.id}">
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeShareUrl)}" 
-                                target="_blank" class="share-option">
-                                <span class="share-icon">📘</span>
-                                Facebook
-                            </a>
-                            <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeShareUrl)}&text=${encodeURIComponent(shareText)}" 
-                                target="_blank" class="share-option">
-                                <span class="share-icon">🐦</span>
-                                Twitter
-                            </a>
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeShareUrl)}" 
-                                target="_blank" class="share-option">
-                                <span class="share-icon">💼</span>
-                                LinkedIn
-                            </a>
-                            <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
-                                target="_blank" class="share-option">
-                                <span class="share-icon">💬</span>
-                                WhatsApp
-                            </a>
-                            <a href="${youtubeShareUrl}" 
-                                target="_blank" class="share-option">
-                                <span class="share-icon">📺</span>
-                                Watch on YouTube
-                            </a>
-                            <a href="mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" 
-                                class="share-option">
-                                <span class="share-icon">✉️</span>
-                                Email
-                            </a>
-                            <a href="#" onclick="copyToClipboard('${youtubeShareUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option">
-                                <span class="share-icon">📋</span>
-                                Copy YouTube Link
-                            </a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeShareUrl)}" target="_blank" class="share-option"><span class="share-icon">📘</span> Facebook</a>
+                            <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeShareUrl)}&text=${encodeURIComponent(shareText)}" target="_blank" class="share-option"><span class="share-icon">🐦</span> Twitter</a>
+                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeShareUrl)}" target="_blank" class="share-option"><span class="share-icon">💼</span> LinkedIn</a>
+                            <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" target="_blank" class="share-option"><span class="share-icon">💬</span> WhatsApp</a>
+                            <a href="${youtubeShareUrl}" target="_blank" class="share-option"><span class="share-icon">📺</span> Watch on YouTube</a>
+                            <a href="#" onclick="copyToClipboard('${youtubeShareUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option"><span class="share-icon">📋</span> Copy Link</a>
                         </div>
                     </div>
                 </div>
             `;
 
-            // Simplified comments section HTML: always show full comments
             const commentsSectionHtml = `
                 <div class="comments-section">
                     <div class="comments-header">
@@ -1497,32 +1312,24 @@
                             <span id="toggle-text-${video.id}">Show Comments</span>
                         </button>
                     </div>
-                    
                     <div class="comments-container" id="comments-${video.id}" style="display: none;">
                         <div class="comment-form">
                             <div class="comment-avatar">${generateAvatar(currentUserName)}</div>
                             <div class="comment-input-container">
-                                <textarea class="comment-input" 
-                                            id="comment-input-${video.id}" 
-                                            placeholder="Add a comment..."
-                                            rows="1"></textarea>
+                                <textarea class="comment-input" id="comment-input-${video.id}" placeholder="Add a comment..." rows="1"></textarea>
                                 <div class="comment-actions" id="comment-actions-${video.id}" style="display: none;">
                                     <button class="cancel-btn" onclick="cancelComment(${video.id})">Cancel</button>
                                     <button class="comment-btn" onclick="postComment(${video.id})">Post</button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="comments-list" id="comments-list-${video.id}">
-                            </div>
+                        <div class="comments-list" id="comments-list-${video.id}"></div>
                     </div>
                 </div>
             `;
 
             card.innerHTML = `
-                <div class="video-container">
-                    ${videoPlayerHtml}
-                </div>
+                <div class="video-container">${videoPlayerHtml}</div>
                 <div class="video-info">
                     <div class="video-title">${escapeHtml(video.title)}</div>
                     ${video.description ? `<div class="video-description">${escapeHtml(video.description)}</div>` : ''}
@@ -1530,7 +1337,6 @@
                         <span class="video-date">${createdDate}</span>
                         <span class="video-duration">New</span>
                     </div>
-                    
                     ${video.description ? `
                         <button class="behind-the-story-toggle" onclick="toggleBehindTheStory(${video.id})">Behind the Story</button>
                         <div class="behind-the-story-content" id="behind-the-story-${video.id}">
@@ -1538,198 +1344,70 @@
                             <p>My goal was to [Explain Creative Goal].</p>
                         </div>
                     ` : ''}
-
                     ${videoActionsHtml}
-                    
                     ${commentsSectionHtml}
                 </div>
             `;
 
-            // Add event listeners for comment input (always enabled now)
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() {
-                showCommentActions(video.id);
-            });
-
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() {
-                autoResizeTextarea(this);
-            });
-
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    postComment(video.id);
-                }
-            });
-
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() { showCommentActions(video.id); });
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() { autoResizeTextarea(this); });
+            card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postComment(video.id); } });
             return card;
         }
 
-        // Generate avatar from name
-        function generateAvatar(name) {
-            return name.charAt(0).toUpperCase();
-        }
-
-        // Toggle video like
+        function generateAvatar(name) { return name.charAt(0).toUpperCase(); }
         async function toggleVideoLike(videoId) {
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
                 const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
                 });
-
                 const data = await response.json();
-                
                 if (data.success) {
                     const likeBtn = document.getElementById(`like-btn-${videoId}`);
                     const likeCount = document.getElementById(`like-count-${videoId}`);
-                    
-                    if (data.liked) {
-                        likeBtn.classList.add('liked');
-                    } else {
-                        likeBtn.classList.remove('liked');
-                    }
-                    
+                    if (data.liked) { likeBtn.classList.add('liked'); } else { likeBtn.classList.remove('liked'); }
                     likeCount.textContent = data.likes_count;
                     videoLikes[videoId] = data.liked;
-                } else {
-                    console.error('Failed to toggle like:', data.message);
-                }
-            } catch (error) {
-                console.error('Error toggling like:', error);
-            }
+                } else { console.error('Failed to toggle like:', data.message); }
+            } catch (error) { console.error('Error toggling like:', error); }
         }
-
-        // Toggle share menu
         function toggleShareMenu(videoId) {
             const shareMenu = document.getElementById(`share-menu-${videoId}`);
             shareMenu.classList.toggle('active');
-            
-            // Close menu when clicking outside
             document.addEventListener('click', function(e) {
-                if (!e.target.closest('.share-menu')) {
-                    shareMenu.classList.remove('active');
-                }
+                if (!e.target.closest('.share-menu')) { shareMenu.classList.remove('active'); }
             });
         }
-
-        // Copy to clipboard
         function copyToClipboard(url, title) {
-            // Use window.location.origin to ensure absolute URL for sharing
-            // The original youtubeShareUrl is already an absolute YouTube URL, so we can use that directly.
             const linkToCopy = url;
-
             navigator.clipboard.writeText(linkToCopy).then(() => {
-                // Show success message
-                const Toast = {
-                    show: (message) => {
-                        const toast = document.createElement('div');
-                        toast.style.cssText = `
-                            position: fixed;
-                            top: 20px;
-                            right: 20px;
-                            background: #4CAF50;
-                            color: white;
-                            padding: 12px 24px;
-                            border-radius: 8px;
-                            z-index: 10000;
-                            font-size: 0.9rem;
-                        `;
-                        toast.textContent = message;
-                        document.body.appendChild(toast);
-                        
-                        setTimeout(() => {
-                            toast.remove();
-                        }, 3000);
-                    }
-                };
-                
-                Toast.show(`YouTube link copied! "${title}"`);
+                const Toast = { show: (message) => { const toast = document.createElement('div'); toast.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 0.9rem;`; toast.textContent = message; document.body.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); } };
+                Toast.show(`Link copied! "${title}"`);
             }).catch(() => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = linkToCopy;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                const Toast = {
-                    show: (message) => {
-                        const toast = document.createElement('div');
-                        toast.style.cssText = `
-                            position: fixed;
-                            top: 20px;
-                            right: 20px;
-                            background: #4CAF50;
-                            color: white;
-                            padding: 12px 24px;
-                            border-radius: 8px;
-                            z-index: 10000;
-                            font-size: 0.9rem;
-                        `;
-                        toast.textContent = message;
-                        document.body.appendChild(toast);
-                        
-                        setTimeout(() => {
-                            toast.remove();
-                        }, 3000);
-                    }
-                };
-                
-                Toast.show(`YouTube link copied! "${title}"`);
+                const textArea = document.createElement('textarea'); textArea.value = linkToCopy; document.body.appendChild(textArea); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea);
+                const Toast = { show: (message) => { const toast = document.createElement('div'); toast.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 0.9rem;`; toast.textContent = message; document.body.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); } };
+                Toast.show(`Link copied! "${title}"`);
             });
         }
-
-        // Load comments for a video
         async function loadComments(videoId) {
             try {
                 const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
                 const data = await response.json();
-                
-                if (data.success) {
-                    displayComments(videoId, data.comments);
-                    updateCommentCount(videoId, data.comments);
-                } else {
-                    console.error('Failed to load comments:', data.message);
-                }
-            } catch (error) {
-                console.error('Error loading comments:', error);
-            }
+                if (data.success) { displayComments(videoId, data.comments); updateCommentCount(videoId, data.comments); }
+                else { console.error('Failed to load comments:', data.message); }
+            } catch (error) { console.error('Error loading comments:', error); }
         }
-
-        // Display comments
         function displayComments(videoId, comments) {
             const commentsList = document.getElementById(`comments-list-${videoId}`);
-            
-            if (comments.length === 0) {
-                commentsList.innerHTML = `
-                    <div class="comments-empty">
-                        <div class="comments-empty-icon">💬</div>
-                        <div class="comments-empty-text">No comments yet</div>
-                        <div class="comments-empty-subtitle">Be the first to share your thoughts!</div>
-                    </div>
-                `;
-                return;
-            }
-
+            if (comments.length === 0) { commentsList.innerHTML = `<div class="comments-empty"><div class="comments-empty-icon">💬</div><div class="comments-empty-text">No comments yet</div><div class="comments-empty-subtitle">Be the first to share your thoughts!</div></div>`; return; }
             commentsList.innerHTML = comments.map(comment => renderComment(comment, videoId)).join('');
         }
-
-        // Render a single comment
         function renderComment(comment, videoId) {
-            const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join(''); // Corrected from comment.repllies
-            
-            // Determine if the current user can delete this comment (if it's their comment OR if they are an admin)
+            const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join('');
             const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.is_admin);
-            const deleteButton = canDelete ?
-                `<button class="delete-comment-btn" onclick="deleteComment(${comment.id}, ${videoId})">Delete</button>` : '';
-
+            const deleteButton = canDelete ? `<button class="delete-comment-btn" onclick="deleteComment(${comment.id}, ${videoId})">Delete</button>` : '';
             return `
                 <div class="comment">
                     <div class="comment-avatar">${generateAvatar(comment.author)}</div>
@@ -1740,23 +1418,13 @@
                         </div>
                         <div class="comment-text">${escapeHtml(comment.text)}</div>
                         <div class="comment-footer">
-                            <button class="comment-like-btn ${comment.liked ? 'liked' : ''}" 
-                                    onclick="toggleCommentLike(${comment.id})">
-                                <span>❤️</span>
-                                <span id="comment-like-count-${comment.id}">${comment.likes}</span>
-                            </button>
-                            <button class="comment-reply-btn" onclick="showReplyForm(${comment.id}, ${videoId})">
-                                <span>↩️</span>
-                                Reply
-                            </button>
+                            <button class="comment-like-btn ${comment.liked ? 'liked' : ''}" onclick="toggleCommentLike(${comment.id})"><span>❤️</span><span id="comment-like-count-${comment.id}">${comment.likes}</span></button>
+                            <button class="comment-reply-btn" onclick="showReplyForm(${comment.id}, ${videoId})"><span>↩️</span>Reply</button>
                             ${deleteButton}
                         </div>
                         ${repliesHtml ? `<div class="replies">${repliesHtml}</div>` : ''}
                         <div class="reply-form" id="reply-form-${comment.id}" style="display: none;">
-                            <textarea class="reply-input" 
-                                      id="reply-input-${comment.id}" 
-                                      placeholder="Write a reply..."
-                                      rows="2"></textarea>
+                            <textarea class="reply-input" id="reply-input-${comment.id}" placeholder="Write a reply..." rows="2"></textarea>
                             <div class="comment-actions">
                                 <button class="cancel-btn" onclick="cancelReply(${comment.id})">Cancel</button>
                                 <button class="comment-btn" onclick="postReply(${comment.id}, ${videoId})">Post</button>
@@ -1766,14 +1434,9 @@
                 </div>
             `;
         }
-
-        // Render a reply
         function renderReply(reply, videoId) {
-            // Determine if the current user can delete this reply (if it's their reply OR if they are an admin)
             const canDelete = currentUser && (currentUser.id === reply.user_id || currentUser.is_admin);
-            const deleteButton = canDelete ?
-                `<button class="delete-comment-btn" onclick="deleteComment(${reply.id}, ${videoId})">Delete</button>` : '';
-
+            const deleteButton = canDelete ? `<button class="delete-comment-btn" onclick="deleteComment(${reply.id}, ${videoId})">Delete</button>` : '';
             return `
                 <div class="reply">
                     <div class="comment-header">
@@ -1782,340 +1445,108 @@
                     </div>
                     <div class="comment-text">${escapeHtml(reply.text)}</div>
                     <div class="comment-footer">
-                        <button class="comment-like-btn ${reply.liked ? 'liked' : ''}" 
-                                onclick="toggleCommentLike(${reply.id})">
-                            <span>❤️</span>
-                            <span id="comment-like-count-${reply.id}">${reply.likes}</span>
-                        </button>
+                        <button class="comment-like-btn ${reply.liked ? 'liked' : ''}" onclick="toggleCommentLike(${reply.id})"><span>❤️</span><span id="comment-like-count-${reply.id}">${reply.likes}</span></button>
                         ${deleteButton}
                     </div>
                 </div>
             `;
         }
-
-        // Update comment count
         function updateCommentCount(videoId, comments) {
-            const totalComments = comments.reduce((total, comment) => {
-                return total + 1 + (comment.replies ? comment.replies.length : 0);
-            }, 0);
-            
-            const commentCount = document.getElementById(`comment-count-${videoId}`);
-            commentCount.textContent = `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`;
+            const totalComments = comments.reduce((total, comment) => { return total + 1 + (comment.replies ? comment.replies.length : 0); }, 0);
+            document.getElementById(`comment-count-${videoId}`).textContent = `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`;
         }
-
-        // Toggle comments visibility
         function toggleComments(videoId) {
             const commentsContainer = document.getElementById(`comments-${videoId}`);
             const toggleText = document.getElementById(`toggle-text-${videoId}`);
-            
             if (commentsContainer.style.display === 'none' || commentsContainer.style.display === '') {
-                commentsContainer.style.display = 'block';
-                toggleText.textContent = 'Hide Comments';
-            } else {
-                commentsContainer.style.display = 'none';
-                toggleText.textContent = 'Show Comments';
-            }
+                commentsContainer.style.display = 'block'; toggleText.textContent = 'Hide Comments';
+            } else { commentsContainer.style.display = 'none'; toggleText.textContent = 'Show Comments'; }
         }
-
-        // Show comment actions
-        function showCommentActions(videoId) {
-            const actions = document.getElementById(`comment-actions-${videoId}`);
-            actions.style.display = 'flex';
-        }
-
-        // Cancel comment
+        function showCommentActions(videoId) { document.getElementById(`comment-actions-${videoId}`).style.display = 'flex'; }
         function cancelComment(videoId) {
             const input = document.getElementById(`comment-input-${videoId}`);
-            const actions = document.getElementById(`comment-actions-${videoId}`);
-            
-            input.value = '';
-            input.style.height = 'auto';
-            actions.style.display = 'none';
-            input.blur();
+            input.value = ''; input.style.height = 'auto'; document.getElementById(`comment-actions-${videoId}`).style.display = 'none'; input.blur();
         }
-
-        // Post comment
         async function postComment(videoId) {
             const input = document.getElementById(`comment-input-${videoId}`);
-            const text = input.value.trim();
-
-            if (!text) return;
-
-            // Get the CSRF token from the hidden input field
+            const text = input.value.trim(); if (!text) return;
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({ text })
-                });
-
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ text }) });
                 const data = await response.json();
-                
-                if (data.success) {
-                    // Reset input
-                    input.value = '';
-                    input.style.height = 'auto';
-                    cancelComment(videoId);
-                    
-                    // Reload comments
-                    loadComments(videoId);
-                } else {
-                    console.error('Failed to post comment:', data.message);
-                }
-            } catch (error) {
-                console.error('Error posting comment:', error);
-            }
+                if (data.success) { input.value = ''; input.style.height = 'auto'; cancelComment(videoId); loadComments(videoId); }
+                else { console.error('Failed to post comment:', data.message); }
+            } catch (error) { console.error('Error posting comment:', error); }
         }
-
-        // Toggle comment like
         async function toggleCommentLike(commentId) {
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}/like`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                });
-
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                 const data = await response.json();
-                
                 if (data.success) {
                     const likeBtn = document.querySelector(`[onclick="toggleCommentLike(${commentId})"]`);
-                    const likeCount = document.getElementById(`comment-like-count-${commentId}`);
-                    
-                    if (data.liked) {
-                        likeBtn.classList.add('liked');
-                    } else {
-                        likeBtn.classList.remove('liked');
-                    }
-                    
-                    likeCount.textContent = data.likes_count;
-                } else {
-                    console.error('Failed to toggle comment like:', data.message);
-                }
-            } catch (error) {
-                console.error('Error toggling comment like:', error);
-            }
+                    if (data.liked) { likeBtn.classList.add('liked'); } else { likeBtn.classList.remove('liked'); }
+                    document.getElementById(`comment-like-count-${commentId}`).textContent = data.likes_count;
+                } else { console.error('Failed to toggle comment like:', data.message); }
+            } catch (error) { console.error('Error toggling comment like:', error); }
         }
-
-        // Show reply form
         function showReplyForm(commentId, videoId) {
-            // Hide any other active reply forms for this video
-            for (const id in activeReplyForms) {
-                if (activeReplyForms[id] === videoId && id != commentId) {
-                    cancelReply(id);
-                }
-            }
-
-            const replyForm = document.getElementById(`reply-form-${commentId}`);
-            replyForm.style.display = 'block';
-            
-            const replyInput = document.getElementById(`reply-input-${commentId}`);
-            replyInput.focus();
-            activeReplyForms[commentId] = videoId; // Mark this form as active
+            for (const id in activeReplyForms) { if (activeReplyForms[id] === videoId && id != commentId) { cancelReply(id); } }
+            document.getElementById(`reply-form-${commentId}`).style.display = 'block';
+            document.getElementById(`reply-input-${commentId}`).focus();
+            activeReplyForms[commentId] = videoId;
         }
-
-        // Cancel reply
         function cancelReply(commentId) {
-            const replyForm = document.getElementById(`reply-form-${commentId}`);
-            const replyInput = document.getElementById(`reply-input-${commentId}`);
-            
-            replyInput.value = '';
-            replyForm.style.display = 'none';
-            delete activeReplyForms[commentId]; // Remove from active forms
+            document.getElementById(`reply-input-${commentId}`).value = '';
+            document.getElementById(`reply-form-${commentId}`).style.display = 'none';
+            delete activeReplyForms[commentId];
         }
-
-        // Post reply
         async function postReply(commentId, videoId) {
             const replyInput = document.getElementById(`reply-input-${commentId}`);
-            const text = replyInput.value.trim();
-
-            if (!text) return;
-
-            // Get the CSRF token from the hidden input field
+            const text = replyInput.value.trim(); if (!text) return;
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({
-                        text,
-                        parent_id: commentId
-                    })
-                });
-
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ text, parent_id: commentId }) });
                 const data = await response.json();
-                
-                if (data.success) {
-                    // Reset input
-                    replyInput.value = '';
-                    cancelReply(commentId);
-                    
-                    // Reload comments
-                    loadComments(videoId);
-                } else {
-                    console.error('Failed to post reply:', data.message);
-                }
-            } catch (error) {
-                console.error('Error posting reply:', error);
-            }
+                if (data.success) { replyInput.value = ''; cancelReply(commentId); loadComments(videoId); }
+                else { console.error('Failed to post reply:', data.message); }
+            } catch (error) { console.error('Error posting reply:', error); }
         }
-
-        // Auto-resize textarea
-        function autoResizeTextarea(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-        }
-
-        // Escape HTML for display
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Show error message (for overall page issues)
+        function autoResizeTextarea(textarea) { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
         function showError(message) {
-            const videoFeed = document.getElementById('video-feed');
-            const loading = document.getElementById('loading');
-            
-            loading.style.display = 'none';
-            
-            videoFeed.innerHTML = `
-                <div class="error-message">
-                    ${message}
-                </div>
-            `;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('video-feed').innerHTML = `<div class="error-message">${message}</div>`;
         }
-
-        // Logout function
         async function logout() {
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    }
-                });
-
+                const response = await fetch(`${BASE_URL}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                 const data = await response.json();
-                
-                if (data.success) {
-                    window.location.href = `${BASE_URL}/`; // Redirect to login/home
-                } else {
-                    console.error('Logout failed:', data.message);
-                    // Optionally show a message to the user
-                }
-            } catch (error) {
-                console.error('Error during logout:', error);
-                // Force redirect even if logout fails due to network error
-                window.location.href = `${BASE_URL}/`;
-            }
+                if (data.success) { window.location.href = `${BASE_URL}/`; } else { console.error('Logout failed:', data.message); }
+            } catch (error) { console.error('Error during logout:', error); window.location.href = `${BASE_URL}/`; }
         }
-
-        // Close dropdowns and modals when clicking outside
         document.addEventListener('click', function(e) {
-            // Close all share menus
-            document.querySelectorAll('.share-dropdown').forEach(menu => {
-                // Ensure the click target is not within this share menu's button or itself
-                if (!e.target.closest('.share-menu') && menu.classList.contains('active')) {
-                    menu.classList.remove('active');
-                }
-            });
-
-            // Close modals when clicking outside the modal content
-            const likesModal = document.getElementById('likes-modal');
-            const commentsModal = document.getElementById('comments-modal');
-            const feedbackModal = document.getElementById('feedback-modal');
-
-            if (likesModal.style.display === 'block' && !e.target.closest('.modal-content')) {
-                closeLikesModal();
-            }
-            if (commentsModal.style.display === 'block' && !e.target.closest('.modal-content')) {
-                closeCommentsModal();
-            }
-            if (feedbackModal.style.display === 'block' && !e.target.closest('.modal-content') && !e.target.closest('.feedback-button-container')) {
-                closeFeedbackModal();
-            }
+            document.querySelectorAll('.share-dropdown').forEach(menu => { if (!e.target.closest('.share-menu') && menu.classList.contains('active')) { menu.classList.remove('active'); } });
+            const likesModal = document.getElementById('likes-modal'); const commentsModal = document.getElementById('comments-modal'); const feedbackModal = document.getElementById('feedback-modal');
+            if (likesModal.style.display === 'block' && !e.target.closest('.modal-content')) { closeLikesModal(); }
+            if (commentsModal.style.display === 'block' && !e.target.closest('.modal-content')) { closeCommentsModal(); }
+            if (feedbackModal.style.display === 'block' && !e.target.closest('.modal-content') && !e.target.closest('.feedback-button-container')) { closeFeedbackModal(); }
         });
-
-        // View video comments (for admin/management - note: your /api/admin/videos/:id/comments route is not defined in app.py)
-        // This function will need a corresponding backend endpoint.
         async function viewVideoComments(videoId) {
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                document.getElementById('comments-content').innerHTML = `
-                    <div class="loading-small">
-                        <div class="loading-spinner"></div>
-                        <div>Loading comments...</div>
-                    </div>
-                `;
-                
+                document.getElementById('comments-content').innerHTML = `<div class="loading-small"><div class="loading-spinner"></div><div>Loading comments...</div></div>`;
                 document.getElementById('comments-modal').style.display = 'block';
-                
-                // Assuming this is an admin-specific endpoint that might need an Admin check
-                const response = await fetch(`${BASE_URL}/api/admin/videos/${videoId}/comments`, {
-                    headers: {
-                        'X-CSRFToken': csrfToken
-                    }
-                });
+                const response = await fetch(`${BASE_URL}/api/admin/videos/${videoId}/comments`, { headers: { 'X-CSRFToken': csrfToken } });
                 const data = await response.json();
-                
-                if (data.success) {
-                    displayCommentsModal(data.comments);
-                } else {
-                    document.getElementById('comments-content').innerHTML = `
-                        <div class="empty-state-small">
-                            <div class="empty-icon">❌</div>
-                            <div>Failed to load comments: ${escapeHtml(data.message || 'Unknown error')}</div>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading comments for modal:', error);
-                document.getElementById('comments-content').innerHTML = `
-                    <div class="empty-state-small">
-                        <div class="empty-icon">❌</div>
-                        <div>Failed to load comments due to a connection error.</div>
-                    </div>
-                `;
-            }
+                if (data.success) { displayCommentsModal(data.comments); }
+                else { document.getElementById('comments-content').innerHTML = `<div class="empty-state-small"><div class="empty-icon">❌</div><div>Failed to load comments: ${escapeHtml(data.message || 'Unknown error')}</div></div>`; }
+            } catch (error) { console.error('Error loading comments for modal:', error); document.getElementById('comments-content').innerHTML = `<div class="empty-state-small"><div class="empty-icon">❌</div><div>Failed to load comments due to a connection error.</div></div>`; }
         }
-
-        // Display comments in modal (likely used by admin panel)
         function displayCommentsModal(comments) {
             const commentsContent = document.getElementById('comments-content');
-            
-            if (comments.length === 0) {
-                commentsContent.innerHTML = `
-                    <div class="empty-state-small">
-                        <div class="empty-icon">💬</div>
-                        <div>No comments yet</div>
-                        <div style="margin-top: 5px; font-size: 0.8rem;">Be the first to comment!</div>
-                    </div>
-                `;
-                return;
-            }
-
+            if (comments.length === 0) { commentsContent.innerHTML = `<div class="empty-state-small"><div class="empty-icon">💬</div><div>No comments yet</div><div style="margin-top: 5px; font-size: 0.8rem;">Be the first to comment!</div></div>`; return; }
             commentsContent.innerHTML = comments.map(comment => `
                 <div class="comment-item">
                     <div class="user-info">
@@ -2134,121 +1565,41 @@
                 </div>
             `).join('');
         }
-
-        // Delete comment from modal (for admin access)
         async function deleteCommentFromModal(commentId) {
-            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-                return;
-            }
-            
-            // Get the CSRF token from the hidden input field
+            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) { return; }
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRFToken': csrfToken
-                    }
-                });
-                
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
                 const result = await response.json();
-                
                 if (result.success) {
-                    // Remove the comment from display
                     const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
-                    if (commentElement) {
-                        commentElement.remove();
-                    }
-                    // Also refresh comments in the main feed if it's open, and update the count
-                    videos.forEach(video => {
-                        if (document.getElementById(`comments-${video.id}`).style.display === 'block') {
-                            loadComments(video.id);
-                        }
-                    });
-                } else {
-                    alert('Failed to delete comment: ' + (result.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error deleting comment:', error);
-                alert('Failed to delete comment. Please try again.');
-            }
+                    if (commentElement) { commentElement.remove(); }
+                    videos.forEach(video => { if (document.getElementById(`comments-${video.id}`).style.display === 'block') { loadComments(video.id); } });
+                } else { alert('Failed to delete comment: ' + (result.message || 'Unknown error')); }
+            } catch (error) { console.error('Error deleting comment:', error); alert('Failed to delete comment. Please try again.'); }
         }
-
-        // Delete comment from main feed (by author or admin)
         async function deleteComment(commentId, videoId) {
-            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-                return;
-            }
-            
+            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) { return; }
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    }
-                });
-                
+                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                 const result = await response.json();
-                
-                if (result.success) {
-                    loadComments(videoId); // Reload comments for the video to reflect deletion
-                } else {
-                    alert('Failed to delete comment: ' + (result.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error deleting comment:', error);
-                alert('Failed to delete comment. Please try again.');
-            }
+                if (result.success) { loadComments(videoId); } else { alert('Failed to delete comment: ' + (result.message || 'Unknown error')); }
+            } catch (error) { console.error('Error deleting comment:', error); alert('Failed to delete comment. Please try again.'); }
         }
-
-
-        // Close comments modal
-        function closeCommentsModal() {
-            document.getElementById('comments-modal').style.display = 'none';
-        }
-
-        // Close likes modal
-        function closeLikesModal() {
-            document.getElementById('likes-modal').style.display = 'none';
-        }
-
-        // Format time ago
+        function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
+        function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
         function formatTimeAgo(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diff = now - date;
-            
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
-            
-            if (days > 0) {
-                return `${days} day${days > 1 ? 's' : ''} ago`;
-            } else if (hours > 0) {
-                return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-            } else if (minutes > 0) {
-                return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-            } else {
-                return 'Just now';
-            }
+            const date = new Date(dateString); const now = new Date(); const diff = now - date;
+            const minutes = Math.floor(diff / 60000); const hours = Math.floor(diff / 3600000); const days = Math.floor(diff / 86400000);
+            if (days > 0) { return `${days} day${days > 1 ? 's' : ''} ago`; } else if (hours > 0) { return `${hours} hour${hours > 1 ? 's' : ''} ago`; } else if (minutes > 0) { return `${minutes} minute${minutes > 1 ? 's' : ''} ago`; } else { return 'Just now'; }
         }
-
-        // Helper function to render a story item (for Top Stories and New Series sections)
         function renderStoryItemHtml(video, type) {
-            const youtubeShareUrl = `https://www.youtube.com/watch?v=$${video.youtube_video_id}`;
+            const youtubeShareUrl = `https://youtu.be/${video.youtube_video_id}`;
             let metaInfo = '';
-            if (type === 'top-story') {
-                metaInfo = `Likes: ${video.likes_count || 0}`;
-            } else if (type === 'new-series' && video.genre) {
-                metaInfo = `Genre: ${escapeHtml(video.genre)}`;
-            } else {
-                metaInfo = `Added: ${new Date(video.created_at).toLocaleDateString()}`;
-            }
-
+            if (type === 'top-story') { metaInfo = `Likes: ${video.likes_count || 0}`; }
+            else if (type === 'new-series' && video.genre) { metaInfo = `Genre: ${escapeHtml(video.genre)}`; }
+            else { metaInfo = `Added: ${new Date(video.created_at).toLocaleDateString()}`; }
             return `
                 <div class="story-item" onclick="window.open('${youtubeShareUrl}', '_blank');">
                     <div class="story-thumbnail"><img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/80x45/1a1a1a/888?text=Video'"></div>
@@ -2260,75 +1611,73 @@
             `;
         }
 
-        // Feature 11 - Load This Month's Top Stories
-        async function loadTopStories() {
-            const topStoriesList = document.getElementById('top-stories-list');
-            topStoriesList.innerHTML = `
+        // Renamed and adapted from loadTopStories and loadNewSeries
+        async function loadCategorizedContent(sectionId, tag, title, emptyMessage) {
+            const listElement = document.getElementById(sectionId);
+            listElement.innerHTML = `
                 <div class="story-item placeholder">
                     <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
                     <div class="story-details">
-                        <div class="story-title">Loading Top Stories...</div>
+                        <div class="story-title">Loading ${title}...</div>
                         <div class="story-meta"></div>
                     </div>
                 </div>
-            `; // Show loading state
+            `;
 
             try {
-                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=Top Story`);
+                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
                 const data = await response.json();
 
                 if (data.success && data.videos.length > 0) {
-                    topStoriesList.innerHTML = data.videos.map(video => renderStoryItemHtml(video, 'top-story')).join('');
+                    listElement.innerHTML = data.videos.map(video => renderStoryItemHtml(video, tag.toLowerCase().replace(' ', '-'))).join('');
                 } else {
-                    topStoriesList.innerHTML = `
+                    listElement.innerHTML = `
                         <div class="empty-state-small" style="padding: 10px 0;">
-                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">⭐</div>
-                            <div>No Top Stories yet.</div>
-                            <div style="font-size: 0.8rem; opacity: 0.7;">Add videos and mark them as 'Top Story' in admin.</div>
+                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">${emptyMessage.icon}</div>
+                            <div>${emptyMessage.text}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">${emptyMessage.subtext}</div>
                         </div>
                     `;
                 }
             } catch (error) {
-                console.error('Error loading top stories:', error);
-                topStoriesList.innerHTML = `<div class="empty-state-small" style="padding: 10px 0; color: #ff6b6b;"><div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">❌</div>Failed to load Top Stories.</div>`;
+                console.error(`Error loading ${title}:`, error);
+                listElement.innerHTML = `<div class="empty-state-small" style="padding: 10px 0; color: #ff6b6b;"><div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">❌</div>Failed to load ${title}.</div>`;
             }
         }
 
-        // Feature 12 - Load New Series
-        async function loadNewSeries() {
-            const newSeriesList = document.getElementById('new-series-list');
-            newSeriesList.innerHTML = `
+        async function loadPremiumSeries() {
+            await loadCategorizedContent('premium-series-list', 'Premium Series', 'Premium Series', {
+                icon: '🎬',
+                text: 'No Premium Series yet.',
+                subtext: 'Mark videos as "Premium Series" in admin to see them here.'
+            });
+        }
+
+        async function loadShortsFeed() {
+            await loadCategorizedContent('shorts-feed-list', 'Shorts', 'Shorts Feed', {
+                icon: '⏱️',
+                text: 'No Shorts yet.',
+                subtext: 'Add short-form content and mark them as "Shorts" in admin.'
+            });
+        }
+
+        async function loadChannels() {
+            // For now, this is just a placeholder. True channel functionality would require distinct backend data.
+            const channelsList = document.getElementById('channels-list');
+            channelsList.innerHTML = `
                 <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
+                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Creators" alt="Loading"></div>
                     <div class="story-details">
-                        <div class="story-title">Discovering New Series...</div>
-                        <div class="story-meta"></div>
+                        <div class="story-title">Loading Top Channels...</div>
+                        <div class="story-meta">Explore diverse creators.</div>
                     </div>
                 </div>
-            `; // Show loading state
-
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=New Series`);
-                const data = await response.json();
-
-                if (data.success && data.videos.length > 0) {
-                    newSeriesList.innerHTML = data.videos.map(video => renderStoryItemHtml(video, 'new-series')).join('');
-                } else {
-                    newSeriesList.innerHTML = `
-                        <div class="empty-state-small" style="padding: 10px 0;">
-                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">🆕</div>
-                            <div>No New Series yet.</div>
-                            <div style="font-size: 0.8rem; opacity: 0.7;">Add videos and mark them as 'New Series' in admin.</div>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading new series:', error);
-                newSeriesList.innerHTML = `<div class="empty-state-small" style="padding: 10px 0; color: #ff6b6b;"><div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">❌</div>Failed to load New Series.</div>`;
-            }
+            `;
+            // If you had a /api/channels endpoint, you would fetch and render them here.
+            // Example: const response = await fetch(`${BASE_URL}/api/channels`);
+            // This is primarily for visual representation of the concept.
         }
 
-        // Feature 13 - Behind the Story Toggle (already implemented in previous step)
         function toggleBehindTheStory(videoId) {
             const contentDiv = document.getElementById(`behind-the-story-${videoId}`);
             if (contentDiv) {
@@ -2340,12 +1689,11 @@
             }
         }
 
-        // Feature 14 - Feedback Box Modal (already implemented in previous step)
         function showFeedbackModal() {
-            document.getElementById('feedback-modal').style.display = 'flex'; // Use flex to center
-            document.getElementById('feedback-text').value = ''; // Clear previous text
-            document.getElementById('feedback-message').style.display = 'none'; // Hide messages
-            document.getElementById('feedback-message').className = 'feedback-success-message'; // Reset class
+            document.getElementById('feedback-modal').style.display = 'flex';
+            document.getElementById('feedback-text').value = '';
+            document.getElementById('feedback-message').style.display = 'none';
+            document.getElementById('feedback-message').className = 'feedback-success-message';
         }
 
         function closeFeedbackModal() {
@@ -2355,7 +1703,7 @@
         async function submitFeedback() {
             const feedbackText = document.getElementById('feedback-text').value.trim();
             const feedbackMessageDiv = document.getElementById('feedback-message');
-            const csrfToken = document.getElementById('csrf_token').value; // Get the CSRF token
+            const csrfToken = document.getElementById('csrf_token').value;
 
             if (!feedbackText) {
                 feedbackMessageDiv.textContent = 'Feedback cannot be empty.';
@@ -2365,29 +1713,22 @@
             }
 
             feedbackMessageDiv.textContent = 'Sending feedback...';
-            feedbackMessageDiv.className = 'feedback-success-message'; // Use success class for loading too
+            feedbackMessageDiv.className = 'feedback-success-message';
             feedbackMessageDiv.style.display = 'block';
 
             try {
                 const response = await fetch(`${BASE_URL}/api/feedback`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                     body: JSON.stringify({ feedback: feedbackText })
                 });
-
                 const data = await response.json();
-
-                if (response.ok) { // Check response.ok for 2xx status codes
+                if (response.ok) {
                     feedbackMessageDiv.textContent = 'Thank you for your feedback!';
                     feedbackMessageDiv.className = 'feedback-success-message';
-                    document.getElementById('feedback-text').value = ''; // Clear text area
-                    setTimeout(() => closeFeedbackModal(), 2000); // Close after 2 seconds
-                } else {
-                    throw new Error(data.message || 'Failed to send feedback.');
-                }
+                    document.getElementById('feedback-text').value = '';
+                    setTimeout(() => closeFeedbackModal(), 2000);
+                } else { throw new Error(data.message || 'Failed to send feedback.'); }
             } catch (error) {
                 console.error('Error sending feedback:', error);
                 feedbackMessageDiv.textContent = error.message || 'Error sending feedback. Please try again.';
@@ -2395,62 +1736,23 @@
             }
         }
 
-        // Feature 15 - Daily Watch Streak (Now fully integrated with backend API)
         async function updateDailyWatchStreak() {
             const streakCountElement = document.getElementById('streak-count');
             const csrfToken = document.getElementById('csrf_token').value;
-
             try {
-                // 1. Get current streak from backend
-                const getResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, {
-                    method: 'GET',
-                    headers: { 'X-CSRFToken': csrfToken }
-                });
+                const getResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'GET', headers: { 'X-CSRFToken': csrfToken } });
                 const getData = await getResponse.json();
-
                 if (getData.success) {
                     streakCountElement.textContent = getData.streak;
-
-                    // 2. Send POST to update streak for today (assuming a video was 'watched' by loading the dashboard)
-                    const postResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
-                        }
-                    });
+                    const postResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                     const postData = await postResponse.json();
-
                     if (postData.success) {
-                        // Update UI again if streak actually changed
                         streakCountElement.textContent = postData.streak;
                         console.log('Daily watch streak updated to:', postData.streak);
-                    } else {
-                        console.warn('Failed to update streak:', postData.message);
-                    }
-                } else {
-                    console.error('Failed to load streak:', getData.message);
-                    streakCountElement.textContent = 'N/A'; // Indicate error
-                }
-            } catch (error) {
-                console.error('Error updating daily watch streak:', error);
-                streakCountElement.textContent = 'N/A';
-            }
+                    } else { console.warn('Failed to update streak:', postData.message); }
+                } else { console.error('Failed to load streak:', getData.message); streakCountElement.textContent = 'N/A'; }
+            } catch (error) { console.error('Error updating daily watch streak:', error); streakCountElement.textContent = 'N/A'; }
         }
-
-        // Removed: Function to toggle subscribe prompt visibility
-        /*
-        function toggleSubscribePrompt(hasActiveSubscription) {
-            const subscribePromptSection = document.getElementById('subscribe-prompt-section');
-            if (subscribePromptSection) {
-                if (hasActiveSubscription) {
-                    subscribePromptSection.style.display = 'none';
-                } else {
-                    subscribePromptSection.style.display = 'block';
-                }
-            }
-        }
-        */
     </script>
 </body>
 </html>
