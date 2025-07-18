@@ -390,6 +390,42 @@ def logout():
     flash('You have been logged out successfully.', 'info')
     return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
 
+# FILE: app.py
+
+# ... (previous code) ...
+
+@app.route('/api/auth/logout', methods=['POST'])
+@login_required
+def logout():
+    """User logout endpoint"""
+    session.clear()
+    flash('You have been logged out successfully.', 'info')
+    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
+
+# START anD PASTE THE NEW CODE HERE
+@app.route('/api/videos/<int:video_id>/view', methods=['POST'])
+@login_required
+def record_video_view(video_id):
+    """Records a single view for a video when a user starts playing it."""
+    video = Video.query.get(video_id)
+    if not video:
+        # Even if the video isn't found, we return a success to not bother the user
+        return jsonify({'success': True, 'message': 'Video not found, but acknowledged.'}), 200
+    
+    try:
+        # Increment the view count safely
+        if video.views_count is None:
+            video.views_count = 0
+        video.views_count += 1
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'View recorded'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error recording view for video {video_id}: {e}")
+        return jsonify({'success': False, 'message': 'Server error while recording view'}), 500
+# END THE NEW CODE HERE
+
 @app.route('/api/auth/check')
 @login_required
 def auth_check():
