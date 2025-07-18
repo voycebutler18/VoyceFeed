@@ -86,8 +86,8 @@ class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    youtube_url = db.Column(db.String(500), nullable=True) # Made nullable for local uploads
-    youtube_video_id = db.Column(db.String(50), nullable=True) # Made nullable for local uploads
+    youtube_url = db.Column(db.String(500), nullable=True) # Now stores playback URL for both YouTube and local files
+    youtube_video_id = db.Column(db.String(50), nullable=True) # Stores YouTube ID or local placeholder
     thumbnail_url = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)
     likes_count = db.Column(db.Integer, default=0)
@@ -95,7 +95,7 @@ class Video(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     genre = db.Column(db.String(100), nullable=True)
     featured_tag = db.Column(db.String(50), nullable=True)
-    local_file_path = db.Column(db.String(500), nullable=True) # Path on server for uploaded videos
+    local_file_path = db.Column(db.String(500), nullable=True) # Path on server (ONLY for locally uploaded files)
     hashtags = db.Column(db.String(500), nullable=True)
     duration_seconds = db.Column(db.Integer, nullable=True)
     is_short = db.Column(db.Boolean, default=False)
@@ -234,7 +234,7 @@ def extract_youtube_video_id(url):
 
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
-    return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Corrected to standard YouTube thumbnail URL
+    return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Standard YouTube thumbnail URL
 
 def login_required(f):
     """Decorator to require login"""
@@ -476,8 +476,8 @@ def get_videos():
             'id': video.id,
             'title': video.title,
             'description': video.description,
-            'youtube_url': video.youtube_url,
-            'youtube_video_id': video.youtube_video_id,
+            'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
+            'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
             'thumbnail_url': video.thumbnail_url,
             'likes_count': video.likes_count,
             'user_liked': user_liked,
@@ -704,7 +704,7 @@ def admin_get_videos():
             source_url_for_admin = None
             if video.local_file_path:
                 source_url_for_admin = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
-            elif video.youtube_url:
+            elif video.youtube_url: # This now holds the YouTube URL (for YouTube videos)
                 source_url_for_admin = video.youtube_url
 
             video_list.append({
@@ -978,7 +978,7 @@ def admin_update_video(video_id):
             try:
                 video.duration_seconds = int(data['duration_seconds'])
             except ValueError:
-                return jsonify({'success': False, 'message': 'Invalid duration format (must be a number)'}), 400
+                return jsonify({'success': False, 'message': 'Invalid duration format'}), 400
         else: # If empty string or None, set to None in DB
             video.duration_seconds = None
 
@@ -1208,7 +1208,7 @@ def search_videos():
             db.or_(
                 Video.title.ilike(f'%{query}%'),
                 Video.description.ilike(f'%{query}%'),
-                Video.hashtags.ilike(f'%{query}%')
+                Video.hashtags.ilike(f'%{query}%') # Search by hashtags
             )
         ).order_by(Video.created_at.desc()).all()
         
@@ -1525,11 +1525,10 @@ def update_watch_history(video_id):
         logger.error(f"Error updating watch history for user {user_id}, video {video_id}: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update watch history'}), 500
 
-# --- VIDEO UPLOAD ROUTE ---
+# --- NEW: VIDEO UPLOAD ROUTE ---
 # This route is specifically for user uploads via dashboard, not admin panel.
 # Admin panel uses admin_add_video, which is now unified.
-# If users can upload from dashboard without being admin, keep this.
-# For now, it mirrors functionality but is intended for frontend dashboard upload form.
+# If users can upload from dashboard without being admin, this route is appropriate for them.
 @app.route('/api/upload-video', methods=['POST'])
 @login_required
 @limiter.limit("5 per hour")
