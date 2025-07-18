@@ -295,7 +295,7 @@
             background-color: rgba(255, 255, 255, 0.1);
             border-radius: 5px;
             margin-top: 10px;
-            display: none; /* Hidden by default */
+            display: none;
         }
 
         .progress-bar {
@@ -795,7 +795,7 @@
                 <div class="video-source-container" id="youtube-source-container">
                     <div class="form-group">
                         <label for="youtube-url">YouTube URL (Paste link here)</label>
-                        <input type="url" id="youtube-url" name="youtube_url" placeholder="http://youtube.com/watch?v=..." required>
+                        <input type="url" id="youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." required>
                     </div>
                 </div>
 
@@ -876,12 +876,12 @@
                 
                 <div class="form-group" id="edit-youtube-url-group">
                     <label for="edit-youtube-url">YouTube URL (Paste link here)</label>
-                    <input type="url" id="edit-youtube-url" name="youtube_url" placeholder="http://youtube.com/watch?v=..." readonly>
+                    <input type="url" id="edit-youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." readonly>
                     <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">YouTube URL cannot be changed after creation.</small>
                 </div>
 
                 <div class="form-group" id="edit-local-file-path-group" style="display:none;">
-                    <label for="edit-local-file-path">Local File Path</label>
+                    <label for="edit-local-file-path">Local File URL</label>
                     <input type="text" id="edit-local-file-path" name="local_file_path" readonly>
                     <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">Local file path cannot be changed.</small>
                 </div>
@@ -959,36 +959,38 @@
             // Event listeners for video source type radio buttons
             document.querySelectorAll('input[name="video_source_type"]').forEach(radio => {
                 radio.addEventListener('change', function() {
-                    toggleVideoSourceInput(this.value);
+                    toggleAddVideoSourceInput(this.value);
                 });
             });
 
             // Handle the initial state when page loads (default is YouTube URL)
-            toggleVideoSourceInput(document.querySelector('input[name="video_source_type"]:checked').value);
+            toggleAddVideoSourceInput(document.querySelector('input[name="video_source_type"]:checked').value);
         });
 
-        // Function to toggle between YouTube URL and File Upload inputs
-        function toggleVideoSourceInput(sourceType) {
+        // Function to toggle between YouTube URL and File Upload inputs in ADD form
+        function toggleAddVideoSourceInput(sourceType) {
             const youtubeContainer = document.getElementById('youtube-source-container');
             const fileUploadContainer = document.getElementById('file-upload-source-container');
             const youtubeUrlInput = document.getElementById('youtube-url');
             const videoFileInput = document.getElementById('video-file');
             const durationInput = document.getElementById('duration-seconds');
             const isShortCheckbox = document.getElementById('is-short-video');
+            const progressContainer = document.getElementById('upload-progress-container');
 
             if (sourceType === 'youtube_url') {
                 youtubeContainer.style.display = 'block';
                 youtubeUrlInput.setAttribute('required', 'required');
                 fileUploadContainer.style.display = 'none';
                 videoFileInput.removeAttribute('required');
-                durationInput.removeAttribute('required'); // Duration not required for YT URL
+                durationInput.removeAttribute('required');
                 isShortCheckbox.checked = false; // Reset short status for YT
+                progressContainer.style.display = 'none'; // Hide progress bar
             } else if (sourceType === 'file_upload') {
                 youtubeContainer.style.display = 'none';
                 youtubeUrlInput.removeAttribute('required');
                 fileUploadContainer.style.display = 'block';
                 videoFileInput.setAttribute('required', 'required');
-                durationInput.setAttribute('required', 'required'); // Duration required for local upload
+                durationInput.setAttribute('required', 'required');
             }
         }
 
@@ -1044,7 +1046,7 @@
             videoList.innerHTML = videos.map(video => {
                 const sourceLink = video.local_file_path ? 
                     `<a href="${video.local_file_path}" target="_blank" style="color: #4ade80;">View File</a>` : 
-                    `<a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>`;
+                    (video.youtube_url ? `<a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>` : 'N/A');
 
                 const durationDisplay = video.duration_seconds !== null ? 
                     `${formatDuration(video.duration_seconds)}` : 'N/A';
@@ -1105,21 +1107,16 @@
             formData.append('featured_tag', document.getElementById('video-featured-tag').value);
             formData.append('video_source_type', sourceType);
 
-            // Add source-specific fields
+            // Add source-specific fields and validation
             if (sourceType === 'youtube_url') {
                 const youtubeUrl = document.getElementById('youtube-url').value.trim();
                 if (!youtubeUrl) { showMessage('YouTube URL is required', 'error'); return; }
                 if (!isValidYouTubeUrl(youtubeUrl)) { showMessage('Please enter a valid YouTube URL', 'error'); return; }
                 formData.append('youtube_url', youtubeUrl);
-                // For YT, is_short & duration are manual override, if provided.
-                if (document.getElementById('is-short-video').checked) {
-                    formData.append('is_short', 'true');
-                    formData.append('duration_seconds', document.getElementById('duration-seconds').value.trim() || '');
-                } else {
-                    formData.append('is_short', 'false');
-                    formData.append('duration_seconds', '');
-                }
-
+                // For YT, is_short & duration are optional
+                formData.append('is_short', document.getElementById('is-short-video').checked ? 'true' : 'false');
+                formData.append('duration_seconds', document.getElementById('duration-seconds').value.trim() || ''); // Can be empty for YT
+                
                 // If adding YouTube URL, send JSON
                 const data = Object.fromEntries(formData.entries()); // Convert FormData to plain object for JSON
                 setButtonLoading(true);
@@ -1145,6 +1142,7 @@
 
                 if (!videoFile) { showMessage('Please select a video file', 'error'); return; }
                 if (!durationSeconds) { showMessage('Video duration is required for uploaded files', 'error'); return; }
+                if (isNaN(durationSeconds) || parseInt(durationSeconds) < 0) { showMessage('Duration must be a positive number', 'error'); return; }
                 
                 formData.append('video_file', videoFile);
                 formData.append('duration_seconds', durationSeconds);
@@ -1215,11 +1213,8 @@
                 return;
             }
             
-            // Only validate YouTube URL if it's the source type and not empty
-            if (data.youtube_url && !isValidYouTubeUrl(data.youtube_url)) {
-                showEditMessage('Please enter a valid YouTube URL', 'error');
-                return;
-            }
+            // For editing, YouTube URL is readonly, so no validation needed here.
+            // Local file path is also readonly.
 
             // Ensure duration is number or null
             if (data.duration_seconds && !/^\d+$/.test(data.duration_seconds)) {
@@ -1316,16 +1311,16 @@
                             document.getElementById('edit-youtube-url-group').style.display = 'block';
                             document.getElementById('edit-local-file-path-group').style.display = 'none';
                             document.getElementById('edit-youtube-url').value = video.youtube_url;
-                            document.getElementById('edit-youtube-url').setAttribute('readonly', 'readonly'); // Make read-only
+                            document.getElementById('edit-youtube-url').setAttribute('readonly', 'readonly');
                         } else if (video.local_file_path) { // It's a local file
                             document.getElementById('edit-youtube-url-group').style.display = 'none';
                             document.getElementById('edit-local-file-path-group').style.display = 'block';
-                            document.getElementById('edit-local-file-path').value = video.local_file_path; // This is already the URL
-                        } else { // Fallback if no specific source type
+                            document.getElementById('edit-local-file-path').value = video.local_file_path;
+                        } else { // Fallback if no specific source type (shouldn't happen with proper data)
                             document.getElementById('edit-youtube-url-group').style.display = 'block';
                             document.getElementById('edit-local-file-path-group').style.display = 'none';
                             document.getElementById('edit-youtube-url').value = '';
-                            document.getElementById('edit-youtube-url').removeAttribute('readonly'); // Allow editing if unknown source
+                            document.getElementById('edit-youtube-url').removeAttribute('readonly');
                         }
                         
                         document.getElementById('edit-modal').style.display = 'flex';
