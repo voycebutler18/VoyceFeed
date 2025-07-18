@@ -1029,65 +1029,66 @@
         }
 
         // Display videos in the list
-        function displayVideos(videos) {
-            const videoList = document.getElementById('video-list');
-            
-            if (videos.length === 0) {
-                videoList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; opacity: 0.6;">
-                        <div style="font-size: 3rem; margin-bottom: 20px;">📹</div>
-                        <div style="font-size: 1.2rem;">No videos yet</div>
-                        <div style="margin-top: 10px;">Add your first video above to get started!</div>
-                    </div>
-                `;
-                return;
-            }
+        // Display videos in the list
+        function displayVideos(videos) {
+            const videoList = document.getElementById('video-list');
+            
+            if (videos.length === 0) {
+                videoList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; opacity: 0.6;">
+                        <div style="font-size: 3rem; margin-bottom: 20px;">📹</div>
+                        <div style="font-size: 1.2rem;">No videos yet</div>
+                        <div style="margin-top: 10px;">Add your first video above to get started!</div>
+                    </div>
+                `;
+                return;
+            }
 
-            videoList.innerHTML = videos.map(video => {
-                const sourceLink = video.local_file_path ? 
-                    `<a href="${video.local_file_path}" target="_blank" style="color: #4ade80;">View File</a>` : 
-                    (video.youtube_url ? `<a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>` : 'N/A');
+            videoList.innerHTML = videos.map(video => {
+                const sourceLink = video.local_file_path ? 
+                    `<a href="${video.local_file_path}" target="_blank" style="color: #4ade80;">View File</a>` : 
+                    (video.youtube_url ? `<a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>` : 'N/A');
 
-                const durationDisplay = video.duration_seconds !== null ? 
-                    `${formatDuration(video.duration_seconds)}` : 'N/A';
+                const durationDisplay = video.duration_seconds !== null ? 
+                    `${formatDuration(video.duration_seconds)}` : 'N/A';
 
-                return `
-                <div class="video-item">
-                    <div class="video-thumbnail">
-                        <img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://via.placeholder.com/120x68/333/fff?text=Video'">
-                    </div>
-                    <div class="video-info">
-                        <div class="video-title">${escapeHtml(video.title)}</div>
-                        <div class="video-description">${escapeHtml(video.description || 'No description')}</div>
-                        <div class="video-meta">
-                            <span>Added ${formatDate(video.created_at)}</span>
-                            <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> 
-                            <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span> 
-                            <span>Duration: ${durationDisplay}</span>
-                            <span>Short: ${video.is_short ? 'Yes' : 'No'}</span>
-                            <span>Views: ${video.views_count || 0}</span>
-                            <span>Hashtags: ${escapeHtml(video.hashtags || 'None')}</span>
-                            <span>Source: ${sourceLink}</span>
-                        </div>
-                        <div class="video-stats">
-                            <div class="stat-item likes" onclick="viewVideoLikes(${video.id})">
-                                <span>❤️</span>
-                                <span>${video.likes_count || 0} likes</span>
-                            </div>
-                            <div class="stat-item comments" onclick="viewVideoComments(${video.id})">
-                                <span>💬</span>
-                                <span>${video.comment_count || 0} comments</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="video-actions">
-                        <button class="action-btn edit" onclick="editVideo(${video.id})">Edit</button>
-                        <button class="action-btn delete" onclick="deleteVideo(${video.id})">Delete</button>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
+                return `
+                <div class="video-item" data-video-id="${video.id}">
+                    <div class="video-thumbnail">
+                        <img src="${video.thumbnail_url || 'https://via.placeholder.com/120x68/333/fff?text=Video'}" alt="${escapeHtml(video.title)}" onerror="this.src='https://via.placeholder.com/120x68/333/fff?text=Video'">
+                    </div>
+                    <div class="video-info">
+                        <div class="video-title">${escapeHtml(video.title)}</div>
+                        <div class="video-description">${escapeHtml(video.description || 'No description')}</div>
+                        <div class="video-meta">
+                            <span>Added: ${formatDate(video.created_at)}</span>
+                            <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> 
+                            <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span> 
+                            <span><strong>Duration:</strong> ${durationDisplay}</span>
+                            <span><strong>Short:</strong> ${video.is_short ? 'Yes' : 'No'}</span>
+                            <span><strong>Views:</strong> ${video.views_count || 0}</span>
+                            <span><strong>Hashtags:</strong> ${escapeHtml(video.hashtags || 'None')}</span>
+                            <span>Source: ${sourceLink}</span>
+                        </div>
+                        <div class="video-stats">
+                            <div class="stat-item likes" onclick="viewVideoLikes(${video.id})">
+                                <span>❤️</span>
+                                <span>${video.likes_count || 0} likes</span>
+                            </div>
+                            <div class="stat-item comments" onclick="viewVideoComments(${video.id})">
+                                <span>💬</span>
+                                <span>${video.comment_count || 0} comments</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="video-actions">
+                        <button class="action-btn edit" onclick="editVideo(${video.id})">Edit</button>
+        _                <button class="action-btn delete" onclick="deleteVideo(${video.id})">Delete</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
 
         // Handle form submission - Add New Video
         document.getElementById('add-video-form').addEventListener('submit', async function(e) {
