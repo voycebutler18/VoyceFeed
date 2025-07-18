@@ -391,6 +391,21 @@
     border: 1px solid rgba(239, 68, 68, 0.4);
     color: #ef4444;
 }
+
+/* Add this new style for the clickable comment count */
+.clickable-stat {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: #4ade80; /* Green to indicate it's clickable */
+    text-decoration: underline;
+    cursor: pointer;
+}
+.clickable-stat:hover {
+    color: #86efac; /* Lighter green on hover */
+}
 /* END NEW VIDEO CARD STYLES */
 
         .progress-bar {
@@ -1094,6 +1109,7 @@
         // Display videos in the list
         // Display videos in the list
 // Display videos in the list
+// Display videos in the list
 function displayVideos(videos) {
     const videoList = document.getElementById('video-list');
     
@@ -1111,7 +1127,6 @@ function displayVideos(videos) {
             ? `${formatDuration(video.duration_seconds)}` 
             : 'N/A';
 
-        // This is the updated HTML structure for the video card
         return `
         <div class="video-card">
             <div class="video-main-content">
@@ -1135,11 +1150,15 @@ function displayVideos(videos) {
                     <span class="detail-value">${escapeHtml(video.hashtags || 'None')}</span>
                     <span class="detail-label">Source:</span>
                     <span class="detail-value">${sourceLink}</span>
-                    
                     <span class="detail-label">Likes:</span>
                     <span class="detail-value">${video.likes_count || 0}</span>
+
                     <span class="detail-label">Comments:</span>
-                    <span class="detail-value">${video.comment_count || 0}</span>
+                    <span class="detail-value">
+                        <button class="clickable-stat" onclick="viewVideoComments(${video.id})">
+                            ${video.comment_count || 0}
+                        </button>
+                    </span>
                 </div>
             </div>
             <div class="video-sidebar">
