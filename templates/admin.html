@@ -1042,6 +1042,37 @@
 
             // Handle the initial state when page loads (default is YouTube URL)
             toggleAddVideoSourceInput(document.querySelector('input[name="video_source_type"]:checked').value);
+            // Add this inside your DOMContentLoaded listener in admin.html
+
+document.getElementById('video-file').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const videoElement = document.createElement('video');
+        videoElement.preload = 'metadata';
+
+        videoElement.onloadedmetadata = function() {
+            // Revoke the object URL to avoid memory leaks
+            window.URL.revokeObjectURL(videoElement.src);
+            
+            // Get duration in seconds and round it
+            const duration = Math.round(videoElement.duration);
+            
+            // Auto-fill the duration input field
+            const durationInput = document.getElementById('duration-seconds');
+            if(durationInput) {
+                durationInput.value = duration;
+            }
+            
+            // Also automatically check/uncheck the "is_short" box
+            const isShortCheckbox = document.getElementById('is-short-video');
+            if(isShortCheckbox) {
+                isShortCheckbox.checked = duration < 60;
+            }
+        }
+
+        videoElement.src = URL.createObjectURL(file);
+    }
+});
         });
 
         // Function to toggle between YouTube URL and File Upload inputs in ADD form
