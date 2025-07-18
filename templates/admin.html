@@ -514,19 +514,19 @@
 
         /* Modal */
         .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    display: none; /* This is the key change */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    /* The 'display: flex' below is removed from the default state */
+    justify-content: center;
+    align-items: center;
+}
 
         .modal-content {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
