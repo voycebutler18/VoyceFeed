@@ -1088,108 +1088,118 @@
         }
         
         // Initializes a single video player
-        function initializeVideoPlayer(tile) {
-            const video = tile.querySelector('video');
-            if (!video) return; // Only apply to tiles with video elements
+        // Initializes a single video player
+function initializeVideoPlayer(tile) {
+    const video = tile.querySelector('video');
+    if (!video) return; // Only apply to tiles with video elements
 
-            const playPauseBtn = tile.querySelector(".play-pause-btn");
-            const rewindBtn = tile.querySelector(".rewind-btn");
-            const volumeBtn = tile.querySelector(".volume-btn");
-            const volumeSlider = tile.querySelector(".volume-slider");
-            const progressBar = tile.querySelector(".progress-bar");
-            const currentTimeEl = tile.querySelector(".current-time");
-            const totalTimeEl = tile.querySelector(".total-time");
+    const videoId = tile.dataset.videoId; // Get the video ID from the tile
+    const playPauseBtn = tile.querySelector(".play-pause-btn");
+    const rewindBtn = tile.querySelector(".rewind-btn");
+    const volumeBtn = tile.querySelector(".volume-btn");
+    const volumeSlider = tile.querySelector(".volume-slider");
+    const progressBar = tile.querySelector(".progress-bar");
+    const currentTimeEl = tile.querySelector(".current-time");
+    const totalTimeEl = tile.querySelector(".total-time");
 
-            // Toggle Play/Pause
-            const togglePlay = () => {
-                if (video.paused) {
-                    // If another video is playing, pause it first
-                    if (currentlyPlayingVideo && currentlyPlayingVideo !== video) {
-                        currentlyPlayingVideo.pause();
-                    }
-                    video.play();
-                    currentlyPlayingVideo = video;
-                } else {
-                    video.pause();
-                    currentlyPlayingVideo = null;
-                }
-            };
-            
-            playPauseBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                togglePlay();
-            });
-
-            video.addEventListener('click', (e) => {
-                e.stopPropagation();
-                togglePlay();
-            });
-
-            // Play/Pause State Changes
-            video.addEventListener("play", () => {
-                tile.classList.add("playing");
-                playPauseBtn.innerHTML = "❚❚"; // Pause Icon
-                if (video.muted) { // Unmute on first manual play
-                   video.muted = false;
-                   volumeSlider.value = video.volume;
-                   volumeBtn.innerHTML = video.volume > 0 ? "🔊" : "🔇";
-                }
-            });
-
-            video.addEventListener("pause", () => {
-                tile.classList.remove("playing");
-                playPauseBtn.innerHTML = "▶"; // Play Icon
-            });
-            
-            // Rewind
-            rewindBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                video.currentTime -= 10;
-            });
-
-            // Volume Controls
-            volumeBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                video.muted = !video.muted;
-            });
-
-            video.addEventListener("volumechange", () => {
-                volumeSlider.value = video.volume;
-                if (video.muted || video.volume === 0) {
-                    volumeBtn.innerHTML = "🔇";
-                } else {
-                    volumeBtn.innerHTML = "🔊";
-                }
-            });
-
-            volumeSlider.addEventListener("input", (e) => {
-                e.stopPropagation();
-                video.volume = e.target.value;
-                video.muted = e.target.value === 0;
-            });
-            
-            // Time and Progress Bar Update
-            video.addEventListener("loadedmetadata", () => {
-                const totalTime = formatTime(video.duration);
-                totalTimeEl.textContent = `${totalTime.minutes}:${totalTime.seconds}`;
-                progressBar.max = video.duration;
-            });
-
-            video.addEventListener("timeupdate", () => {
-                const currentTime = formatTime(video.currentTime);
-                currentTimeEl.textContent = `${currentTime.minutes}:${currentTime.seconds}`;
-                progressBar.value = video.currentTime;
-            });
-            
-            // Seek functionality
-            progressBar.addEventListener("input", (e) => {
-                e.stopPropagation();
-                video.currentTime = e.target.value;
-            });
-
-            // Prevent clicks on controls from bubbling up to the video element
-             tile.querySelector('.custom-video-controls').addEventListener('click', e => e.stopPropagation());
+    // Toggle Play/Pause
+    const togglePlay = () => {
+        if (video.paused) {
+            // If another video is playing, pause it first
+            if (currentlyPlayingVideo && currentlyPlayingVideo !== video) {
+                currentlyPlayingVideo.pause();
+            }
+            video.play();
+            currentlyPlayingVideo = video;
+        } else {
+            video.pause();
+            currentlyPlayingVideo = null;
         }
+    };
+    
+    playPauseBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlay();
+    });
+
+    video.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlay();
+    });
+
+    // Play/Pause State Changes
+    video.addEventListener("play", () => {
+        tile.classList.add("playing");
+        playPauseBtn.innerHTML = "❚❚"; // Pause Icon
+        
+        // --- THIS IS THE NEW CODE THAT COUNTS THE VIEW ---
+        if (!tile.dataset.viewRecorded) {
+            recordView(videoId);
+            tile.dataset.viewRecorded = 'true'; // Set a flag so we don't count it again
+        }
+        // --- END OF NEW CODE ---
+
+        if (video.muted) { // Unmute on first manual play
+            video.muted = false;
+            volumeSlider.value = video.volume;
+            volumeBtn.innerHTML = video.volume > 0 ? "🔊" : "🔇";
+        }
+    });
+
+    video.addEventListener("pause", () => {
+        tile.classList.remove("playing");
+        playPauseBtn.innerHTML = "▶"; // Play Icon
+    });
+    
+    // Rewind
+    rewindBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        video.currentTime -= 10;
+    });
+
+    // Volume Controls
+    volumeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        video.muted = !video.muted;
+    });
+
+    video.addEventListener("volumechange", () => {
+        volumeSlider.value = video.volume;
+        if (video.muted || video.volume === 0) {
+            volumeBtn.innerHTML = "🔇";
+        } else {
+            volumeBtn.innerHTML = "🔊";
+        }
+    });
+
+    volumeSlider.addEventListener("input", (e) => {
+        e.stopPropagation();
+        video.volume = e.target.value;
+        video.muted = e.target.value === 0;
+    });
+    
+    // Time and Progress Bar Update
+    video.addEventListener("loadedmetadata", () => {
+        const totalTime = formatTime(video.duration);
+        totalTimeEl.textContent = `${totalTime.minutes}:${totalTime.seconds}`;
+        progressBar.max = video.duration;
+    });
+
+    video.addEventListener("timeupdate", () => {
+        const currentTime = formatTime(video.currentTime);
+        currentTimeEl.textContent = `${currentTime.minutes}:${currentTime.seconds}`;
+        progressBar.value = video.currentTime;
+    });
+    
+    // Seek functionality
+    progressBar.addEventListener("input", (e) => {
+        e.stopPropagation();
+        video.currentTime = e.target.value;
+    });
+
+    // Prevent clicks on controls from bubbling up to the video element
+     tile.querySelector('.custom-video-controls').addEventListener('click', e => e.stopPropagation());
+}
 
         // --- END NEW VIDEO PLAYER LOGIC ---
 
