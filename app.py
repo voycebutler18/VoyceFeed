@@ -222,8 +222,8 @@ def extract_youtube_video_id(url):
 
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
-    # This is a generic placeholder. Realistically, you'd use YouTube Data API or a more robust service.
-    return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+    # MODIFIED: Use a standard YouTube thumbnail URL
+    return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
 
 def login_required(f):
     """Decorator to require login"""
@@ -290,7 +290,15 @@ def contact_page():
 def help_support_page():
     return render_template('help_support.html')
 
+@app.route('/account-settings') # NEW: Account Settings Page
+@login_required
+def account_settings_page():
+    user = User.query.get(session['user_id'])
+    return render_template('account_settings.html', user=user)
+
 # Serve uploaded media files
+from flask import send_from_directory # Import needed for send_from_directory
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # Ensure the file is within the UPLOAD_FOLDER for security
@@ -371,8 +379,8 @@ def login():
 def logout():
     """User logout endpoint"""
     session.clear()
-    flash('You have been logged out successfully.', 'info') # Add a flash message
-    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')}) # Return redirect URL
+    flash('You have been logged out successfully.', 'info')
+    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
 
 @app.route('/api/auth/check')
 @login_required
@@ -931,7 +939,7 @@ def admin_delete_comment(comment_id):
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error deleting comment for admin: {e}", exc_info=True)
+        logger.error(f"Error deleting comment: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
 
 @app.route('/api/admin/users', methods=['GET'])
