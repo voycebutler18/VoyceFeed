@@ -746,88 +746,136 @@ def admin_get_video_likes(video_id):
         logger.error(f"Error fetching video likes for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/admin/videos', methods=['GET'])
+@admin_required
+def admin_get_videos():
+    """Get all videos for admin"""
+    try:
+        videos = Video.query.order_by(Video.created_at.desc()).all()
+        
+        video_list = []
+        for video in videos:
+            comment_count = Comment.query.filter_by(video_id=video.id).count()
+            
+            # Determine source URL for admin view
+            source_url_for_admin = None
+            if video.local_file_path:
+                source_url_for_admin = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url:
+                source_url_for_admin = video.youtube_url
+
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url,
+                'youtube_video_id': video.youtube_video_id,
+                'thumbnail_url': video.thumbnail_url,
+                'is_active': video.is_active,
+                'likes_count': video.likes_count,
+                'created_at': video.created_at.isoformat(),
+                'genre': video.genre,
+                'featured_tag': video.featured_tag,
+                'local_file_path': source_url_for_admin,
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count,
+                'hashtags': video.hashtags,
+                'comment_count': comment_count
+            })
+        
+        return jsonify({'success': True, 'videos': video_list})
+        
+    except Exception as e:
+        logger.error(f"Error fetching admin videos: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/admin/videos', methods=['POST'])
 @admin_required
 def admin_add_video():
     """Add new video (admin only)"""
     try:
-        # Determine if form data is JSON (from edit modal) or multipart (from add video form)
-        # Using request.form for all data to handle both types uniformly via FormData
         data = request.form
         video_source_type = data.get('video_source_type')
+        
+        # Debug log to see what we're receiving
+        logger.info(f"Received video_source_type: {video_source_type}")
+        logger.info(f"Form data keys: {list(data.keys())}")
+        
+        if not video_source_type:
+            return jsonify({'success': False, 'message': 'video_source_type is required'}), 400
 
         title = data.get('title', '').strip()
-        description = data.get('description', '').strip()
-        genre = data.get('genre', '').strip()
-        featured_tag = data.get('featured_tag', '').strip()
-        hashtags = data.get('hashtags', '').strip()
-        is_short = data.get('is_short', 'false').lower() == 'true'
-        duration_seconds_str = data.get('duration_seconds') # String, could be empty
         
-        # Convert duration_seconds to int if provided, otherwise None
-        duration_seconds = None
-        if duration_seconds_str:
-            try:
-                duration_seconds = int(duration_seconds_str)
-            except ValueError:
-                return jsonify({'success': False, 'message': 'Invalid duration format (must be a number)'}), 400
-
-        video_id = None
-        youtube_url = None
-        local_file_path = None
-        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Default thumbnail
+        if not title:
+            return jsonify({'success': False, 'message': 'Title is required'}), 400
 
         if video_source_type == 'youtube_url':
             youtube_url_input = data.get('youtube_url', '').strip()
-            if not title or not youtube_url_input:
-                return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
+            if not youtube_url_input:
+                return jsonify({'success': False, 'message': 'YouTube URL is required'}), 400
             
             video_id = extract_youtube_video_id(youtube_url_input)
             if not video_id:
                 return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
             
-            # Check for existing YouTube video
-            if Video.query.filter_by(youtube_video_id=video_id).first():
-                return jsonify({'success': False, 'message': 'This YouTube video has already been added'}), 400
+            new_video = Video(
+                title=title,
+                description=data.get('description', '').strip(),
+                youtube_url=youtube_url_input,
+                youtube_video_id=video_id,
+                thumbnail_url=get_youtube_thumbnail(video_id),
+                genre=data.get('genre', '').strip(),
+                featured_tag=data.get('featured_tag', '').strip(),
+                hashtags=data.get('hashtags', '').strip(),
+                duration_seconds=int(data.get('duration_seconds')) if data.get('duration_seconds') else None,
+                is_short=data.get('is_short', 'false').lower() == 'true',
+                views_count=0
+            )
             
-            thumbnail_url = get_youtube_thumbnail(video_id)
-            youtube_url = youtube_url_input # Store original YouTube URL
-
         elif video_source_type == 'file_upload':
             if 'video_file' not in request.files:
-                return jsonify({'success': False, 'message': 'No video file part for upload'}), 400
+                return jsonify({'success': False, 'message': 'No video file provided'}), 400
             
             video_file = request.files['video_file']
             if video_file.filename == '':
-                return jsonify({'success': False, 'message': 'No selected video file'}), 400
-            
-            if not title:
-                return jsonify({'success': False, 'message': 'Title is required for uploaded video'}), 400
+                return jsonify({'success': False, 'message': 'No file selected'}), 400
 
-            allowed_extensions = {'mp4', 'mov', 'avi', 'mkv', 'webm'}
-            if '.' not in video_file.filename or video_file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
-                return jsonify({'success': False, 'message': 'Unsupported file type for upload'}), 400
-            
             filename = secure_filename(video_file.filename)
-            filename_with_user_id = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
-            local_file_path_on_server = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user_id)
-            video_file.save(local_file_path_on_server)
+            unique_filename = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+            local_file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            video_file.save(local_file_path)
 
-            # For local uploads, the 'youtube_url' field in the DB will store the public URL
-            youtube_url = url_for('uploaded_file', filename=filename_with_user_id)
-            youtube_video_id_placeholder = f"local_{filename_with_user_id.split('.')[0]}"
-            video_id = youtube_video_id_placeholder # Use this as video_id for local files
-
-            # Check for existing local file video (by server path)
-            if Video.query.filter_by(local_file_path=local_file_path_on_server).first():
-                 # Clean up the uploaded file if it's a duplicate based on path
-                os.remove(local_file_path_on_server)
-                return jsonify({'success': False, 'message': 'This video file has already been uploaded'}), 400
+            new_video = Video(
+                title=title,
+                description=data.get('description', '').strip(),
+                youtube_url=url_for('uploaded_file', filename=unique_filename),
+                local_file_path=local_file_path,
+                thumbnail_url=url_for('static', filename='default_thumbnail.jpg'),
+                genre=data.get('genre', '').strip(),
+                featured_tag=data.get('featured_tag', '').strip(),
+                hashtags=data.get('hashtags', '').strip(),
+                duration_seconds=int(data.get('duration_seconds')) if data.get('duration_seconds') else None,
+                is_short=data.get('is_short', 'false').lower() == 'true',
+                views_count=0
+            )
             
-            local_file_path = local_file_path_on_server # Store the actual path for DB
-
         else:
-            return jsonify({'success': False, 'message': 'Invalid video source type'}), 400
+            return jsonify({'success': False, 'message': f'Invalid video source type: {video_source_type}'}), 400
+
+        db.session.add(new_video)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Video added successfully',
+            'video': {'id': new_video.id, 'title': new_video.title}
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error adding video: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Failed to add video: {str(e)}'}), 500
 
         # Now create the Video object
         video = Video(
