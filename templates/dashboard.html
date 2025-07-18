@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snayvu – Create. Watch. Repeat.</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Base Styles */
         * {
@@ -308,7 +307,7 @@
             cursor: default; /* Change cursor back from pointer for tile itself */
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
-            padding-bottom: 10px; /* Space below content for actions */
+            padding-bottom: 10px;
             display: flex;
             flex-direction: column;
         }
@@ -333,7 +332,7 @@
             height: 100%;
             border: none;
             display: block;
-            pointer-events: none; /* Disable interaction with player for hover/custom controls */
+            pointer-events: none; /* Disable interaction with player for hover controls */
         }
 
         .tile-media-overlay {
@@ -342,26 +341,22 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.3); /* Lighter overlay on hover for better visibility */
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
-            flex-direction: column; /* To stack controls at bottom */
-            justify-content: flex-end; /* Push controls to bottom */
             align-items: center;
+            justify-content: center;
             z-index: 5; /* Above video/iframe */
             transition: background 0.2s ease;
-            cursor: pointer;
-            padding-bottom: 10px; /* Space for controls */
+            cursor: pointer; /* Indicates it's clickable */
         }
         .tile-media-overlay:hover {
-            background: rgba(0, 0, 0, 0.1); /* Even lighter on hover */
+            background: rgba(0, 0, 0, 0.3);
         }
         .tile-media-overlay .play-icon {
             font-size: 3rem;
             color: white;
             opacity: 0.8;
             pointer-events: none; /* Icon itself shouldn't block click */
-            margin-bottom: auto; /* Push play icon to top */
-            margin-top: 20%; /* Centered vertically */
         }
         /* Hide overlay when video is actually playing */
         .content-tile.playing .tile-media-overlay {
@@ -375,6 +370,7 @@
             display: none !important;
         }
         .tile-video {
+            /* To ensure controls can be added on top if needed */
             object-fit: cover;
         }
 
@@ -390,86 +386,6 @@
             display: none; /* Hide thumbnail when video is playing */
         }
 
-        /* --- Custom Video Controls within Overlay --- */
-        .video-controls-bar {
-            width: 90%; /* Controls bar width */
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: auto; /* Pushes controls to bottom of overlay */
-            background: rgba(0,0,0,0.5);
-            border-radius: 5px;
-            padding: 5px;
-        }
-        .play-pause-btn, .mute-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 5px;
-            opacity: 0.9;
-            transition: opacity 0.2s ease;
-        }
-        .play-pause-btn:hover, .mute-button:hover {
-            opacity: 1;
-        }
-        .volume-slider {
-            flex-grow: 1;
-            width: 60px; /* Specific width for slider */
-            height: 4px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 2px;
-            -webkit-appearance: none;
-            appearance: none;
-            cursor: pointer;
-            outline: none;
-        }
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-            margin-top: -4px; /* Center thumb vertically */
-        }
-        .volume-slider::-moz-range-thumb {
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-        }
-        .time-display {
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.8);
-            width: 70px; /* Fixed width for time display */
-            text-align: right;
-            flex-shrink: 0;
-        }
-        .progress-seek-bar {
-            width: 100%;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 3px;
-            cursor: pointer;
-            margin-top: 5px; /* Space between time and progress */
-            position: absolute;
-            bottom: 0;
-            left: 0;
-        }
-        .progress-seek-fill {
-            height: 100%;
-            width: 0%;
-            background: #a855f7; /* Snayvu accent */
-            border-radius: 3px;
-            position: relative;
-        }
-        /* --- End Custom Video Controls --- */
-
 
         .tile-info {
             padding: 10px;
@@ -484,11 +400,11 @@
             font-weight: 600;
             line-height: 1.3;
             margin-bottom: 5px;
-            white-space: normal;
+            white-space: normal; /* Allow title to wrap */
             overflow: hidden;
             text-overflow: ellipsis;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 2; /* Show up to 2 lines */
             -webkit-box-orient: vertical;
             flex-grow: 1;
         }
@@ -507,7 +423,7 @@
             background-color: rgba(255, 255, 255, 0.3);
             border-radius: 1.5px;
             margin-top: 5px;
-            display: block;
+            display: block; /* Always show for progress tracking */
         }
         .tile-progress-bar-fill {
             height: 100%;
@@ -1137,11 +1053,9 @@
                     const iframeElement = tile.querySelector('iframe.tile-iframe'); // Select iframe specifically
 
                     // Pause currently playing video if a new one is coming into view OR if the current one goes out of view
-                    if (entry.isIntersecting) {
-                        if (currentPlayingVideoElement && currentPlayingVideoElement !== videoElement && currentPlayingVideoElement !== iframeElement) {
-                            pauseVideo(currentPlayingVideoElement);
-                        }
-                    } else { // If *this* video is no longer intersecting, pause it
+                    if (currentPlayingVideoElement && currentPlayingVideoElement !== videoElement && currentPlayingVideoElement !== iframeElement) {
+                        pauseVideo(currentPlayingVideoElement);
+                    } else if (!entry.isIntersecting) { // If *this* video is no longer intersecting, pause it
                         if (videoElement && videoElement === currentPlayingVideoElement) {
                             pauseVideo(videoElement);
                         } else if (iframeElement && iframeElement === currentPlayingVideoElement) {
@@ -1269,7 +1183,7 @@
                 // If it's a YouTube iframe, clicking the overlay should take them to YouTube.
                 // This is generally the most consistent cross-browser behavior for YouTube embeds with minimal controls.
                 if (videoId) {
-                    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+                    window.open(`https://www.youtube.com/embed/$9{videoId}`, '_blank');
                 }
             }
         }
@@ -1323,43 +1237,6 @@
             }
         }
 
-        // Mute/Unmute button handler
-        function toggleMute(button) {
-            const videoElement = button.closest('.content-tile').querySelector('video.tile-video');
-            if (videoElement) {
-                videoElement.muted = !videoElement.muted;
-                button.innerHTML = videoElement.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-                // Sync slider with mute state
-                const volumeSlider = button.closest('.video-controls-bar').querySelector('.volume-slider');
-                if (volumeSlider) {
-                    volumeSlider.value = videoElement.muted ? 0 : (videoElement.volume || 1); // Set to 0 if muted, else current volume
-                }
-            }
-        }
-
-        // Volume slider handler
-        function setVolume(slider) {
-            const videoElement = slider.closest('.content-tile').querySelector('video.tile-video');
-            if (videoElement) {
-                videoElement.volume = slider.value;
-                videoElement.muted = (slider.value == 0); // Mute if slider is 0
-                // Update mute button icon
-                const muteButton = slider.closest('.video-controls-bar').querySelector('.mute-button');
-                if (muteButton) {
-                    muteButton.innerHTML = (slider.value == 0) ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-                }
-            }
-        }
-
-        // Seek bar handler (for HTML5 video progress)
-        function seekVideo(event, videoElement) {
-            const progressBar = event.currentTarget; // The div with class progress-seek-bar
-            const clickX = event.offsetX; // X-coordinate of the click relative to the element
-            const progressBarWidth = progressBar.offsetWidth; // Total width of the progress bar
-            const seekTime = (clickX / progressBarWidth) * videoElement.duration;
-            videoElement.currentTime = seekTime;
-        }
-
         // --- Standard functions ---
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1378,7 +1255,7 @@
             loadContentRow('new-this-week-row', 'New This Week', 'New Content');
             loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
             loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Changed tag to 'Just Dropped' for consistency with upload
             loadContentRow('live-now-row', 'Live Now', 'Live Streams');
         }
 
@@ -1429,6 +1306,72 @@
             }
         }
 
+
+        // Renders a single content tile with integrated player and interaction buttons
+        function renderContentTile(video) {
+            let mediaHtml = '';
+            let mediaType = '';
+            let playbackSource = video.local_file_path; // local_file_path holds the direct playback URL or YouTube URL
+            let thumbnailUrl = video.thumbnail_url || 'https://placehold.co/180x100/1a1a1a/888?text=Snayvu';
+
+            // Determine if it's a local video or YouTube
+            // If youtube_video_id is present AND local_file_path is not, assume YouTube
+            if (video.youtube_video_id && !video.local_file_path) {
+                mediaType = 'youtube';
+                const youtubeEmbedUrl = `http://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${video.youtube_video_id}&modestbranding=1&playsinline=1`;
+                mediaHtml = `
+                    <iframe class="tile-iframe" src="${youtubeEmbedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
+                `;
+            } else if (playbackSource) { // It's a local file (playbackSource is its URL)
+                mediaType = 'video';
+                mediaHtml = `
+                    <video class="tile-video" src="${playbackSource}" preload="metadata" muted playsinline loop></video>
+                `;
+            } else {
+                // Fallback for no playable source (shouldn't happen with proper data)
+                mediaType = 'none';
+                mediaHtml = `<img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="No Video Source">`;
+            }
+
+            // Progress bar for Continue Watching
+            const progressPercentage = (video.progress_seconds && video.duration_seconds && video.duration_seconds > 0)
+                ? (video.progress_seconds / video.duration_seconds) * 100
+                : 0;
+            const progressBarHtml = `
+                <div class="tile-progress-bar-container">
+                    <div class="tile-progress-bar-fill" style="width: ${progressPercentage}%;"></div>
+                </div>
+            `;
+
+            return `
+                <div class="content-tile" data-video-id="${video.id}" data-media-type="${mediaType}">
+                    <div class="tile-media-container">
+                        ${mediaHtml}
+                        <img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="${escapeHtml(video.title)} Thumbnail">
+                        <div class="tile-media-overlay">
+                            <span class="play-icon">▶</span>
+                        </div>
+                    </div>
+                    ${progressBarHtml}
+                    <div class="tile-info">
+                        <div class="tile-title">${escapeHtml(video.title)}</div>
+                        <div class="tile-meta">
+                            ${video.genre ? `<span>${escapeHtml(video.genre)}</span> | ` : ''}
+                            ${video.is_short ? 'Short' : 'Long-form'} | 
+                            ${video.views_count} Views
+                        </div>
+                        <div class="tile-actions">
+                            <button class="tile-action-btn ${video.user_liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleVideoLike(${video.id});">
+                                ❤️ <span id="likes-count-${video.id}">${video.likes_count || 0}</span>
+                            </button>
+                            <button class="tile-action-btn" onclick="event.stopPropagation(); viewVideoComments(${video.id});">
+                                💬 <span id="comments-count-${video.id}">${video.comment_count || 0}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         // Load content for the Hero Banner (unchanged)
         async function loadHeroBannerContent() {
@@ -1659,13 +1602,13 @@
             const csrfToken = document.getElementById('csrf_token').value;
             try {
                 const getResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'GET', headers: { 'X-CSRFToken': csrfToken } });
-                const getData = response.json(); // Don't await here, await on .json() below
+                const getData = await response.json();
                 if (getData.success) {
                     streakCountElement.textContent = getData.streak;
                     const postResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                     const postData = await postResponse.json();
                     if (postData.success) { streakCountElement.textContent = postData.streak; console.log('Daily watch streak updated to:', postData.streak); } else { console.warn('Failed to update streak:', postData.message); }
-                } else { console.error('Failed to load streak:', (await getData).message); streakCountElement.textContent = 'N/A'; } // Await getData here
+                } else { console.error('Failed to load streak:', getData.message); streakCountElement.textContent = 'N/A'; }
             } catch (error) { console.error('Error updating daily watch streak:', error); streakCountElement.textContent = 'N/A'; }
         }
     </script>
