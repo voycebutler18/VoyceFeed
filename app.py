@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, date
 import os
 import re
 from functools import wraps
-from sqlalchemy import func, desc # Import desc for ordering
+from sqlalchemy import func, desc
 import logging
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -71,7 +71,7 @@ class User(db.Model):
     comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
     comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
     video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
-    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan') # New relationship
+    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
@@ -86,8 +86,8 @@ class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    youtube_url = db.Column(db.String(500), nullable=True) # Made nullable for local uploads
-    youtube_video_id = db.Column(db.String(50), nullable=True) # Made nullable for local uploads
+    youtube_url = db.Column(db.String(500), nullable=True)
+    youtube_video_id = db.Column(db.String(50), nullable=True)
     thumbnail_url = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)
     likes_count = db.Column(db.Integer, default=0)
@@ -95,15 +95,15 @@ class Video(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     genre = db.Column(db.String(100), nullable=True)
     featured_tag = db.Column(db.String(50), nullable=True)
-    local_file_path = db.Column(db.String(500), nullable=True) # Path on server for uploaded videos
+    local_file_path = db.Column(db.String(500), nullable=True)
     hashtags = db.Column(db.String(500), nullable=True)
-    duration_seconds = db.Column(db.Integer, nullable=True) # New: Video duration in seconds
-    is_short = db.Column(db.Boolean, default=False) # New: True if duration < 60s
-    views_count = db.Column(db.Integer, default=0) # New: For trending logic
+    duration_seconds = db.Column(db.Integer, nullable=True)
+    is_short = db.Column(db.Boolean, default=False)
+    views_count = db.Column(db.Integer, default=0)
 
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
-    watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan') # New relationship
+    watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan')
 
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
@@ -200,7 +200,7 @@ class Feedback(db.Model):
             'user_email': self.user.email
         }
 
-class WatchHistory(db.Model): # New model for watch history
+class WatchHistory(db.Model):
     __tablename__ = 'watch_history'
     __table_args__ = {'extend_existing': True}
 
@@ -208,11 +208,11 @@ class WatchHistory(db.Model): # New model for watch history
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     watched_at = db.Column(db.DateTime, default=datetime.utcnow)
-    progress_seconds = db.Column(db.Integer, default=0) # How many seconds watched
-    completed = db.Column(db.Boolean, default=False) # True if watched till end
+    progress_seconds = db.Column(db.Integer, default=0)
+    completed = db.Column(db.Boolean, default=False)
 
     __table_args__ = (
-        db.UniqueConstraint('user_id', 'video_id'), # Each user has one history entry per video
+        db.UniqueConstraint('user_id', 'video_id'),
     )
 
 
@@ -234,7 +234,7 @@ def extract_youtube_video_id(url):
 
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
-    return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+    return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Corrected YouTube thumbnail URL
 
 def login_required(f):
     """Decorator to require login"""
@@ -310,7 +310,6 @@ def account_settings_page():
 # Serve uploaded media files
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    # Ensure the file is within the UPLOAD_FOLDER for security
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # --- END STATIC PAGES ROUTES ---
@@ -466,12 +465,19 @@ def get_videos():
             video_id=video.id
         ).first() is not None
         
+        # Determine correct playback URL
+        playback_url = None
+        if video.local_file_path:
+            playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+        elif video.youtube_url:
+            playback_url = video.youtube_url
+
         video_list.append({
             'id': video.id,
             'title': video.title,
             'description': video.description,
-            'youtube_url': video.youtube_url, # Will be local URL for uploaded videos
-            'youtube_video_id': video.youtube_video_id, # Placeholder for local videos
+            'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
+            'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
             'thumbnail_url': video.thumbnail_url,
             'likes_count': video.likes_count,
             'user_liked': user_liked,
@@ -479,10 +485,12 @@ def get_videos():
             'genre': video.genre,
             'featured_tag': video.featured_tag,
             'can_watch': True,
-            'local_file_path': url_for('uploaded_file', filename=os.path.basename(video.local_file_path)) if video.local_file_path else None, # Serve local file
-            'duration_seconds': video.duration_seconds, # New
-            'is_short': video.is_short, # New
-            'views_count': video.views_count # New
+            'local_file_path': playback_url, # This field is now the primary playback URL for both types
+            'duration_seconds': video.duration_seconds,
+            'is_short': video.is_short,
+            'views_count': video.views_count,
+            'hashtags': video.hashtags,
+            'comment_count': Comment.query.filter_by(video_id=video.id).count()
         })
     
     return jsonify({'success': True, 'videos': video_list})
@@ -691,24 +699,32 @@ def admin_get_videos():
         video_list = []
         for video in videos:
             comment_count = Comment.query.filter_by(video_id=video.id).count()
+            
+            # Determine source URL for admin view
+            source_url = None
+            if video.local_file_path:
+                source_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url:
+                source_url = video.youtube_url
+
             video_list.append({
                 'id': video.id,
                 'title': video.title,
                 'description': video.description,
-                'youtube_url': video.youtube_url,
-                'youtube_video_id': video.youtube_video_id,
+                'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
+                'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
                 'thumbnail_url': video.thumbnail_url,
                 'is_active': video.is_active,
                 'likes_count': video.likes_count,
                 'created_at': video.created_at.isoformat(),
                 'genre': video.genre,
                 'featured_tag': video.featured_tag,
-                'local_file_path': url_for('uploaded_file', filename=os.path.basename(video.local_file_path)) if video.local_file_path else None, # Serve local file
-                'duration_seconds': video.duration_seconds, # New
-                'is_short': video.is_short, # New
-                'views_count': video.views_count, # New
-                'hashtags': video.hashtags, # New
-                'comment_count': comment_count # Ensure comment count is passed
+                'local_file_path': source_url, # This is the source URL for admin view
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count,
+                'hashtags': video.hashtags,
+                'comment_count': comment_count
             })
         
         return jsonify({'success': True, 'videos': video_list})
@@ -790,48 +806,102 @@ def admin_get_video_comments(video_id):
 def admin_add_video():
     """Add new video (admin only)"""
     try:
-        data = request.get_json()
+        # Check if form data is JSON (from edit modal) or multipart (from add video form)
+        if request.is_json:
+            data = request.get_json()
+            video_source_type = 'youtube_url' # Assume JSON is for YouTube URL
+        else:
+            # Assume multipart form data (from file upload or initial form)
+            data = request.form
+            video_source_type = request.form.get('video_source_type') # 'file_upload' or 'youtube_url'
+
         title = data.get('title', '').strip()
         description = data.get('description', '').strip()
-        youtube_url = data.get('youtube_url', '').strip()
         genre = data.get('genre', '').strip()
         featured_tag = data.get('featured_tag', '').strip()
-        hashtags = data.get('hashtags', '').strip() # Admin can add hashtags
+        hashtags = data.get('hashtags', '').strip()
+        is_short = data.get('is_short', 'false').lower() == 'true'
+        duration_seconds = data.get('duration_seconds', None)
         
-        # Admin-added videos are assumed to be long-form YouTube videos, not shorts.
-        # Duration is not set here, as it's for uploaded files.
-        is_short = False # Admin typically adds long-form content
-        duration_seconds = None # Not applicable for YouTube URLs unless fetched via API
+        # Convert duration_seconds to int if provided
+        try:
+            if duration_seconds:
+                duration_seconds = int(duration_seconds)
+            else:
+                duration_seconds = None
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Invalid duration format'}), 400
 
-        if not title or not youtube_url:
-            return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
-        
-        video_id = extract_youtube_video_id(youtube_url)
-        if not video_id:
-            return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
-        
-        # Check if video already exists by youtube_video_id or local_file_path
-        existing_video = Video.query.filter(
-            (Video.youtube_video_id == video_id) |
-            (Video.youtube_url == youtube_url) # Check if the exact URL was added before
-        ).first()
+        video_id = None
+        youtube_url = None
+        local_file_path = None
+        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Default thumbnail
 
-        if existing_video:
-            return jsonify({'success': False, 'message': 'This video has already been added'}), 400
-        
-        thumbnail_url = get_youtube_thumbnail(video_id)
-        
+        if video_source_type == 'youtube_url':
+            youtube_url = data.get('youtube_url', '').strip()
+            if not title or not youtube_url:
+                return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
+            
+            video_id = extract_youtube_video_id(youtube_url)
+            if not video_id:
+                return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
+            
+            # Check for existing YouTube video
+            if Video.query.filter_by(youtube_video_id=video_id).first():
+                return jsonify({'success': False, 'message': 'This YouTube video has already been added'}), 400
+            
+            thumbnail_url = get_youtube_thumbnail(video_id)
+
+        elif video_source_type == 'file_upload':
+            if 'video_file' not in request.files:
+                return jsonify({'success': False, 'message': 'No video file part for upload'}), 400
+            
+            video_file = request.files['video_file']
+            if video_file.filename == '':
+                return jsonify({'success': False, 'message': 'No selected video file'}), 400
+            
+            if not title:
+                return jsonify({'success': False, 'message': 'Title is required for uploaded video'}), 400
+
+            allowed_extensions = {'mp4', 'mov', 'avi', 'mkv', 'webm'}
+            if '.' not in video_file.filename or video_file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+                return jsonify({'success': False, 'message': 'Unsupported file type for upload'}), 400
+            
+            filename = secure_filename(video_file.filename)
+            filename_with_user_id = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+            local_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user_id)
+            video_file.save(local_file_path)
+
+            # For local uploads, youtube_url field will store the URL to serve the file
+            youtube_url = url_for('uploaded_file', filename=filename_with_user_id)
+            youtube_video_id_placeholder = f"local_{filename_with_user_id.split('.')[0]}"
+            video_id = youtube_video_id_placeholder # Use this as video_id for local files
+
+            # Check for existing local file video
+            if Video.query.filter_by(local_file_path=local_file_path).first():
+                 # Clean up the uploaded file if it's a duplicate based on path
+                os.remove(local_file_path)
+                return jsonify({'success': False, 'message': 'This video file has already been uploaded'}), 400
+
+        else:
+            return jsonify({'success': False, 'message': 'Invalid video source type'}), 400
+
+        # Now create the Video object
         video = Video(
             title=title,
             description=description if description else None,
             youtube_url=youtube_url,
             youtube_video_id=video_id,
             thumbnail_url=thumbnail_url,
+            is_active=True,
+            likes_count=0,
             genre=genre if genre else None,
             featured_tag=featured_tag if featured_tag else None,
+            local_file_path=local_file_path, # Path on server
             hashtags=hashtags if hashtags else None,
-            duration_seconds=duration_seconds, # Will be None for YouTube
-            is_short=is_short # Will be False for YouTube
+            duration_seconds=duration_seconds,
+            is_short=is_short,
+            views_count=0
         )
         
         db.session.add(video)
@@ -845,19 +915,22 @@ def admin_add_video():
                 'title': video.title,
                 'description': video.description,
                 'youtube_video_id': video.youtube_video_id,
+                'local_file_path': url_for('uploaded_file', filename=os.path.basename(video.local_file_path)) if video.local_file_path else None,
                 'thumbnail_url': video.thumbnail_url,
                 'created_at': video.created_at.isoformat(),
                 'genre': video.genre,
                 'featured_tag': video.featured_tag,
                 'hashtags': video.hashtags,
-                'is_short': video.is_short
+                'is_short': video.is_short,
+                'duration_seconds': video.duration_seconds
             }
         })
         
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error adding video for admin: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': 'Failed to add video'}), 500
+        return jsonify({'success': False, 'message': 'Failed to add video. ' + str(e)}), 500
+
 
 @app.route('/api/admin/videos/<int:video_id>', methods=['DELETE'])
 @admin_required
@@ -901,9 +974,16 @@ def admin_update_video(video_id):
             video.featured_tag = data['featured_tag'].strip() if data['featured_tag'] else None
         if 'hashtags' in data:
             video.hashtags = data['hashtags'].strip() if data['hashtags'] else None
-        if 'is_short' in data: # Admin can override is_short
+        if 'is_short' in data:
             video.is_short = bool(data['is_short'])
-        
+        if 'duration_seconds' in data and data['duration_seconds'] is not None:
+            try:
+                video.duration_seconds = int(data['duration_seconds'])
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Invalid duration format'}), 400
+        else:
+            video.duration_seconds = None # Allow clearing duration
+
         video.updated_at = datetime.utcnow()
         
         db.session.commit()
@@ -1062,7 +1142,7 @@ def get_user_profile():
             'has_subscription': True,
             'subscription_status': 'active',
             'subscription_end': None,
-            'comment_count': Comment.query.filter_by(user.id).count(),
+            'comment_count': Comment.query.filter_by(user_id=user.id).count(),
             'watch_streak': user.watch_streak,
             'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
         }
@@ -1130,12 +1210,19 @@ def search_videos():
             db.or_(
                 Video.title.ilike(f'%{query}%'),
                 Video.description.ilike(f'%{query}%'),
-                Video.hashtags.ilike(f'%{query}%') # Search by hashtags
+                Video.hashtags.ilike(f'%{query}%')
             )
         ).order_by(Video.created_at.desc()).all()
         
         video_list = []
         for video in videos:
+            # Determine correct playback URL
+            playback_url = None
+            if video.local_file_path:
+                playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url:
+                playback_url = video.youtube_url
+
             video_list.append({
                 'id': video.id,
                 'title': video.title,
@@ -1144,10 +1231,10 @@ def search_videos():
                 'youtube_video_id': video.youtube_video_id,
                 'thumbnail_url': video.thumbnail_url,
                 'created_at': video.created_at.isoformat(),
-                'local_file_path': url_for('uploaded_file', filename=os.path.basename(video.local_file_path)) if video.local_file_path else None, # Serve local file
-                'duration_seconds': video.duration_seconds, # New
-                'is_short': video.is_short, # New
-                'views_count': video.views_count # New
+                'local_file_path': playback_url,
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count
             })
         
         return jsonify({
@@ -1213,17 +1300,19 @@ def get_categorized_videos():
     try:
         tag = request.args.get('tag', '').strip()
         genre = request.args.get('genre', '').strip()
-        current_user_id = session['user_id'] # Get current user ID for personalized data
+        current_user_id = session['user_id']
 
         if not tag:
             return jsonify({'success': False, 'message': 'Tag parameter is required'}), 400
 
         query = Video.query.filter_by(is_active=True)
 
+        # Dynamic Content Categorization Logic
         if tag == 'Trending Now':
-            # Simple trending: most likes in the last 7 days, or highest views_count
-            # For more robust trending, you'd track views over time.
-            videos = query.order_by(Video.likes_count.desc(), Video.views_count.desc()).limit(10).all()
+            # Simple trending: most views in the last 7 days.
+            # You might want to combine with likes_count if views_count is too low.
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.views_count.desc(), Video.likes_count.desc()).limit(10).all()
         elif tag == 'Snayvu Originals':
             # Admin-posted videos explicitly tagged as Originals
             videos = query.filter_by(featured_tag='Snayvu Originals').order_by(Video.created_at.desc()).limit(10).all()
@@ -1248,23 +1337,26 @@ def get_categorized_videos():
             watch_history_entries = WatchHistory.query.filter_by(
                 user_id=current_user_id,
                 completed=False
-            ).order_by(desc(WatchHistory.watched_at)).limit(10).all() # Order by most recently watched
+            ).order_by(desc(WatchHistory.watched_at)).limit(10).all()
             
             video_ids = [entry.video_id for entry in watch_history_entries]
             # Fetch the actual video objects based on history order
-            videos = Video.query.filter(Video.id.in_(video_ids)).order_by(
+            videos_from_history = Video.query.filter(Video.id.in_(video_ids)).order_by(
                 db.case(
                     {id_: index for index, id_ in enumerate(video_ids)},
                     value=Video.id
                 )
             ).all()
-            # Attach progress to videos
-            video_map = {video.id: video for video in videos}
+            
+            # Attach progress and total duration for frontend
+            video_map_with_progress = {}
             for entry in watch_history_entries:
-                if entry.video_id in video_map:
-                    video_map[entry.video_id].progress_seconds = entry.progress_seconds
-                    video_map[entry.video_id].total_duration = video_map[entry.video_id].duration_seconds # For progress bar
-            videos = [video_map[id_] for id_ in video_ids if id_ in video_map] # Maintain order
+                video = next((v for v in videos_from_history if v.id == entry.video_id), None)
+                if video:
+                    video.progress_seconds = entry.progress_seconds
+                    video.total_duration = video.duration_seconds # Assuming duration_seconds is set for all videos
+                    video_map_with_progress[video.id] = video
+            videos = [video_map_with_progress[id_] for id_ in video_ids if id_ in video_map_with_progress] # Maintain order
 
         else:
             # Default to fetching by the provided featured_tag
@@ -1284,21 +1376,22 @@ def get_categorized_videos():
                 'title': video.title,
                 'description': video.description,
                 'youtube_url': video.youtube_url, # Original YouTube URL
-                'youtube_video_id': video.youtube_video_id,
+                'youtube_video_id': video.youtube_video_id, # YouTube ID
                 'thumbnail_url': video.thumbnail_url,
                 'likes_count': video.likes_count,
-                'user_liked': VideoLike.query.filter_by(user_id=current_user_id, video_id=video.id).first() is not None, # Check if current user liked
+                'user_liked': VideoLike.query.filter_by(user_id=current_user_id, video_id=video.id).first() is not None,
                 'created_at': video.created_at.isoformat(),
                 'genre': video.genre,
                 'featured_tag': video.featured_tag,
-                'can_watch': True, # All content is free now
-                'local_file_path': video_playback_url, # This is the URL to use for playback
+                'can_watch': True,
+                'local_file_path': video_playback_url,
                 'duration_seconds': video.duration_seconds,
                 'is_short': video.is_short,
                 'views_count': video.views_count,
                 'hashtags': video.hashtags,
                 'comment_count': Comment.query.filter_by(video_id=video.id).count(),
-                'progress_seconds': getattr(video, 'progress_seconds', 0) # For continue watching
+                'progress_seconds': getattr(video, 'progress_seconds', 0), # For continue watching
+                'total_duration': getattr(video, 'total_duration', video.duration_seconds) # For continue watching
             })
         
         return jsonify({'success': True, 'videos': video_list})
@@ -1387,55 +1480,18 @@ def user_watch_streak():
             logger.error(f"Error updating watch streak for user {user.id}: {e}", exc_info=True)
             return jsonify({'success': False, 'message': 'Failed to update watch streak'}), 500
 
-# --- NEW: Watch History API ---
-@app.route('/api/watch-history/<int:video_id>', methods=['POST'])
-@login_required
-def update_watch_history(video_id):
-    """
-    Update watch history for a video.
-    Expected JSON: {'progress_seconds': int, 'completed': bool}
-    """
-    user_id = session['user_id']
-    data = request.get_json()
-    progress_seconds = data.get('progress_seconds', 0)
-    completed = data.get('completed', False)
 
-    try:
-        video = Video.query.get(video_id)
-        if not video:
-            return jsonify({'success': False, 'message': 'Video not found'}), 404
-
-        history_entry = WatchHistory.query.filter_by(user_id=user_id, video_id=video_id).first()
-
-        if history_entry:
-            history_entry.progress_seconds = progress_seconds
-            history_entry.completed = completed
-            history_entry.watched_at = datetime.utcnow() # Update last watched time
-        else:
-            history_entry = WatchHistory(
-                user_id=user_id,
-                video_id=video_id,
-                progress_seconds=progress_seconds,
-                completed=completed
-            )
-            db.session.add(history_entry)
-        
-        # Increment views_count for trending logic (simple view tracking)
-        if progress_seconds > 0 and video.views_count is not None:
-            video.views_count += 1 # Increment view count on significant watch
-        
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Watch history updated'}), 200
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating watch history for user {user_id}, video {video_id}: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': 'Failed to update watch history'}), 500
-
-# --- NEW: VIDEO UPLOAD ROUTE ---
+# --- VIDEO UPLOAD ROUTE ---
 @app.route('/api/upload-video', methods=['POST'])
 @login_required
-@limiter.limit("5 per hour") # Limit uploads to prevent abuse
+@limiter.limit("5 per hour")
 def upload_video():
+    # This route is specifically for user uploads via dashboard, not admin panel.
+    # Admin panel uses admin_add_video, which is now unified.
+    # This route is still here for historical context but might not be used directly by new dashboard if all uploads go via admin.html
+    # If users can upload from dashboard without being admin, keep this.
+    # For now, it mirrors functionality but is intended for frontend dashboard upload form.
+    
     if 'video_file' not in request.files:
         return jsonify({'success': False, 'message': 'No video file part'}), 400
     
@@ -1443,9 +1499,8 @@ def upload_video():
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip()
     hashtags_str = request.form.get('hashtags', '').strip()
-    # NEW: Get duration and is_short from form (manual input for now)
-    duration_str = request.form.get('duration_seconds', '0').strip()
-    is_short_input = request.form.get('is_short', 'false').lower() == 'true'
+    duration_str = request.form.get('duration_seconds', '0').strip() # User manually inputs duration for now
+    is_short_input = request.form.get('is_short', 'false').lower() == 'true' # User manually checks 'is short'
 
     if video_file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'}), 400
@@ -1453,7 +1508,6 @@ def upload_video():
     if not title:
         return jsonify({'success': False, 'message': 'Video title is required'}), 400
 
-    # Basic file type validation (for demonstration)
     allowed_extensions = {'mp4', 'mov', 'avi', 'mkv', 'webm'}
     if '.' not in video_file.filename or video_file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
         return jsonify({'success': False, 'message': 'Unsupported file type'}), 400
@@ -1463,33 +1517,29 @@ def upload_video():
         is_short = is_short_input or (duration_seconds is not None and duration_seconds < 60)
 
         filename = secure_filename(video_file.filename)
-        filename_with_user = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user)
-        video_file.save(file_path)
+        filename_with_user_id = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+        local_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user_id)
+        video_file.save(local_file_path)
 
-        # Placeholder for thumbnail generation
-        # In a real app, you'd use ffmpeg to extract a frame as a thumbnail.
-        # For now, we'll use a generic placeholder or a simple derived name.
-        thumbnail_base_name = f"thumb_{filename_with_user.rsplit('.', 1)[0]}.jpg"
-        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Fallback to a static image
-        # If you want to simulate a unique thumbnail for each local video:
-        # thumbnail_url = url_for('uploaded_file', filename=thumbnail_base_name)
-        # You'd then need a process to actually create thumbnail_base_name.jpg in UPLOAD_FOLDER
+        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Generic thumbnail for now
+
+        # Use the /uploads/ endpoint for playback URL
+        playback_url = url_for('uploaded_file', filename=filename_with_user_id)
 
         new_video = Video(
             title=title,
             description=description if description else None,
-            youtube_url=None, # No YouTube URL for local uploads
-            youtube_video_id=None, # No YouTube ID for local uploads
-            thumbnail_url=thumbnail_url, # Use generic or generated thumbnail
+            youtube_url=None, # Not a YouTube video
+            youtube_video_id=None, # No YouTube ID
+            thumbnail_url=thumbnail_url,
             is_active=True,
             genre="Uploaded",
-            featured_tag="Just Dropped", # Mark as "Just Dropped" for the feed
-            local_file_path=file_path, # Store actual local file path
+            featured_tag="Just Dropped", # Mark as "Just Dropped"
+            local_file_path=local_file_path,
             hashtags=hashtags_str if hashtags_str else None,
-            duration_seconds=duration_seconds, # New
-            is_short=is_short, # New
-            views_count=0 # Initialize views
+            duration_seconds=duration_seconds,
+            is_short=is_short,
+            views_count=0
         )
         db.session.add(new_video)
         db.session.commit()
@@ -1501,7 +1551,7 @@ def upload_video():
                 'id': new_video.id,
                 'title': new_video.title,
                 'description': new_video.description,
-                'local_url': url_for('uploaded_file', filename=filename_with_user),
+                'local_file_path': playback_url, # Frontend will use this for playback
                 'thumbnail_url': new_video.thumbnail_url,
                 'duration_seconds': new_video.duration_seconds,
                 'is_short': new_video.is_short
@@ -1512,7 +1562,6 @@ def upload_video():
         db.session.rollback()
         logger.error(f"Error during video upload: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to upload video. Please try again.'}), 500
-# --- END VIDEO UPLOAD ROUTE ---
 
 
 # Error handlers
@@ -1536,7 +1585,6 @@ def create_tables():
         with app.app_context():
             db.create_all() # This will create all tables and new columns
 
-            # Admin user setup
             admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
             admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
@@ -1564,5 +1612,4 @@ if __name__ == '__main__':
     create_tables()
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 else:
-    # This runs when deployed (not in debug mode)
     create_tables()
