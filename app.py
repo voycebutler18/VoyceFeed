@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, date
 import os
 import re
 from functools import wraps
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc # Import desc for ordering
 import logging
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -71,7 +71,7 @@ class User(db.Model):
     comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
     comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
     video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
-    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan')
+    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan') # New relationship
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
@@ -86,8 +86,8 @@ class Video(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    youtube_url = db.Column(db.String(500), nullable=True)
-    youtube_video_id = db.Column(db.String(50), nullable=True)
+    youtube_url = db.Column(db.String(500), nullable=True) # Made nullable for local uploads
+    youtube_video_id = db.Column(db.String(50), nullable=True) # Made nullable for local uploads
     thumbnail_url = db.Column(db.String(500))
     is_active = db.Column(db.Boolean, default=True)
     likes_count = db.Column(db.Integer, default=0)
@@ -95,15 +95,15 @@ class Video(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     genre = db.Column(db.String(100), nullable=True)
     featured_tag = db.Column(db.String(50), nullable=True)
-    local_file_path = db.Column(db.String(500), nullable=True)
+    local_file_path = db.Column(db.String(500), nullable=True) # Path on server for uploaded videos
     hashtags = db.Column(db.String(500), nullable=True)
-    duration_seconds = db.Column(db.Integer, nullable=True)
-    is_short = db.Column(db.Boolean, default=False)
-    views_count = db.Column(db.Integer, default=0)
+    duration_seconds = db.Column(db.Integer, nullable=True) # New: Video duration in seconds
+    is_short = db.Column(db.Boolean, default=False) # New: True if duration < 60s
+    views_count = db.Column(db.Integer, default=0) # New: For trending logic
 
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
-    watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan')
+    watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan') # New relationship
 
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
@@ -234,7 +234,7 @@ def extract_youtube_video_id(url):
 
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
-    return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Corrected YouTube thumbnail URL
+    return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Corrected to standard YouTube thumbnail URL
 
 def login_required(f):
     """Decorator to require login"""
@@ -806,14 +806,10 @@ def admin_get_video_comments(video_id):
 def admin_add_video():
     """Add new video (admin only)"""
     try:
-        # Check if form data is JSON (from edit modal) or multipart (from add video form)
-        if request.is_json:
-            data = request.get_json()
-            video_source_type = 'youtube_url' # Assume JSON is for YouTube URL
-        else:
-            # Assume multipart form data (from file upload or initial form)
-            data = request.form
-            video_source_type = request.form.get('video_source_type') # 'file_upload' or 'youtube_url'
+        # Determine if form data is JSON (from edit modal) or multipart (from add video form)
+        # Using request.form for all data to handle both types uniformly via FormData
+        data = request.form
+        video_source_type = data.get('video_source_type')
 
         title = data.get('title', '').strip()
         description = data.get('description', '').strip()
@@ -821,7 +817,7 @@ def admin_add_video():
         featured_tag = data.get('featured_tag', '').strip()
         hashtags = data.get('hashtags', '').strip()
         is_short = data.get('is_short', 'false').lower() == 'true'
-        duration_seconds = data.get('duration_seconds', None)
+        duration_seconds = data.get('duration_seconds')
         
         # Convert duration_seconds to int if provided
         try:
@@ -890,14 +886,14 @@ def admin_add_video():
         video = Video(
             title=title,
             description=description if description else None,
-            youtube_url=youtube_url,
-            youtube_video_id=video_id,
+            youtube_url=youtube_url, # Stores URL to serve local file OR YouTube URL
+            youtube_video_id=video_id, # Stores local_id OR YouTube_ID
             thumbnail_url=thumbnail_url,
             is_active=True,
             likes_count=0,
             genre=genre if genre else None,
             featured_tag=featured_tag if featured_tag else None,
-            local_file_path=local_file_path, # Path on server
+            local_file_path=local_file_path, # Path on server (None for YouTube)
             hashtags=hashtags if hashtags else None,
             duration_seconds=duration_seconds,
             is_short=is_short,
@@ -982,7 +978,7 @@ def admin_update_video(video_id):
             except ValueError:
                 return jsonify({'success': False, 'message': 'Invalid duration format'}), 400
         else:
-            video.duration_seconds = None # Allow clearing duration
+            video.duration_seconds = None # Allow clearing duration if empty string/null passed
 
         video.updated_at = datetime.utcnow()
         
@@ -1369,7 +1365,7 @@ def get_categorized_videos():
             if video.local_file_path:
                 video_playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
             elif video.youtube_url:
-                video_playback_url = video.youtube_url # Use original YouTube URL for embedding/linking
+                video_playback_url = video.youtube_url
 
             video_list.append({
                 'id': video.id,
@@ -1384,7 +1380,7 @@ def get_categorized_videos():
                 'genre': video.genre,
                 'featured_tag': video.featured_tag,
                 'can_watch': True,
-                'local_file_path': video_playback_url,
+                'local_file_path': video_playback_url, # This field is the primary playback URL for both types
                 'duration_seconds': video.duration_seconds,
                 'is_short': video.is_short,
                 'views_count': video.views_count,
@@ -1480,17 +1476,66 @@ def user_watch_streak():
             logger.error(f"Error updating watch streak for user {user.id}: {e}", exc_info=True)
             return jsonify({'success': False, 'message': 'Failed to update watch streak'}), 500
 
+# --- NEW: Watch History API ---
+@app.route('/api/watch-history/<int:video_id>', methods=['POST'])
+@login_required
+def update_watch_history(video_id):
+    """
+    Update watch history for a video.
+    Expected JSON: {'progress_seconds': int, 'completed': bool}
+    """
+    user_id = session['user_id']
+    data = request.get_json()
+    progress_seconds = data.get('progress_seconds', 0)
+    completed = data.get('completed', False)
+
+    try:
+        video = Video.query.get(video_id)
+        if not video:
+            return jsonify({'success': False, 'message': 'Video not found'}), 404
+
+        history_entry = WatchHistory.query.filter_by(user_id=user_id, video_id=video_id).first()
+
+        if history_entry:
+            history_entry.progress_seconds = progress_seconds
+            history_entry.completed = completed
+            history_entry.watched_at = datetime.utcnow() # Update last watched time
+        else:
+            history_entry = WatchHistory(
+                user_id=user_id,
+                video_id=video_id,
+                progress_seconds=progress_seconds,
+                completed=completed
+            )
+            db.session.add(history_entry)
+        
+        # Increment views_count for trending logic (simple view tracking)
+        # Only increment if progress > 0 (watched some part) and not already incremented recently for this session/video
+        # For simplicity, we just increment on every update with progress > 0.
+        # A more robust system would use a separate view_event table or daily unique views.
+        if progress_seconds > 0 and video.views_count is not None:
+             video.views_count += 1
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Watch history updated'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating watch history for user {user_id}, video {video_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update watch history'}), 500
 
 # --- VIDEO UPLOAD ROUTE ---
+# This route is specifically for user uploads via dashboard, not admin panel.
+# Admin panel uses admin_add_video, which is now unified.
+# If users can upload from dashboard without being admin, keep this.
+# For now, it mirrors functionality but is intended for frontend dashboard upload form.
 @app.route('/api/upload-video', methods=['POST'])
 @login_required
 @limiter.limit("5 per hour")
 def upload_video():
-    # This route is specifically for user uploads via dashboard, not admin panel.
-    # Admin panel uses admin_add_video, which is now unified.
-    # This route is still here for historical context but might not be used directly by new dashboard if all uploads go via admin.html
-    # If users can upload from dashboard without being admin, keep this.
-    # For now, it mirrors functionality but is intended for frontend dashboard upload form.
+    # This route is for general users to upload via a dashboard modal.
+    # The admin_add_video now handles file uploads from the admin page.
+    # To avoid confusion, you might consider removing this if all uploads are via admin.
+    # However, if non-admin users can upload, this route is appropriate for them.
     
     if 'video_file' not in request.files:
         return jsonify({'success': False, 'message': 'No video file part'}), 400
