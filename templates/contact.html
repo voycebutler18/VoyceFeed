@@ -94,3 +94,287 @@
         }
 
         .contact-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .contact-card p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+
+        .contact-link {
+            color: #a855f7;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .contact-link:hover {
+            color: #6366f1;
+        }
+
+        .contact-form {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 30px 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #a855f7;
+            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .submit-button {
+            background: linear-gradient(45deg, #a855f7, #6366f1);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            width: 100%;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .back-button {
+            background: linear-gradient(45deg, #a855f7, #6366f1);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .response-time {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .business-hours {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+        }
+
+        .hours-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .day {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .time {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Snayvu</div>
+            <div class="subtitle">We're here to help!</div>
+        </div>
+
+        <div class="content">
+            <h1>Contact Us</h1>
+            
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <span class="contact-icon">📧</span>
+                    <h3>Email Support</h3>
+                    <p>Get help with your account, technical issues, or general questions</p>
+                    <a href="mailto:info@snayvu.com" class="contact-link">info@snayvu.com</a>
+                </div>
+                
+                <div class="contact-card">
+                    <span class="contact-icon">📞</span>
+                    <h3>Phone Support</h3>
+                    <p>Speak directly with our support team for urgent matters</p>
+                    <a href="tel:720-306-1898" class="contact-link">720-306-1898</a>
+                </div>
+                
+                <div class="contact-card">
+                    <span class="contact-icon">💬</span>
+                    <h3>Live Chat</h3>
+                    <p>Real-time assistance for quick questions and guidance</p>
+                    <a href="#" class="contact-link" onclick="openLiveChat()">Start Chat</a>
+                </div>
+                
+                <div class="contact-card">
+                    <span class="contact-icon">📋</span>
+                    <h3>Help Center</h3>
+                    <p>Browse our comprehensive FAQ and troubleshooting guides</p>
+                    <a href="#" class="contact-link">Visit Help Center</a>
+                </div>
+            </div>
+
+            <div class="response-time">
+                <h3>🕒 Response Times</h3>
+                <p>Email: Within 24 hours | Phone: Immediate during business hours | Live Chat: Under 5 minutes</p>
+            </div>
+
+            <div class="business-hours">
+                <h3>Business Hours (Mountain Time)</h3>
+                <div class="hours-grid">
+                    <div class="day">Monday - Friday</div>
+                    <div class="time">9:00 AM - 6:00 PM</div>
+                    <div class="day">Saturday</div>
+                    <div class="time">10:00 AM - 4:00 PM</div>
+                    <div class="day">Sunday</div>
+                    <div class="time">Closed</div>
+                </div>
+            </div>
+
+            <h2>Send us a Message</h2>
+            <div class="contact-form">
+                <form id="contactForm" onsubmit="submitContactForm(event)">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="Enter your email address">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subject">Subject *</label>
+                        <select id="subject" name="subject" required>
+                            <option value="">Select a topic</option>
+                            <option value="account">Account Issues</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="billing">Billing Questions</option>
+                            <option value="content">Content Issues</option>
+                            <option value="feature">Feature Request</option>
+                            <option value="partnership">Partnership Inquiry</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="message">Message *</label>
+                        <textarea id="message" name="message" required placeholder="Please describe your question or issue in detail..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="submit-button">Send Message</button>
+                </form>
+            </div>
+
+            <h2>Other Ways to Reach Us</h2>
+            <p><strong>Creator Support:</strong> Dedicated support for content creators at <a href="mailto:creators@snayvu.com" class="contact-link">creators@snayvu.com</a></p>
+            <p><strong>Business Inquiries:</strong> For partnerships and business opportunities at <a href="mailto:business@snayvu.com" class="contact-link">business@snayvu.com</a></p>
+            <p><strong>Press & Media:</strong> Media inquiries and press releases at <a href="mailto:press@snayvu.com" class="contact-link">press@snayvu.com</a></p>
+            <p><strong>Security Issues:</strong> Report security vulnerabilities at <a href="mailto:security@snayvu.com" class="contact-link">security@snayvu.com</a></p>
+        </div>
+
+        <a href="dashboard.html" class="back-button">← Back to Dashboard</a>
+    </div>
+
+    <script>
+        function submitContactForm(event) {
+            event.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData);
+            
+            // Simple validation
+            if (!data.name || !data.email || !data.subject || !data.message) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            // Simulate form submission
+            const submitButton = event.target.querySelector('.submit-button');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Sending...';
+            submitButton.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                alert('Thank you for your message! We\'ll get back to you within 24 hours.');
+                event.target.reset();
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }, 2000);
+        }
+        
+        function openLiveChat() {
+            // This would integrate with a live chat service
+            alert('Live chat feature coming soon! Please use email or phone for immediate assistance.');
+        }
+    </script>
+</body>
+</html>
