@@ -28,7 +28,7 @@
 
         /* Left Sidebar Menu */
         .sidebar {
-            width: 250px; /* Fixed width, can be adjusted or made collapsible with JS */
+            width: 250px; /* Default desktop width */
             background: #1a1a1a; /* Slightly lighter dark background for sidebar */
             padding: 20px 0;
             position: fixed;
@@ -40,7 +40,8 @@
             z-index: 1000;
             display: flex;
             flex-direction: column;
-            transition: width 0.3s ease; /* For future collapsible feature */
+            transition: width 0.3s ease, transform 0.3s ease; /* Added transform for hidden state */
+            transform: translateX(0); /* Default visible */
         }
 
         .sidebar-logo {
@@ -147,9 +148,34 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
+        /* Mobile Toggle Button for Sidebar */
+        .sidebar-toggle-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001; /* Above sidebar */
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: none; /* Hidden by default, shown on mobile */
+        }
+        .sidebar-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+
         /* Main Homepage Body */
         .main-content {
-            margin-left: 250px; /* Offset for the fixed sidebar */
+            margin-left: 250px; /* Desktop offset for the fixed sidebar */
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto; /* Allows main content to scroll independently */
@@ -177,18 +203,13 @@
             width: 100%;
             height: 100%;
             background: url('https://placehold.co/1200x400/0a0a0a/333?text=Snayvu+Featured+Content') no-repeat center center/cover; /* Generic Placeholder image */
-            /* REMOVED: opacity here if we want a solid image */
             z-index: 1;
-            display: flex; /* Added to center text if needed */
-            align-items: center; /* Added to center text if needed */
-            justify-content: center; /* Added to center text if needed */
-            font-size: 3rem; /* Placeholder text size */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
             font-weight: 800;
-            color: rgba(255, 255, 255, 0.2); /* Faded placeholder text */
-        }
-        .hero-video-placeholder iframe {
-            /* REMOVED: iframe style as iframe is removed from HTML */
-            display: none; /* Ensure it's hidden */
+            color: rgba(255, 255, 255, 0.2);
         }
 
         .hero-content {
@@ -364,21 +385,34 @@
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .sidebar {
-                width: 70px; /* Collapsed sidebar width */
-                padding: 20px 0;
+                width: 250px; /* Full width for overlay/off-canvas */
+                transform: translateX(-100%); /* Start off-screen */
+                position: fixed; /* Keep it fixed for off-canvas */
+                z-index: 1000;
+                box-shadow: 0 0 30px rgba(0,0,0,0.5); /* Add shadow for off-canvas effect */
+            }
+            .sidebar.active {
+                transform: translateX(0); /* Slide in */
             }
             .sidebar-logo, .sidebar-section-title, .sidebar-footer-links, .sidebar-copyright, .sidebar-account-info {
-                display: none; /* Hide text elements in collapsed state */
+                display: flex; /* Display content inside sidebar when open */
+                flex-direction: column; /* Ensure vertical layout for info group */
+                align-items: flex-start; /* Align content to left inside sidebar */
+                width: 100%; /* Ensure they take full width */
+            }
+            .sidebar-account-info {
+                padding: 0 20px 20px; /* Restore padding */
             }
             .sidebar-menu-item {
-                justify-content: center; /* Center icons */
-                padding: 12px 0;
+                justify-content: flex-start; /* Align menu items to left */
+                padding: 12px 20px; /* Restore padding */
             }
             .sidebar-icon {
-                margin-right: 0; /* No margin when text is hidden */
+                margin-right: 15px; /* Restore margin */
             }
+
             .main-content {
-                margin-left: 70px; /* Adjust offset */
+                margin-left: 0; /* No static margin on mobile */
                 padding: 15px;
             }
             .hero-title {
@@ -389,6 +423,11 @@
             }
             .content-tile {
                 width: 150px; /* Smaller tiles on mobile */
+            }
+
+            /* Show toggle button on mobile */
+            .sidebar-toggle-btn {
+                display: flex; /* Show the hamburger menu button */
             }
         }
         
@@ -632,8 +671,10 @@
 <body>
     <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
 
+    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn">☰</button>
+
     <div class="container">
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">Snayvu</div>
 
             <ul class="sidebar-menu">
@@ -683,13 +724,13 @@
             <div class="sidebar-copyright">© 2024 Snayvu. All rights reserved.</div>
         </aside>
 
-        <main class="main-content">
+        <main class="main-content" id="main-content">
             <section class="hero-banner">
                 <div class="hero-video-placeholder">
                     </div>
                 <div class="hero-content">
                     <h1 class="hero-title">Experience Snayvu: Create, Watch, Repeat.</h1>
-                    <button class="hero-button" onclick="loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');">Explore Content</button>
+                    <button class="hero-button" onclick="loadAllHomepageRows();">Explore Content</button>
                 </div>
             </section>
 
@@ -839,7 +880,31 @@
             loadUserInfo();
             loadHeroBannerContent(); // Ensure hero banner is loaded correctly
             loadAllHomepageRows(); // Load all content rows for the initial homepage view
+
+            // Initialize sidebar toggle on mobile
+            document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
+            // Close sidebar when clicking outside on mobile
+            document.getElementById('main-content').addEventListener('click', function(event) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('active') && !sidebar.contains(event.target) && !document.getElementById('sidebar-toggle-btn').contains(event.target)) {
+                    toggleSidebar();
+                }
+            });
         });
+
+        // Function to toggle sidebar visibility on mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            sidebar.classList.toggle('active');
+            // Optional: You could dim the main content when sidebar is active
+            // if (sidebar.classList.contains('active')) {
+            //     mainContent.style.filter = 'brightness(50%)';
+            // } else {
+            //     mainContent.style.filter = 'none';
+            // }
+        }
+
 
         // Function to load all homepage rows
         function loadAllHomepageRows() {
@@ -911,7 +976,7 @@
                 videoSourceUrl = video.local_file_path; // This URL is already generated by url_for in app.py
             } else if (video.youtube_video_id) {
                 // Fallback to a generic YouTube watch link if no local file (and a valid YouTube ID exists)
-                videoSourceUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+                videoSourceUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`; // Corrected YouTube URL
             } else {
                 // If neither, just a generic placeholder link
                 videoSourceUrl = '#'; // Or a Snayvu generic video page
@@ -981,23 +1046,36 @@
                     loadAllHomepageRows(); // Reload all content rows for Home
                 } else if (section === 'discover') {
                     displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
-                    // In a real app, you would load content related to discovery here, e.g., loadContentRow('some-discover-row', 'Discover', 'Discover Content');
                 } else if (section === 'originals') {
-                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals'); // Reload the Originals row
-                    document.getElementById('feature-display-area').style.display = 'none'; // Hide general message
-                    document.getElementById('snayvu-originals-section').style.display = 'block'; // Ensure its specific section is visible
+                    // Load the Originals row and scroll to it
+                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
+                    document.getElementById('snayvu-originals-section').style.display = 'block'; // Show only this row
+                    document.getElementById('feature-display-area').style.display = 'none'; // Hide generic message
                     window.scrollTo(0, document.getElementById('snayvu-originals-section').offsetTop); // Scroll to it
                 } else if (section === 'shorts') {
-                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Load Shorts content
+                    // Load Shorts content and display a message
+                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Use 'Shorts' tag for this
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
+                    document.getElementById('just-dropped-shorts-section').style.display = 'block'; // Show only this row
                     displayFeatureMessage('📱', 'Shorts', 'Enjoy quick, engaging vertical videos designed for instant entertainment.');
                 } else if (section === 'channels') {
-                    loadContentRow('top-creators-row', 'Featured Channel', 'Channels'); // Load some relevant videos
+                    // Load some relevant videos and display a message
+                    loadContentRow('top-creators-row', 'Featured Channel', 'Channels');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
+                    document.getElementById('top-creators-section').style.display = 'block'; // Show only this row
                     displayFeatureMessage('📺', 'Channels', 'Explore the diverse worlds of your favorite creators with their long-form videos and livestreams.');
                 } else if (section === 'live') {
-                    loadContentRow('live-now-row', 'Live', 'Live Now'); // Use 'Live' tag for this
+                    // Load 'Live' tagged content and display message
+                    loadContentRow('live-now-row', 'Live', 'Live Now');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
+                    document.getElementById('live-now-section').style.display = 'block'; // Show only this row
                     displayFeatureMessage('📡', 'Live Now', 'Catch live broadcasts and interactive sessions from creators in real-time.');
                 } else if (section === 'mood-feed') {
+                    // Load 'Emotional Picks' and display message
                     loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
+                    document.getElementById('emotional-picks-section').style.display = 'block'; // Show only this row
                     displayFeatureMessage('🧠', 'For You (Mood Feed)', 'Your personalized feed, curated by mood. Content designed to make you Laugh, Cry, Shock, Think, or Uplift.');
                 }
                 // Personal Feed sections (These are conceptual and require more complex backend work)
@@ -1013,10 +1091,11 @@
                     displayFeatureMessage('📈', 'Creator Dashboard', 'Access your analytics, manage uploads, and track your performance as a creator. This feature needs backend integration for creator analytics.');
                 }
                 // Account Settings, Upload, Help & Support, Logout are handled by specific `href` or `onclick`
+                // Account Settings and Help & Support already have direct `href`
             });
         });
 
-        // --- NEW: Handle Logout Click (to ensure client-side redirect) ---
+        // --- Handle Logout Click (to ensure client-side redirect) ---
         async function handleLogoutClick() {
             const csrfToken = document.getElementById('csrf_token').value;
             try {
@@ -1033,13 +1112,11 @@
                     window.location.href = data.redirect; // Redirect to the login/index page
                 } else {
                     console.error('Logout failed:', data.message || 'Unknown error');
-                    // Fallback to force redirect even if API response is unexpected
-                    window.location.href = `${BASE_URL}/`; 
+                    window.location.href = `${BASE_URL}/`; // Fallback to force redirect
                 }
             } catch (error) {
                 console.error('Error during logout:', error);
-                // Force redirect even if network error
-                window.location.href = `${BASE_URL}/`; 
+                window.location.href = `${BASE_URL}/`; // Force redirect even on network error
             }
         }
 
