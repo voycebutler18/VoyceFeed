@@ -390,18 +390,6 @@ def logout():
     flash('You have been logged out successfully.', 'info')
     return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
 
-# FILE: app.py
-
-# ... (previous code) ...
-
-@app.route('/api/auth/logout', methods=['POST'])
-@login_required
-def logout():
-    """User logout endpoint"""
-    session.clear()
-    flash('You have been logged out successfully.', 'info')
-    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
-
 # START anD PASTE THE NEW CODE HERE
 @app.route('/api/videos/<int:video_id>/view', methods=['POST'])
 @login_required
