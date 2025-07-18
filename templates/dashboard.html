@@ -1,1718 +1,1652 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snayvu – Create. Watch. Repeat.</title>
-    <style>
-        /* Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+# FILE LOCATION: /app.py (root of your GitHub repo)
+# Complete Flask application for subscription-based storytelling website
 
-        body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0a0a0a; /* Dark background */
-            color: white;
-            overflow-x: hidden; /* Prevent horizontal scroll from off-canvas sidebar */
-            line-height: 1.6;
-        }
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from datetime import datetime, timedelta, date
+import os
+import re
+from functools import wraps
+from sqlalchemy import func, desc # Import desc for ordering
+import logging
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
+import ffmpeg # For video duration detection
 
-        /* Layout Grid */
-        .container {
-            display: flex;
-            min-height: 100vh;
-        }
+# Initialize Flask app
+app = Flask(__name__)
 
-        /* Left Sidebar Menu */
-        .sidebar {
-            width: 250px; /* Default desktop width */
-            background: #1a1a1a; /* Slightly lighter dark background for sidebar */
-            padding: 20px 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            overflow-y: auto; /* Scrollable sidebar */
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            z-index: 1000; /* Ensure it's above other content when open */
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease; /* Transition for sliding in/out */
-            transform: translateX(0); /* Default visible on desktop */
-        }
+# --- NEW: Define the path for the persistent data directory ---
+DATA_DIR = os.path.join(os.getcwd(), 'data')
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+    print(f"Created persistent data directory: {DATA_DIR}")
 
-        .sidebar-logo {
-            font-size: 2rem;
-            font-weight: 800;
-            background: linear-gradient(45deg, #a855f7, #6366f1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 0 20px;
-        }
+# Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(DATA_DIR, "stories.db")}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-        .sidebar-section-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 20px 20px 10px;
-        }
+# Configure upload folder for videos
+UPLOAD_FOLDER = os.path.join(DATA_DIR, 'uploads')
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 # 100 MB max upload size (increased for videos)
 
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+print(f"Using SQLite database at: {app.config['SQLALCHEMY_DATABASE_URI']}")
+print(f"Using Upload Folder at: {app.config['UPLOAD_FOLDER']}")
 
-        .sidebar-menu-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease;
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none; /* For anchor tags */
-        }
+# Initialize extensions
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+csrf = CSRFProtect(app)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
-        .sidebar-menu-item:hover {
-            background: rgba(99, 102, 241, 0.1); /* Light Snayvu accent hover */
-            color: white;
-        }
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-        .sidebar-menu-item.active {
-            background: rgba(168, 85, 247, 0.2); /* Snayvu accent for active item */
-            color: white;
-            font-weight: 600;
-        }
 
-        .sidebar-icon {
-            margin-right: 15px;
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.6);
-        }
+# Database Models
+class User(db.Model):
+    __tablename__ = 'user'
+    __table_args__ = {'extend_existing': True}
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(60), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_watch_date = db.Column(db.Date, nullable=True)
+    watch_streak = db.Column(db.Integer, default=0)
+    
+    comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
+    comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
+    video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
+    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan') # New relationship
 
-        .sidebar-menu-item:hover .sidebar-icon,
-        .sidebar-menu-item.active .sidebar-icon {
-            color: white;
-        }
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
+    
+    def get_display_name(self):
+        return self.email.split('@')[0]
+
+class Video(db.Model):
+    __tablename__ = 'video'
+    __table_args__ = {'extend_existing': True}
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    youtube_url = db.Column(db.String(500), nullable=True) # Now stores playback URL for both YouTube and local files
+    youtube_video_id = db.Column(db.String(50), nullable=True) # Stores YouTube ID or local placeholder
+    thumbnail_url = db.Column(db.String(500))
+    is_active = db.Column(db.Boolean, default=True)
+    likes_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    genre = db.Column(db.String(100), nullable=True)
+    featured_tag = db.Column(db.String(50), nullable=True)
+    local_file_path = db.Column(db.String(500), nullable=True) # Path on server (ONLY for locally uploaded files)
+    hashtags = db.Column(db.String(500), nullable=True)
+    duration_seconds = db.Column(db.Integer, nullable=True)
+    is_short = db.Column(db.Boolean, default=False)
+    views_count = db.Column(db.Integer, default=0)
+
+    comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
+    likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
+    watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan')
+
+class VideoLike(db.Model):
+    __tablename__ = 'video_like'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'video_id'),
+        {'extend_existing': True}
+    )
+
+class Comment(db.Model):
+    __tablename__ = 'comment'
+    __table_args__ = {'extend_existing': True}
+    
+    id = db.Column(db.Integer, primary_key=True)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
+    text = db.Column(db.Text, nullable=False)
+    likes_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    replies = db.relationship('Comment', 
+                              backref=db.backref('parent', remote_side=[id]),
+                              lazy=True,
+                              cascade='all, delete-orphan')
+    
+    likes = db.relationship('CommentLike', backref='comment', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self, current_user_id=None):
+        liked_by_user = False
+        if current_user_id:
+            liked_by_user = any(like.user_id == current_user_id for like in self.likes)
         
-        .sidebar-divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin: 20px 0;
+        return {
+            'id': self.id,
+            'author': self.user.get_display_name(),
+            'text': self.text,
+            'time': self.get_time_ago(),
+            'likes': self.likes_count,
+            'liked': liked_by_user,
+            'replies': [reply.to_dict(current_user_id) for reply in self.replies],
+            'created_at': self.created_at.isoformat()
         }
-
-        .sidebar-footer-links {
-            list-style: none;
-            padding: 0 20px;
-            margin-top: auto; /* Pushes footer to the bottom */
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .sidebar-footer-item {
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-        }
-
-        .sidebar-footer-item a {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-        .sidebar-footer-item a:hover {
-            color: white;
-        }
-
-        .sidebar-copyright {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.4);
-            text-align: center;
-            margin-top: 15px;
-            padding: 0 20px;
-        }
+    
+    def get_time_ago(self):
+        now = datetime.utcnow()
+        diff = now - self.created_at
         
-        .sidebar-account-info {
-            display: flex;
-            align-items: center;
-            padding: 0 20px 20px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "just now"
+
+class CommentLike(db.Model):
+    __tablename__ = 'comment_like'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'comment_id'),
+        {'extend_existing': True}
+    )
+
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    feedback_text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='feedbacks')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'feedback_text': self.feedback_text,
+            'created_at': self.created_at.isoformat(),
+            'user_email': self.user.email
         }
 
-        /* Mobile Toggle Button for Sidebar */
-        .sidebar-toggle-btn {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001; /* Above sidebar when open */
-            background: rgba(26, 26, 26, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: none; /* Hidden by default, shown on mobile */
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-        .sidebar-toggle-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+class WatchHistory(db.Model):
+    __tablename__ = 'watch_history'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    watched_at = db.Column(db.DateTime, default=datetime.utcnow)
+    progress_seconds = db.Column(db.Integer, default=0)
+    completed = db.Column(db.Boolean, default=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'video_id'),
+    )
 
 
-        /* Main Homepage Body */
-        .main-content {
-            margin-left: 250px; /* Desktop offset for the fixed sidebar */
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto; /* Allows main content to scroll independently */
-            transition: margin-left 0.3s ease; /* For desktop sidebar transition */
-        }
+# Helper Functions
+def extract_youtube_video_id(url):
+    """Extract YouTube video ID from URL"""
+    patterns = [
+        r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+        r'youtube\.com\/watch\?v=([^"&?\/\s]{11})',
+        r'youtu\.be\/([^"&?\/\s]{11})',
+        r'youtube\.com\/embed\/([^"&?\/\s]{11})'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    return None
 
-        /* Overlay when sidebar is open on mobile */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999; /* Below sidebar, above main content */
-            display: none; /* Hidden by default */
-        }
-        .overlay.active {
-            display: block;
-        }
+def get_youtube_thumbnail(video_id):
+    """Get YouTube thumbnail URL"""
+    return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
 
-        /* Hero Banner */
-        .hero-banner {
-            background: linear-gradient(to right, #1f1f1f, #2a2a2a);
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 40px;
-            padding: 30px;
-            min-height: 250px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-        }
+def login_required(f):
+    """Decorator to require login"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            flash('Please log in to access this page', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
-        .hero-video-placeholder {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://placehold.co/1200x400/0a0a0a/333?text=Snayvu+Featured+Content') no-repeat center center/cover;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.2);
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 2;
-            color: white;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-        }
-
-        .hero-badge {
-            display: none;
-        }
-
-        .hero-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .hero-button {
-            background: linear-gradient(45deg, #a855f7, #6366f1);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-        }
-        .hero-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
-        }
-
-        /* Horizontal Content Rows */
-        .content-row {
-            margin-bottom: 40px;
-        }
-
-        .row-header {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #f0f0f0;
-        }
-
-        .row-content {
-            display: flex;
-            overflow-x: auto;
-            gap: 15px;
-            padding-bottom: 10px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
-        }
-
-        /* Custom scrollbar for rows */
-        .row-content::-webkit-scrollbar {
-            height: 8px;
-        }
-        .row-content::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-        .row-content::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-        }
-        .row-content::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        .content-tile {
-            flex-shrink: 0;
-            width: 320px; /* Increased width for better video player view */
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-            cursor: default;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-        .content-tile:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-        }
+def admin_required(f):
+    """Decorator to require admin access"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Authentication required'}), 401
+            return redirect(url_for('index'))
         
-        /* Video Player Specific Styles */
-        .tile-media-container {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-            background: #000;
-            cursor: pointer;
-        }
+        user = User.query.get(session['user_id'])
+        if not user or not user.is_admin:
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'Admin access required'}), 403
+            return redirect(url_for('index'))
         
-        .tile-media-container video,
-        .tile-media-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-            object-fit: contain; /* CRITICAL CHANGE: Ensures full video is visible, adds letterboxing if needed */
-        }
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Routes
+@app.route('/')
+def index():
+    """Main landing page"""
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user:
+            if user.is_admin:
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('dashboard'))
+    
+    return render_template('index.html')
+
+# --- STATIC PAGES ROUTES ---
+@app.route('/about')
+def about_page():
+    return render_template('about.html')
+
+@app.route('/terms')
+def terms_page():
+    return render_template('terms.html')
+
+@app.route('/privacy')
+def privacy_page():
+    return render_template('privacy.html')
+
+@app.route('/contact')
+def contact_page():
+    return render_template('contact.html')
+
+@app.route('/help-support')
+def help_support_page():
+    return render_template('help_support.html')
+
+@app.route('/account-settings')
+@login_required
+def account_settings_page():
+    user = User.query.get(session['user_id'])
+    return render_template('account_settings.html', user=user)
+
+# Serve uploaded media files
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# --- END STATIC PAGES ROUTES ---
+
+
+# Authentication Routes
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """User registration endpoint"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
         
-        /* Hide default video controls */
-        video::-webkit-media-controls {
-            display:none !important;
-        }
+        if not email or not password:
+            return jsonify({'success': False, 'message': 'Email and password are required'}), 400
         
-        .custom-video-controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            opacity: 0; /* Hidden by default */
-            transition: opacity 0.3s ease;
-            z-index: 10;
-        }
-
-        .content-tile:hover .custom-video-controls,
-        .content-tile.playing .custom-video-controls {
-            opacity: 1; /* Show on hover or when playing */
-        }
+        if len(password) < 8:
+            return jsonify({'success': False, 'message': 'Password must be at least 8 characters long'}), 400
         
-        .controls-top-row, .controls-bottom-row {
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-
-        .controls-bottom-row {
-            padding-top: 5px;
-        }
+        if User.query.filter_by(email=email).first():
+            return jsonify({'success': False, 'message': 'An account with this email already exists'}), 400
         
-        .control-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 5px;
-        }
+        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        user = User(email=email, password_hash=password_hash)
+        db.session.add(user)
+        db.session.commit()
         
-        .volume-container {
-            display: flex;
-            align-items: center;
-            margin-left: 10px;
-        }
-
-        .volume-slider {
-            width: 60px;
-            height: 4px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 2px;
-            cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-        }
+        session['user_id'] = user.id
+        session['user_email'] = user.email
         
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 12px;
-            height: 12px;
-            background: #a855f7;
-            border-radius: 50%;
-            cursor: pointer;
-        }
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful',
+            'isAdmin': False,
+            'redirect': '/dashboard'
+        })
         
-        .time-display {
-            margin-left: auto;
-            font-size: 0.8rem;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.7);
-        }
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error during registration: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Registration failed. Please try again.'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """User login endpoint"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
         
-        .progress-bar {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            border-radius: 2.5px;
-            outline: none;
-            margin-bottom: 5px;
-        }
-
-        .progress-bar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #a855f7;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid #0a0a0a;
-        }
-
-        /* End Video Player Styles */
-
-        .tile-info {
-            padding: 10px 15px; /* More padding */
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .tile-title {
-            font-size: 1rem; /* Slightly larger title */
-            font-weight: 600;
-            line-height: 1.3;
-            margin-bottom: 5px;
-            white-space: normal;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            flex-grow: 1;
-        }
-
-        .tile-meta {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 5px;
-        }
-
-        .tile-actions {
-            display: flex;
-            justify-content: flex-start; /* Align actions to the left */
-            align-items: center;
-            gap: 20px; /* More space between buttons */
-            padding: 5px 0;
-            margin-top: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .tile-action-btn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.8); /* Brighter for more visibility */
-            font-size: 0.9rem; /* Larger font */
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 5px;
-            border-radius: 5px;
-            transition: background 0.2s ease, color 0.2s ease;
-        }
-        .tile-action-btn:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .tile-action-btn.liked {
-            color: #a855f7;
-            font-weight: bold;
-        }
-
-
-        /* Footer */
-        .footer {
-            background: #1a1a1a;
-            padding: 30px 20px;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 40px;
-        }
-
-        .footer-app-buttons {
-            margin-bottom: 20px;
-        }
-
-        .app-button {
-            display: inline-block;
-            background: #333;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            margin: 0 10px;
-            transition: background 0.2s ease;
-        }
-        .app-button:hover {
-            background: #555;
-        }
-
-        .footer-links {
-            list-style: none;
-            padding: 0;
-            margin-bottom: 20px;
-        }
-
-        .footer-links li {
-            display: inline-block;
-            margin: 0 10px;
-        }
-
-        .footer-links a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: color 0.2s ease;
-        }
-        .footer-links a:hover {
-            color: white;
-        }
-
-        .footer-logo-tagline {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 250px;
-                transform: translateX(-100%);
-                position: fixed;
-                z-index: 1000;
-                box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .sidebar-logo, .sidebar-section-title, .sidebar-footer-links, .sidebar-copyright, .sidebar-account-info {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-                width: 100%;
-                padding: 0 20px;
-            }
-            .sidebar-account-info {
-                align-items: flex-start;
-            }
-
-            .sidebar-menu-item {
-                justify-content: flex-start;
-                padding: 12px 20px;
-            }
-            .sidebar-icon {
-                margin-right: 15px;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 15px;
-            }
+        if not email or not password:
+            return jsonify({'success': False, 'message': 'Email and password are required'}), 400
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['user_email'] = user.email
             
-            .sidebar-toggle-btn {
-                display: flex;
-            }
-
-            .hero-title {
-                font-size: 2rem;
-            }
-            .row-header {
-                font-size: 1.3rem;
-            }
-            .content-tile {
-                width: 280px; /* Adjusted mobile width */
-            }
-            .tile-title {
-                font-size: 0.9rem;
-            }
-            .tile-action-btn {
-                font-size: 0.8rem;
-                gap: 5px;
-            }
-        }
-        
-        /* Modals (generic styles, adjusted for video player modal) */
-        .modal {
-            display: none; /* Changed from flex to none by default, then controlled by JS */
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: #0a0a0a;
-            margin: auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 600px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-        .close-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
-        .close-btn:hover {
-            opacity: 1;
-        }
-        .likes-content, .comments-content {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .like-item, .comment-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 10px;
-            border-radius: 12px;
-        }
-        .like-item:last-child, .comment-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #6366f1, #a855f7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-        .user-details { flex: 1; }
-        .user-name { font-weight: 600; font-size: 1rem; margin-bottom: 3px; }
-        .user-email { font-size: 0.85rem; opacity: 0.7; }
-        .like-time, .comment-time { font-size: 0.8rem; opacity: 0.6; }
-        .comment-text {
-            margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; font-size: 0.9rem; line-height: 1.4;
-        }
-        .comment-meta {
-            display: flex; align-items: center; gap: 15px; margin-top: 10px; font-size: 0.8rem; opacity: 0.7;
-        }
-        .comment-likes { display: flex; align-items: center; gap: 5px; }
-        .delete-comment-btn {
-            background: rgba(255, 107, 107, 0.2); border: 1px solid rgba(255, 107, 107, 0.3); color: #ff6b6b; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.3s ease;
-        }
-        .delete-comment-btn:hover { background: rgba(255, 107, 107, 0.3); transform: translateY(-1px); }
-        .empty-state-small { text-align: center; padding: 40px 20px; opacity: 0.6; }
-        .empty-state-small .empty-icon { font-size: 2rem; margin-bottom: 15px; }
-        .loading-small { text-align: center; padding: 40px 20px; }
-        .loading-small .loading-spinner { width: 30px; height: 30px; margin: 0 auto 15px; }
-
-        /* Floating Feedback Button */
-        .feedback-button-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 999;
-        }
-        .feedback-button {
-            background: linear-gradient(45deg, #4ade80, #22c55e);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .feedback-button:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
-        }
-        #feedback-modal .modal-content { max-width: 450px; padding: 30px; }
-        #feedback-modal textarea {
-            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; min-height: 120px; resize: vertical; margin-bottom: 15px; font-family: 'SF Pro Display', sans-serif;
-        }
-        #feedback-modal textarea::placeholder { color: rgba(255, 255, 255, 0.6); }
-        #feedback-modal button {
-            width: 100%; padding: 12px; background: linear-gradient(45deg, #4ade80, #22c55e); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
-        }
-        #feedback-modal button:hover { background: linear-gradient(45deg, #22c55e, #4ade80); transform: translateY(-1px); }
-        .feedback-success-message { color: #4ade80; margin-top: 15px; display: none; font-size: 0.9rem; }
-        .feedback-error-message { color: #ff6b6b; margin-top: 15px; display: none; font-size: 0.9rem; }
-
-        /* Upload Modal Specific Styles */
-        #upload-modal .modal-content {
-            max-width: 500px;
-        }
-        #upload-form label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-        #upload-form input[type="text"],
-        #upload-form textarea,
-        #upload-form input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-        }
-        #upload-form input[type="file"] {
-            margin-bottom: 15px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        #upload-form textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-        #upload-form button[type="submit"] {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(45deg, #6366f1, #a855f7);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        #upload-form button[type="submit"]:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
-        }
-        #upload-form button[type="submit"]:disabled {
-            background: rgba(255, 255, 255, 0.1);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .upload-status-message {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        .upload-status-message.success {
-            color: #4ade80;
-        }
-        .upload-status-message.error {
-            color: #ff6b6b;
-        }
-        .upload-status-message.info {
-            color: rgba(255, 255, 255, 0.7);
-        }
-        /* Feature Specific Content */
-        .feature-content-area {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            min-height: 400px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-        .feature-content-area h2 {
-            color: #a855f7;
-            font-size: 2rem;
-            margin-bottom: 20px;
-        }
-        .feature-content-area p {
-            font-size: 1.1rem;
-            opacity: 0.8;
-            max-width: 400px;
-            margin-bottom: 20px;
-        }
-        .feature-content-area .feature-icon {
-            font-size: 4rem;
-            margin-bottom: 30px;
-            color: #6366f1;
-        }
-    </style>
-</head>
-<body>
-    <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
-
-    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn">☰</button>
-
-    <div class="container">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-logo">Snayvu</div>
-
-            <ul class="sidebar-menu">
-                <li><a href="/dashboard" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="discover"><span class="sidebar-icon">🔍</span> Discover</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="originals"><span class="sidebar-icon">🎬</span> Snayvu Originals</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="shorts"><span class="sidebar-icon">📱</span> Shorts</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="channels"><span class="sidebar-icon">📺</span> Channels</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="live"><span class="sidebar-icon">📡</span> Live Now</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="mood-feed"><span class="sidebar-icon">🧠</span> For You (Mood Feed)</a></li>
-            </ul>
-
-            <div class="sidebar-divider"></div>
-
-            <div class="sidebar-section-title">Personal Feed</div>
-            <ul class="sidebar-menu">
-                <li><a href="#" class="sidebar-menu-item" data-section="continue-watching"><span class="sidebar-icon">🧾</span> Continue Watching</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="watchlist"><span class="sidebar-icon">⭐</span> Watchlist</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="my-circle"><span class="sidebar-icon">🧍</span> My Circle</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="my-reactions"><span class="sidebar-icon">💬</span> My Reactions</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="creator-dashboard"><span class="sidebar-icon">📈</span> Creator Dashboard</a></li>
-            </ul>
-
-            <div class="sidebar-divider"></div>
-
-            <div class="sidebar-section-title">Settings & Info</div>
-            <ul class="sidebar-menu">
-                <li><a href="/account-settings" class="sidebar-menu-item"><span class="sidebar-icon">⚙️</span> Account Settings</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="upload" onclick="showUploadModal(); return false;"><span class="sidebar-icon">📤</span> Upload</a></li>
-                <li><a href="/help-support" class="sidebar-menu-item"><span class="sidebar-icon">📞</span> Help & Support</a></li>
-                <li><a href="#" class="sidebar-menu-item" onclick="handleLogoutClick(); return false;"><span class="sidebar-icon">🚪</span> Log Out</a></li>
-            </ul>
-
-            <div class="sidebar-divider"></div>
+            return jsonify({
+                'success': True,
+                'message': 'Login successful',
+                'isAdmin': user.is_admin
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Invalid email or password'}), 401
             
-            <div class="sidebar-account-info">
-                <span class="user-email" id="user-email">Loading...</span>
-                <span class="streak-tracker" id="watch-streak"><span class="streak-icon">🔥</span> <span id="streak-count">0</span>-Day Streak</span>
-            </div>
+    except Exception as e:
+        logger.error(f"Error during login: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Login failed. Please try again.'}), 500
 
-            <ul class="sidebar-footer-links">
-                <li><a href="/about">About</a></li>
-                <li><a href="/terms">Terms</a></li>
-                <li><a href="/privacy">Privacy</a></li>
-                <li><a href="/contact">Contact</a></li>
-            </ul>
-            <div class="sidebar-copyright">© 2024 Snayvu. All rights reserved.</div>
-        </aside>
+@app.route('/api/auth/logout', methods=['POST'])
+@login_required
+def logout():
+    """User logout endpoint"""
+    session.clear()
+    flash('You have been logged out successfully.', 'info')
+    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
 
-        <div class="overlay" id="sidebar-overlay"></div>
+@app.route('/api/auth/check')
+@login_required
+def auth_check():
+    """Check if user is authenticated"""
+    user = User.query.get(session['user_id'])
+    return jsonify({
+        'success': True,
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'is_admin': user.is_admin,
+            'has_subscription': True
+        }
+    })
 
-        <main class="main-content" id="main-content">
-            <section class="hero-banner">
-                <div class="hero-video-placeholder">
-                    </div>
-                <div class="hero-content">
-                    <h1 class="hero-title">Experience Snayvu: Create, Watch, Repeat.</h1>
-                    <button class="hero-button" onclick="loadAllHomepageRows();">Explore Content</button>
-                </div>
-            </section>
+# --- NEW: VIEW COUNT ROUTE ---
+@app.route('/api/videos/<int:video_id>/view', methods=['POST'])
+@login_required
+def record_video_view(video_id):
+    """Records a single view for a video when a user starts playing it."""
+    video = Video.query.get(video_id)
+    if not video:
+        # Even if the video isn't found, we return a success to not bother the user
+        return jsonify({'success': True, 'message': 'Video not found, but acknowledged.'}), 200
+    
+    try:
+        # Increment the view count safely
+        if video.views_count is None:
+            video.views_count = 0
+        video.views_count += 1
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'View recorded'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error recording view for video {video_id}: {e}")
+        return jsonify({'success': False, 'message': 'Server error while recording view'}), 500
 
-            <section class="content-row" id="trending-now-section">
-                <h2 class="row-header">🔥 Trending Now</h2>
-                <div class="row-content" id="trending-now-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+# Video Like System Routes
+@app.route('/api/videos/<int:video_id>/like', methods=['POST'])
+@login_required
+def toggle_video_like(video_id):
+    """Toggle like on a video"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        user_id = session['user_id']
+        
+        existing_like = VideoLike.query.filter_by(
+            user_id=user_id,
+            video_id=video_id
+        ).first()
+        
+        if existing_like:
+            db.session.delete(existing_like)
+            video.likes_count = max(0, video.likes_count - 1)
+            liked = False
+        else:
+            new_like = VideoLike(user_id=user_id, video_id=video_id)
+            db.session.add(new_like)
+            video.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': video.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling video like: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
-            <section class="content-row" id="snayvu-originals-section">
-                <h2 class="row-header">🎬 Snayvu Originals</h2>
-                <div class="row-content" id="snayvu-originals-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """User dashboard"""
+    return render_template('dashboard.html')
 
-            <section class="content-row" id="top-creators-section">
-                <h2 class="row-header">🌟 Top Creators This Week</h2>
-                <div class="row-content" id="top-creators-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+@app.route('/api/videos')
+@login_required
+def get_videos():
+    """
+    Get all active videos for feed.
+    'can_watch' flag is always true now.
+    """
+    videos = Video.query.filter_by(is_active=True).order_by(Video.created_at.desc()).all()
+    current_user = User.query.get(session['user_id'])
 
-            <section class="content-row" id="new-this-week-section">
-                <h2 class="row-header">🆕 New This Week</h2>
-                <div class="row-content" id="new-this-week-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+    video_list = []
+    for video in videos:
+        user_liked = VideoLike.query.filter_by(
+            user_id=current_user.id,
+            video_id=video.id
+        ).first() is not None
+        
+        # Determine correct playback URL
+        playback_url = None
+        if video.local_file_path:
+            playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+        elif video.youtube_url: # This now holds the YouTube URL (for YouTube videos)
+            playback_url = video.youtube_url
 
-            <section class="content-row" id="emotional-picks-section">
-                <h2 class="row-header">🧠 Emotional Picks</h2>
-                <div class="row-content" id="emotional-picks-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+        video_list.append({
+            'id': video.id,
+            'title': video.title,
+            'description': video.description,
+            'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
+            'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
+            'thumbnail_url': video.thumbnail_url,
+            'likes_count': video.likes_count,
+            'user_liked': user_liked,
+            'created_at': video.created_at.isoformat(),
+            'genre': video.genre,
+            'featured_tag': video.featured_tag,
+            'can_watch': True,
+            'local_file_path': playback_url, # This field is now the primary playback URL for both types
+            'duration_seconds': video.duration_seconds,
+            'is_short': video.is_short,
+            'views_count': video.views_count,
+            'hashtags': video.hashtags,
+            'comment_count': Comment.query.filter_by(video_id=video.id).count()
+        })
+    
+    return jsonify({'success': True, 'videos': video_list})
 
-            <section class="content-row" id="continue-watching-section">
-                <h2 class="row-header">🧾 Continue Watching</h2>
-                <div class="row-content" id="continue-watching-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+# Comment System Routes
+@app.route('/api/videos/<int:video_id>/comments', methods=['GET'])
+@login_required
+def get_comments(video_id):
+    """Get comments for a specific video"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        comments = Comment.query.filter_by(
+            video_id=video_id, 
+            parent_id=None
+        ).order_by(Comment.created_at.desc()).all()
+        
+        current_user_id = session['user_id']
+        
+        comment_list = []
+        for comment in comments:
+            comment_list.append(comment.to_dict(current_user_id))
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'total_count': len(comments)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting comments: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
 
-            <section class="content-row" id="just-dropped-shorts-section">
-                <h2 class="row-header">⚡ Just Dropped (Shorts)</h2>
-                <div class="row-content" id="just-dropped-shorts-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+@app.route('/api/videos/<int:video_id>/comments', methods=['POST'])
+@login_required
+def post_comment(video_id):
+    """Post a new comment on a video"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '').strip()
+        parent_id = data.get('parent_id')
+        
+        if not text:
+            return jsonify({'success': False, 'message': 'Comment text is required'}), 400
+        
+        video = Video.query.get_or_404(video_id)
+        
+        if parent_id:
+            parent_comment = Comment.query.get(parent_id)
+            if not parent_comment or parent_comment.video_id != video_id:
+                return jsonify({'success': False, 'message': 'Invalid parent comment'}), 400
+        
+        comment = Comment(
+            video_id=video_id,
+            user_id=session['user_id'],
+            parent_id=parent_id,
+            text=text
+        )
+        
+        db.session.add(comment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Comment posted successfully',
+            'comment': comment.to_dict(session['user_id'])
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error posting comment: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to post comment'}), 500
 
-            <section class="content-row" id="live-now-section">
-                <h2 class="row-header">🔴 Live Now</h2>
-                <div class="row-content" id="live-now-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
+@app.route('/api/comments/<int:comment_id>/like', methods=['POST'])
+@login_required
+def toggle_comment_like(comment_id):
+    """Toggle like on a comment"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        user_id = session['user_id']
+        
+        existing_like = CommentLike.query.filter_by(
+            user_id=user_id,
+            comment_id=comment_id
+        ).first()
+        
+        if existing_like:
+            db.session.delete(existing_like)
+            comment.likes_count = max(0, comment.likes_count - 1)
+            liked = False
+        else:
+            new_like = CommentLike(user_id=user_id, comment_id=comment_id)
+            db.session.add(new_like)
+            comment.likes_count += 1
+            liked = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'liked': liked,
+            'likes_count': comment.likes_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling comment like: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update like'}), 500
 
-            <section id="feature-display-area" style="display: none;">
-                </section>
+@app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
+@login_required
+def delete_comment(comment_id):
+    """Delete a comment (only by the author or admin)"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        user = User.query.get(session['user_id'])
+        
+        if comment.user_id != user.id and not user.is_admin:
+            return jsonify({'success': False, 'message': 'Not authorized to delete this comment'}), 403
+        
+        db.session.delete(comment)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Comment deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting comment: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
 
-        </main>
-    </div>
+@app.route('/api/comments/<int:comment_id>', methods=['PUT'])
+@login_required
+def edit_comment(comment_id):
+    """Edit a comment (only by the author)"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        user_id = session['user_id']
+        
+        if comment.user_id != user_id:
+            return jsonify({'success': False, 'message': 'Not authorized to edit this comment'}), 403
+        
+        data = request.get_json()
+        new_text = data.get('text', '').strip()
+        
+        if not new_text:
+            return jsonify({'success': False, 'message': 'Comment text is required'}), 400
+        
+        comment.text = new_text
+        comment.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Comment updated successfully',
+            'comment': comment.to_dict(user_id)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error editing comment: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update comment'}), 500
 
-    <footer class="footer">
-        <div class="footer-app-buttons">
-            <a href="#" class="app-button">Download on the App Store</a>
-            <a href="#" class="app-button">Get it on Google Play</a>
-        </div>
-        <ul class="footer-links">
-            <li><a href="/about">About</a></li>
-            <li><a href="/terms">Terms</a></li>
-            <li><a href="/privacy">Privacy</a></li>
-            <li><a href="/contact">Contact</a></li>
-        </ul>
-        <div class="footer-logo-tagline">Snayvu – Create. Watch. Repeat.</div>
-    </footer>
+# Admin Routes
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    """Admin dashboard"""
+    return render_template('admin.html')
 
-    <div id="likes-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Video Likes</div>
-                <button class="close-btn" onclick="closeLikesModal()">×</button>
-            </div>
-            <div class="likes-content" id="likes-content"></div>
-        </div>
-    </div>
+@app.route('/api/admin/stats')
+@admin_required
+def admin_stats():
+    """Get admin dashboard statistics"""
+    try:
+        now = datetime.utcnow()
+        month_start = datetime(now.year, now.month, 1)
 
-    <div id="comments-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <div class="modal-title">Video Comments</div>
-                <button class="close-btn" onclick="closeCommentsModal()">×</button>
-            </div>
-            <div class="comments-content" id="comments-content"></div>
-        </div>
-    </div>
-
-    <div id="feedback-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Suggest a Story / Give Feedback</div>
-                <button class="close-btn" onclick="closeFeedbackModal()">×</button>
-            </div>
-            <textarea id="feedback-text" placeholder="Share your ideas or tell us what you think!"></textarea>
-            <button onclick="submitFeedback()">Send Feedback</button>
-            <div id="feedback-message" class="feedback-success-message"></div>
-        </div>
-    </div>
-
-    <div id="upload-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Upload Video</div>
-                <button class="close-btn" onclick="closeUploadModal()">×</button>
-            </div>
-            <form id="upload-form">
-                <label for="upload-title">Title</label>
-                <input type="text" id="upload-title" name="title" required maxlength="200">
-
-                <label for="upload-description">Description (Optional)</label>
-                <textarea id="upload-description" name="description" rows="3" maxlength="500"></textarea>
-
-                <label for="upload-hashtags">Hashtags (e.g., #short #comedy)</label>
-                <input type="text" id="upload-hashtags" name="hashtags" maxlength="200">
-
-                <label for="upload-duration">Video Duration (seconds) <span style="opacity: 0.7;">(Optional for local uploads)</span></label>
-                <input type="number" id="upload-duration" name="duration_seconds" placeholder="e.g., 30 for shorts, 120 for longer videos">
-                <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">Manually enter video duration for categorization.</small>
-
-                <input type="checkbox" id="upload-is-short" name="is_short" style="width: auto; margin-right: 10px;">
-                <label for="upload-is-short" style="display: inline;">Mark as Short (under 60 seconds)</label>
-                <br><br>
-
-                <label for="upload-file">Select Video File</label>
-                <input type="file" id="upload-file" name="video_file" accept="video/mp4,video/mov,video/avi,video/mkv,video/webm" required>
-                
-                <button type="submit" id="upload-submit-btn">Upload</button>
-                <p class="upload-status-message" id="upload-status"></p>
-                <div class="progress-container" id="upload-progress-container">
-                    <div class="progress-bar" id="upload-progress-bar">0%</div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="feedback-button-container">
-        <button class="feedback-button" onclick="showFeedbackModal()">💡</button>
-    </div>
-
-    <script>
-        const BASE_URL = window.location.origin;
-        let currentUser = null;
-        let currentUserName = 'You'; // Default username for display
-        let currentlyPlayingVideo = null; // NEW: Track the currently playing video element
-
-        // --- NEW VIDEO PLAYER LOGIC ---
-
-        // Formats time in seconds to MM:SS or HH:MM:SS
-        function formatTime(timeInSeconds) {
-            const result = new Date(timeInSeconds * 1000).toISOString().substr(11, 8);
-            return {
-                minutes: result.substr(3, 2),
-                seconds: result.substr(6, 2),
-                hours: result.substr(0, 2),
-            };
+        stats = {
+            'total_videos': Video.query.filter_by(is_active=True).count(),
+            'total_users': User.query.count(),
+            'active_subscribers': User.query.count(), # Note: This will count all users, not just paying subs, if subscriptions are disabled.
+            'videos_this_month': Video.query.filter(
+                Video.created_at >= month_start,
+                Video.is_active == True
+            ).count(),
+            'total_comments': Comment.query.count(),
+            'comments_this_month': Comment.query.filter(
+                Comment.created_at >= month_start
+            ).count()
         }
         
-        // Initializes a single video player
-        // Initializes a single video player
-function initializeVideoPlayer(tile) {
-    const video = tile.querySelector('video');
-    if (!video) return; // Only apply to tiles with video elements
-
-    const videoId = tile.dataset.videoId; // Get the video ID from the tile
-    const playPauseBtn = tile.querySelector(".play-pause-btn");
-    const rewindBtn = tile.querySelector(".rewind-btn");
-    const volumeBtn = tile.querySelector(".volume-btn");
-    const volumeSlider = tile.querySelector(".volume-slider");
-    const progressBar = tile.querySelector(".progress-bar");
-    const currentTimeEl = tile.querySelector(".current-time");
-    const totalTimeEl = tile.querySelector(".total-time");
-
-    // Toggle Play/Pause
-    const togglePlay = () => {
-        if (video.paused) {
-            // If another video is playing, pause it first
-            if (currentlyPlayingVideo && currentlyPlayingVideo !== video) {
-                currentlyPlayingVideo.pause();
-            }
-            video.play();
-            currentlyPlayingVideo = video;
-        } else {
-            video.pause();
-            currentlyPlayingVideo = null;
-        }
-    };
-    
-    playPauseBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        togglePlay();
-    });
-
-    video.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlay();
-    });
-
-    // Play/Pause State Changes
-    video.addEventListener("play", () => {
-        tile.classList.add("playing");
-        playPauseBtn.innerHTML = "❚❚"; // Pause Icon
+        return jsonify({'success': True, 'stats': stats})
         
-        // --- THIS IS THE NEW CODE THAT COUNTS THE VIEW ---
-        if (!tile.dataset.viewRecorded) {
-            recordView(videoId);
-            tile.dataset.viewRecorded = 'true'; // Set a flag so we don't count it again
-        }
-        // --- END OF NEW CODE ---
+    except Exception as e:
+        logger.error(f"Error fetching admin stats: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-        if (video.muted) { // Unmute on first manual play
-            video.muted = false;
-            volumeSlider.value = video.volume;
-            volumeBtn.innerHTML = video.volume > 0 ? "🔊" : "🔇";
-        }
-    });
-
-    video.addEventListener("pause", () => {
-        tile.classList.remove("playing");
-        playPauseBtn.innerHTML = "▶"; // Play Icon
-    });
-    
-    // Rewind
-    rewindBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        video.currentTime -= 10;
-    });
-
-    // Volume Controls
-    volumeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        video.muted = !video.muted;
-    });
-
-    video.addEventListener("volumechange", () => {
-        volumeSlider.value = video.volume;
-        if (video.muted || video.volume === 0) {
-            volumeBtn.innerHTML = "🔇";
-        } else {
-            volumeBtn.innerHTML = "🔊";
-        }
-    });
-
-    volumeSlider.addEventListener("input", (e) => {
-        e.stopPropagation();
-        video.volume = e.target.value;
-        video.muted = e.target.value === 0;
-    });
-    
-    // Time and Progress Bar Update
-    video.addEventListener("loadedmetadata", () => {
-        const totalTime = formatTime(video.duration);
-        totalTimeEl.textContent = `${totalTime.minutes}:${totalTime.seconds}`;
-        progressBar.max = video.duration;
-    });
-
-    video.addEventListener("timeupdate", () => {
-        const currentTime = formatTime(video.currentTime);
-        currentTimeEl.textContent = `${currentTime.minutes}:${currentTime.seconds}`;
-        progressBar.value = video.currentTime;
-    });
-    
-    // Seek functionality
-    progressBar.addEventListener("input", (e) => {
-        e.stopPropagation();
-        video.currentTime = e.target.value;
-    });
-
-    // Prevent clicks on controls from bubbling up to the video element
-     tile.querySelector('.custom-video-controls').addEventListener('click', e => e.stopPropagation());
-}
-
-        // --- END NEW VIDEO PLAYER LOGIC ---
-
-        // Records a view for a video
-async function recordView(videoId) {
-    try {
-        const csrfToken = document.getElementById('csrf_token').value;
-        await fetch(`${BASE_URL}/api/videos/${videoId}/view`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        });
-    } catch (error) {
-        console.error('Could not record view:', error);
-    }
-}
-
-        document.addEventListener('DOMContentLoaded', function() {
-            loadUserInfo();
-            loadHeroBannerContent();
-            loadAllHomepageRows();
-
-            document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
-            document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
-
-            // Intersection Observer to PAUSE videos when they scroll out of view
-            const videoIntersectionObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (!entry.isIntersecting) {
-                        const video = entry.target.querySelector('video');
-                        if (video && !video.paused) {
-                            video.pause();
-                        }
-                    }
-                });
-            }, { threshold: 0.1 }); // Pause when less than 10% is visible
-
-            // Observe all dynamically added content tiles
-            const rowContents = document.querySelectorAll('.row-content');
-            rowContents.forEach(row => {
-                const observer = new MutationObserver((mutationsList) => {
-                    for (const mutation of mutationsList) {
-                        if (mutation.type === 'childList') {
-                            mutation.addedNodes.forEach(node => {
-                                if (node.nodeType === 1 && node.classList.contains('content-tile')) {
-                                    if(node.querySelector('video')){
-                                       initializeVideoPlayer(node);
-                                       videoIntersectionObserver.observe(node);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                });
-                observer.observe(row, { childList: true });
-            });
-        });
-
-        // Function to explicitly pause a video
-        function pauseCurrentlyPlayingVideo() {
-            if (currentlyPlayingVideo) {
-                currentlyPlayingVideo.pause();
-                currentlyPlayingVideo = null;
-            }
-        }
-
-        // --- Standard functions ---
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        function loadAllHomepageRows() {
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block');
-            document.getElementById('feature-display-area').style.display = 'none';
-
-            loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
-            loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-            loadContentRow('top-creators-row', 'Featured Creator', 'Top Creators');
-            loadContentRow('new-this-week-row', 'New This Week', 'New Content');
-            loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
-            loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
-            loadContentRow('live-now-row', 'Live Now', 'Live Streams');
-        }
-
-        async function loadUserInfo() {
-            try {
-                const response = await fetch(`${BASE_URL}/api/auth/check`);
-                const data = await response.json();
-                if (data.success) {
-                    currentUser = data.user;
-                    document.getElementById('user-email').textContent = currentUser.email;
-                    currentUserName = currentUser.email.split('@')[0];
-                    updateDailyWatchStreak();
-                } else {
-                    window.location.href = `${BASE_URL}/`;
-                }
-            } catch (error) {
-                console.error('Error loading user info:', error);
-                window.location.href = `${BASE_URL}/`;
-            }
-        }
-
-        async function loadContentRow(elementId, tag, title) {
-            const rowContentElement = document.getElementById(elementId);
-            rowContentElement.innerHTML = `
-                <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading ${title}...</div><div class="tile-meta"></div></div></div>
-            `;
-
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
-                const data = await response.json();
-
-                if (data.success && data.videos.length > 0) {
-                    rowContentElement.innerHTML = data.videos.map(video => renderContentTile(video)).join('');
-                    // Initialization now happens via MutationObserver
-                } else {
-                    rowContentElement.innerHTML = `
-                        <div class="empty-state-small" style="padding: 20px; width: 100%; flex-shrink: 0; text-align: center;">
-                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">👀</div>
-                            <div style="font-size: 0.9rem;">No ${title} content yet.</div>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error(`Error loading ${title}:`, error);
-                rowContentElement.innerHTML = `
-                    <div class="error-message" style="padding: 10px; width: 100%; flex-shrink: 0;">Failed to load ${title}.</div>
-                `;
-            }
-        }
-
-
-        // Renders a single content tile with integrated player and interaction buttons
-        function renderContentTile(video) {
-            let playbackSource = video.local_file_path; // local_file_path holds the direct playback URL
-            let thumbnailUrl = video.thumbnail_url || 'https://placehold.co/320x180/1a1a1a/888?text=Snayvu';
-
-            // Use poster attribute for thumbnail
-            const videoHtml = playbackSource ? `
-                <video src="${playbackSource}" preload="metadata" muted playsinline poster="${thumbnailUrl}"></video>
-                <div class="custom-video-controls">
-                    <input type="range" class="progress-bar" value="0" step="any">
-                    <div class="controls-bottom-row">
-                        <button class="control-btn play-pause-btn">▶</button>
-                        <button class="control-btn rewind-btn">⟲ 10s</button>
-                        <div class="volume-container">
-                            <button class="control-btn volume-btn">🔇</button>
-                            <input type="range" class="volume-slider" min="0" max="1" step="any" value="0">
-                        </div>
-                        <div class="time-display">
-                            <span class="current-time">00:00</span> / <span class="total-time">00:00</span>
-                        </div>
-                    </div>
-                </div>
-            ` : `<img src="${thumbnailUrl}" alt="No Video Source">`;
-
-            return `
-                <div class="content-tile" data-video-id="${video.id}">
-                    <div class="tile-media-container">
-                        ${videoHtml}
-                    </div>
-                    <div class="tile-info">
-                        <div>
-                           <div class="tile-title">${escapeHtml(video.title)}</div>
-                           <div class="tile-meta">
-                               ${video.genre ? `<span>${escapeHtml(video.genre)}</span> | ` : ''}
-                               ${video.is_short ? 'Short' : 'Long-form'} | 
-                               ${video.views_count} Views
-                           </div>
-                        </div>
-                        <div class="tile-actions">
-                            <button class="tile-action-btn ${video.user_liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleVideoLike(${video.id});">
-                                ❤️ <span id="likes-count-${video.id}">${video.likes_count || 0}</span> Likes
-                            </button>
-                            <button class="tile-action-btn" onclick="event.stopPropagation(); viewVideoComments(${video.id});">
-                                💬 <span id="comments-count-${video.id}">${video.comment_count || 0}</span> Comments
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Load content for the Hero Banner (unchanged)
-        async function loadHeroBannerContent() {
-            const heroBanner = document.querySelector('.hero-banner');
-            heroBanner.querySelector('.hero-video-placeholder').innerHTML = '';
-            heroBanner.querySelector('.hero-title').textContent = 'Experience Snayvu: Create, Watch, Repeat.';
-            heroBanner.querySelector('.hero-button').onclick = () => loadAllHomepageRows();
-        }
-
-        // --- Sidebar Navigation Logic ---
-        function displayFeatureMessage(icon, title, message) {
-            pauseCurrentlyPlayingVideo(); // Pause video before showing message
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
-            const featureDisplayArea = document.getElementById('feature-display-area');
-            featureDisplayArea.innerHTML = `
-                <div class="feature-content-area">
-                    <div class="feature-icon">${icon}</div>
-                    <h2>${title}</h2>
-                    <p>${message}</p>
-                    <p>Stay tuned for updates as we build out these exciting features!</p>
-                </div>
-            `;
-            featureDisplayArea.style.display = 'block';
-            window.scrollTo(0, 0);
-        }
-
-        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
-            item.addEventListener('click', function(event) {
-                if (this.dataset.section) { event.preventDefault(); }
-
-                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
-                this.classList.add('active');
-                
-                if (document.getElementById('sidebar').classList.contains('active')) { toggleSidebar(); }
-
-                const section = this.dataset.section;
-                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
-                document.getElementById('feature-display-area').style.display = 'none';
-                
-                pauseCurrentlyPlayingVideo(); // Pause video when navigating
-
-                if (section === 'home') {
-                    loadAllHomepageRows();
-                } else if (section === 'discover') {
-                    displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
-                    document.getElementById('trending-now-section').style.display = 'block';
-                    loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
-                } else if (section === 'originals') {
-                    document.getElementById('snayvu-originals-section').style.display = 'block';
-                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-                } else if (section === 'shorts') {
-                    document.getElementById('just-dropped-shorts-section').style.display = 'block';
-                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts');
-                } else if (section === 'channels') {
-                    document.getElementById('top-creators-section').style.display = 'block';
-                    loadContentRow('top-creators-row', 'Featured Creator', 'Channels');
-                } else if (section === 'live') {
-                    document.getElementById('live-now-section').style.display = 'block';
-                    loadContentRow('live-now-row', 'Live', 'Live Now');
-                } else if (section === 'mood-feed') {
-                    document.getElementById('emotional-picks-section').style.display = 'block';
-                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
-                } else if (section === 'continue-watching') {
-                    document.getElementById('continue-watching-section').style.display = 'block';
-                    loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-                } else if (section === 'watchlist' || section === 'my-circle' || section === 'my-reactions' || section === 'creator-dashboard') {
-                    // Simplified handling for feature message sections
-                    const messages = {
-                        watchlist: ['⭐', 'Watchlist', 'Save your favorite videos and series to watch later.'],
-                        'my-circle': ['🧍', 'My Circle', 'Share private content and engage exclusively with your closest connections.'],
-                        'my-reactions': ['💬', 'My Reactions', 'View and manage all your facial reaction clips.'],
-                        'creator-dashboard': ['📈', 'Creator Dashboard', 'Access analytics and manage your content.']
-                    };
-                    displayFeatureMessage(...messages[section]);
-                }
-            });
-        });
-
-        // Handle Logout Click
-        async function handleLogoutClick() {
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-                });
-                const data = await response.json();
-                if (data.success && data.redirect) { window.location.href = data.redirect; }
-                else { console.error('Logout failed:', data.message || 'Unknown error'); window.location.href = `${BASE_URL}/`; }
-            } catch (error) { console.error('Error during logout:', error); window.location.href = `${BASE_URL}/`; }
-        }
-
-        // General Helper Functions
-        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+@app.route('/api/admin/videos', methods=['GET'])
+@admin_required
+def admin_get_videos():
+    """Get all videos for admin"""
+    try:
+        videos = Video.query.order_by(Video.created_at.desc()).all()
         
-        // --- Upload Modal JS ---
-        function showUploadModal() {
-            document.getElementById('upload-modal').style.display = 'flex';
-            document.getElementById('upload-form').reset();
-            document.getElementById('upload-status').textContent = '';
-        }
-        function closeUploadModal() { document.getElementById('upload-modal').style.display = 'none'; }
-        // (Upload form submission logic remains the same as previous correct versions)
-         document.getElementById('upload-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const uploadButton = document.getElementById('upload-submit-btn');
-            const statusMessage = document.getElementById('upload-status');
-            const csrfToken = document.getElementById('csrf_token').value;
-
-            uploadButton.disabled = true;
-            statusMessage.textContent = 'Uploading...';
-            statusMessage.className = 'upload-status-message info';
-
-            try {
-                const response = await fetch(`${BASE_URL}/api/upload-video`, {
-                    method: 'POST',
-                    headers: {'X-CSRFToken': csrfToken},
-                    body: formData
-                });
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    statusMessage.textContent = result.message || 'Upload successful!';
-                    statusMessage.className = 'upload-status-message success';
-                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
-                    setTimeout(closeUploadModal, 2000);
-                } else {
-                    throw new Error(result.message || 'Upload failed.');
-                }
-            } catch (error) {
-                statusMessage.textContent = error.message;
-                statusMessage.className = 'upload-status-message error';
-            } finally {
-                uploadButton.disabled = false;
-            }
-        });
-
-        // --- LIKE & COMMENT FUNCTIONS ---
-
-/**
- * Toggles the "like" status for a video.
- * It sends a request to the server and updates the like button and count on success.
- * @param {number} videoId The ID of the video to like/unlike.
- */
-async function toggleVideoLike(videoId) {
-    if (!currentUser) {
-        alert("You must be logged in to like videos.");
-        return;
-    }
-    const csrfToken = document.getElementById('csrf_token').value;
-    const likeButton = document.querySelector(`.content-tile[data-video-id="${videoId}"] .tile-action-btn`);
-    const likesCountSpan = document.getElementById(`likes-count-${videoId}`);
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update like status.');
-        }
-
-        const data = await response.json();
-        if (data.success) {
-            // Update UI with the new data from the server
-            likesCountSpan.textContent = data.likes_count;
-            if (data.liked) {
-                likeButton.classList.add('liked');
-            } else {
-                likeButton.classList.remove('liked');
-            }
-        } else {
-            throw new Error(data.message || 'An error occurred.');
-        }
-    } catch (error) {
-        console.error('Error toggling video like:', error);
-        alert('Could not update like. Please try again.');
-    }
-}
-
-/**
- * Opens a modal to display comments for a specific video and allows adding a new one.
- * @param {number} videoId The ID of the video whose comments are to be viewed.
- */
-async function viewVideoComments(videoId) {
-    pauseCurrentlyPlayingVideo(); // Pause any playing video when opening the modal
-    const modal = document.getElementById('comments-modal');
-    const contentDiv = document.getElementById('comments-content');
-    modal.style.display = 'flex';
-    contentDiv.innerHTML = '<div class="loading-small" style="padding: 40px; text-align: center;">Loading comments...</div>';
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
-        if (!response.ok) throw new Error('Failed to fetch comments.');
-
-        const data = await response.json();
-        if (data.success) {
-            let commentsHtml = '';
-            // Generate HTML for each comment
-            if (data.comments && data.comments.length > 0) {
-                commentsHtml = data.comments.map(comment => `
-                    <div class="comment-item">
-                        <div class="user-info">
-                            <div class="user-avatar">${escapeHtml(comment.user_name).charAt(0).toUpperCase()}</div>
-                            <div class="user-details">
-                                <div class="user-name">${escapeHtml(comment.user_name)}</div>
-                                <div class="comment-text">${escapeHtml(comment.text)}</div>
-                                <div class="comment-meta">
-                                    <span class="comment-time">${new Date(comment.timestamp).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                commentsHtml = '<div class="empty-state-small" style="text-align:center; padding: 20px;"><div class="empty-icon">🤫</div>No comments yet. Be the first!</div>';
-            }
-
-            // HTML for the "Add Comment" form
-            const formHtml = `
-                <div class="add-comment-form" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                    <form onsubmit="event.preventDefault(); addComment(${videoId}, this);">
-                        <textarea name="comment_text" placeholder="Add a comment..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; min-height: 60px; resize: vertical; margin-bottom: 10px;"></textarea>
-                        <button type="submit" style="width: 100%; padding: 10px; background: linear-gradient(45deg, #6366f1, #a855f7); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">Post Comment</button>
-                    </form>
-                </div>
-            `;
-
-            contentDiv.innerHTML = commentsHtml + formHtml;
-        } else {
-            throw new Error(data.message || 'Could not load comments.');
-        }
-    } catch (error) {
-        console.error('Error fetching comments:', error);
-        contentDiv.innerHTML = `<div class="empty-state-small" style="text-align:center; padding: 20px;">${error.message}</div>`;
-    }
-}
-
-/**
- * Submits a new comment for a video.
- * @param {number} videoId The ID of the video to comment on.
- * @param {HTMLFormElement} formElement The form element that was submitted.
- */
-async function addComment(videoId, formElement) {
-    const textarea = formElement.querySelector('textarea[name="comment_text"]');
-    const commentText = textarea.value.trim();
-    if (!commentText) return;
-
-    const csrfToken = document.getElementById('csrf_token').value;
-    const submitButton = formElement.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Posting...';
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ text: commentText })
-        });
-
-        if (!response.ok) throw new Error('Failed to post comment.');
-
-        const data = await response.json();
-        if (data.success) {
-            // Update the comment count on the video tile without a full page reload
-            const commentsCountSpan = document.getElementById(`comments-count-${videoId}`);
-            commentsCountSpan.textContent = parseInt(commentsCountSpan.textContent) + 1;
+        video_list = []
+        for video in videos:
+            comment_count = Comment.query.filter_by(video_id=video.id).count()
             
-            // Refresh the comments list to show the new comment
-            viewVideoComments(videoId);
-        } else {
-            throw new Error(data.message || 'Server returned an error.');
+            # Determine source URL for admin view
+            source_url_for_admin = None
+            if video.local_file_path:
+                source_url_for_admin = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url: # This now holds the YouTube URL (for YouTube videos)
+                source_url_for_admin = video.youtube_url
+
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
+                'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
+                'thumbnail_url': video.thumbnail_url,
+                'is_active': video.is_active,
+                'likes_count': video.likes_count,
+                'created_at': video.created_at.isoformat(),
+                'genre': video.genre,
+                'featured_tag': video.featured_tag,
+                'local_file_path': source_url_for_admin, # This is the source URL for admin view/playback
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count,
+                'hashtags': video.hashtags,
+                'comment_count': comment_count
+            })
+        
+        return jsonify({'success': True, 'videos': video_list})
+        
+    except Exception as e:
+        logger.error(f"Error fetching admin videos: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos/<int:video_id>/likes', methods=['GET'])
+@admin_required
+def admin_get_video_likes(video_id):
+    """Get all likes for a specific video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        likes = db.session.query(VideoLike, User).join(User).filter(
+            VideoLike.video_id == video_id
+        ).order_by(VideoLike.created_at.desc()).all()
+        
+        like_list = []
+        for like, user in likes:
+            like_list.append({
+                'id': like.id,
+                'user_name': user.get_display_name(),
+                'user_email': user.email,
+                'created_at': like.created_at.isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'likes': like_list,
+            'video_title': video.title,
+            'total_likes': len(like_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching video likes for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos/<int:video_id>/comments', methods=['GET'])
+@admin_required
+def admin_get_video_comments(video_id):
+    """Get all comments for a specific video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        comments = Comment.query.filter_by(parent_id=None, video_id=video_id).order_by(Comment.created_at.desc()).all()
+        
+        comment_list = []
+        for comment in comments:
+            replies_count = Comment.query.filter_by(parent_id=comment.id).count()
+            
+            comment_list.append({
+                'id': comment.id,
+                'user_name': comment.user.get_display_name(),
+                'user_email': comment.user.email,
+                'text': comment.text,
+                'likes_count': comment.likes_count,
+                'replies_count': replies_count,
+                'created_at': comment.created_at.isoformat(),
+                'is_reply': comment.parent_id is not None
+            })
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'video_title': video.title,
+            'total_comments': len(comment_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching video comments for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos', methods=['POST'])
+@admin_required
+def admin_add_video():
+    """Add new video (admin only)"""
+    try:
+        data = {}
+        # CORRECTLY HANDLE JSON OR FORM DATA
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+
+        video_source_type = data.get('video_source_type')
+        title = data.get('title', '').strip()
+        
+        if not title:
+             return jsonify({'success': False, 'message': 'Title is required'}), 400
+
+        if video_source_type == 'file_upload':
+            if 'video_file' not in request.files:
+                return jsonify({'success': False, 'message': 'No video file part for upload'}), 400
+            
+            video_file = request.files['video_file']
+            if video_file.filename == '':
+                return jsonify({'success': False, 'message': 'No selected video file'}), 400
+
+            filename = secure_filename(video_file.filename)
+            unique_filename = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+            local_file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            video_file.save(local_file_path)
+
+            try:
+                probe = ffmpeg.probe(local_file_path)
+                duration_seconds = int(float(probe['format']['duration']))
+                is_short = duration_seconds < 60
+            except ffmpeg.Error as e:
+                logger.error(f"FFmpeg error processing {local_file_path}: {e.stderr}")
+                duration_seconds = int(data.get('duration_seconds')) if data.get('duration_seconds') else None
+                is_short = data.get('is_short', 'false').lower() == 'true'
+
+            thumbnail_url = url_for('static', filename='default_thumbnail.jpg')
+            
+            new_video = Video(
+                title=title,
+                description=data.get('description', '').strip(),
+                youtube_url=url_for('uploaded_file', filename=unique_filename),
+                local_file_path=local_file_path,
+                thumbnail_url=thumbnail_url,
+                genre=data.get('genre', '').strip(),
+                featured_tag=data.get('featured_tag', '').strip(),
+                hashtags=data.get('hashtags', '').strip(),
+                duration_seconds=duration_seconds,
+                is_short=is_short,
+                views_count=0
+            )
+            db.session.add(new_video)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Video uploaded successfully!', 'video': {'id': new_video.id, 'title': new_video.title}})
+
+        elif video_source_type == 'youtube_url':
+            youtube_url_input = data.get('youtube_url', '').strip()
+            if not youtube_url_input:
+                return jsonify({'success': False, 'message': 'YouTube URL are required'}), 400
+            
+            video_id = extract_youtube_video_id(youtube_url_input)
+            if not video_id:
+                return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
+            
+            duration_seconds = int(data.get('duration_seconds')) if data.get('duration_seconds') else None
+            is_short = data.get('is_short', 'false').lower() == 'true' or (duration_seconds is not None and duration_seconds < 60)
+            
+            new_video = Video(
+                title=title,
+                description=data.get('description', '').strip(),
+                youtube_url=youtube_url_input,
+                youtube_video_id=video_id,
+                thumbnail_url=get_youtube_thumbnail(video_id),
+                genre=data.get('genre', '').strip(),
+                featured_tag=data.get('featured_tag', '').strip(),
+                hashtags=data.get('hashtags', '').strip(),
+                duration_seconds=duration_seconds,
+                is_short=is_short,
+                views_count=0
+            )
+            db.session.add(new_video)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Video added successfully!', 'video': {'id': new_video.id, 'title': new_video.title}})
+
+        else:
+            # This is the error you were getting
+            return jsonify({'success': False, 'message': f"Invalid video source type received: {video_source_type}"}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error adding video for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to add video. ' + str(e)}), 500
+
+
+@app.route('/api/admin/videos/<int:video_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_video(video_id):
+    """Delete video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        if video.local_file_path and os.path.exists(video.local_file_path):
+            os.remove(video.local_file_path)
+            print(f"Deleted local file: {video.local_file_path}")
+
+        db.session.delete(video)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Video deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting video for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to delete video'}), 500
+
+@app.route('/api/admin/videos/<int:video_id>', methods=['PUT'])
+@admin_required
+def admin_update_video(video_id):
+    """Update video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        data = request.get_json()
+        
+        if 'title' in data:
+            video.title = data['title'].strip()
+        if 'description' in data:
+            video.description = data['description'].strip() if data['description'] else None
+        if 'is_active' in data:
+            video.is_active = bool(data['is_active'])
+        if 'genre' in data:
+            video.genre = data['genre'].strip() if data['genre'] else None
+        if 'featured_tag' in data:
+            video.featured_tag = data['featured_tag'].strip() if data['featured_tag'] else None
+        if 'hashtags' in data:
+            video.hashtags = data['hashtags'].strip() if data['hashtags'] else None
+        if 'is_short' in data:
+            video.is_short = bool(data['is_short'])
+        
+        if 'duration_seconds' in data and data['duration_seconds'] is not None and data['duration_seconds'] != '':
+            try:
+                video.duration_seconds = int(data['duration_seconds'])
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Invalid duration format'}), 400
+        else:
+            video.duration_seconds = None
+
+        video.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Video updated successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating video for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update video'}), 500
+
+@app.route('/api/admin/comments', methods=['GET'])
+@admin_required
+def admin_get_comments():
+    """Get all comments for admin moderation"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        video_id = request.args.get('video_id', type=int)
+        
+        query = Comment.query
+        
+        if video_id:
+            query = query.filter_by(video_id=video_id)
+        
+        comments = query.order_by(Comment.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        comment_list = []
+        for comment in comments.items:
+            comment_data = comment.to_dict()
+            comment_data['video_title'] = comment.video.title
+            comment_data['user_email'] = comment.user.email
+            comment_list.append(comment_data)
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'pagination': {
+                'page': comments.page,
+                'pages': comments.pages,
+                'per_page': comments.per_page,
+                'total': comments.total,
+                'has_next': comments.has_next,
+                'has_prev': comments.has_prev
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting comments for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/comments/<int:comment_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_comment(comment_id):
+    """Delete comment (admin only)"""
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        
+        db.session.delete(comment)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Comment deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting comment: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to delete comment'}), 500
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_get_users():
+    """Get all users for admin"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        users = db.session.query(User).order_by(User.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        user_list = []
+        for user in users.items:
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'display_name': user.get_display_name(),
+                'is_admin': user.is_admin,
+                'created_at': user.created_at.isoformat(),
+                'has_subscription': True, # All users are "active subscribers" now
+                'subscription_status': 'active', # All users are "active" now
+                'subscription_end': None, # No end date for free content
+                'comment_count': Comment.query.filter_by(user_id=user.id).count(),
+                'watch_streak': user.watch_streak,
+                'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
+            }
+            user_list.append(user_data)
+        
+        return jsonify({
+            'success': True,
+            'users': user_list,
+            'pagination': {
+                'page': users.page,
+                'pages': users.pages,
+                'per_page': users.per_page,
+                'total': users.total,
+                'has_next': users.has_next,
+                'has_prev': users.has_prev
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting users for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def admin_toggle_user_admin(user_id):
+    """Toggle admin status for a user"""
+    try:
+        user = User.query.get_or_404(user_id)
+        current_admin = User.query.get(session['user_id'])
+        
+        if user.id == current_admin.id:
+            return jsonify({'success': False, 'message': 'Cannot modify your own admin status'}), 400
+        
+        user.is_admin = not user.is_admin
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'User {"granted" if user.is_admin else "revoked"} admin access',
+            'is_admin': user.is_admin
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling admin status: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update user'}), 500
+
+# User Profile Routes
+@app.route('/api/user/profile', methods=['GET'])
+@login_required
+def get_user_profile():
+    """Get current user's profile"""
+    try:
+        user = User.query.get(session['user_id'])
+        
+        profile_data = {
+            'id': user.id,
+            'email': user.email,
+            'display_name': user.get_display_name(),
+            'is_admin': user.is_admin,
+            'created_at': user.created_at.isoformat(),
+            'has_subscription': True, # All users are "active subscribers" now
+            'subscription_status': 'active', # All users are "active" now
+            'subscription_end': None, # No end date for free content
+            'comment_count': Comment.query.filter_by(user_id=user.id).count(),
+            'watch_streak': user.watch_streak,
+            'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
         }
-    } catch (error) {
-        console.error('Error adding comment:', error);
-        alert(`Could not add comment: ${error.message}`);
-        submitButton.disabled = false;
-        submitButton.textContent = 'Post Comment';
-    }
-}
+        
+        return jsonify({
+            'success': True,
+            'profile': profile_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting user profile: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to load profile'}), 500
 
-// Closes the Likes modal
-function closeLikesModal() {
-    document.getElementById('likes-modal').style.display = 'none';
-}
+@app.route('/api/user/comments', methods=['GET'])
+@login_required
+def get_user_comments():
+    """Get current user's comments"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        user_id = session['user_id']
+        
+        comments = Comment.query.filter_by(user_id=user_id).order_by(
+            Comment.created_at.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        comment_list = []
+        for comment in comments.items:
+            comment_data = comment.to_dict(user_id)
+            comment_data['video_title'] = comment.video.title
+            comment_data['video_id'] = comment.video.id
+            comment_list.append(comment_data)
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'pagination': {
+                'page': comments.page,
+                'pages': comments.pages,
+                'per_page': comments.per_page,
+                'total': comments.total,
+                'has_next': comments.has_next,
+                'has_prev': comments.has_prev
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting user comments: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to load comments'}), 500
 
-// Closes the Comments modal
-function closeCommentsModal() {
-    document.getElementById('comments-modal').style.display = 'none';
-}
-        // Feedback modal (unchanged)
-        function showFeedbackModal() { document.getElementById('feedback-modal').style.display = 'flex'; }
-        function closeFeedbackModal() { document.getElementById('feedback-modal').style.display = 'none'; }
-        async function submitFeedback() {
-             // (Identical to previous correct version)
-            const feedbackText = document.getElementById('feedback-text').value.trim();
-            const feedbackMessageDiv = document.getElementById('feedback-message');
-            const csrfToken = document.getElementById('csrf_token').value;
-            if (!feedbackText) { return; }
-            try {
-                const response = await fetch(`${BASE_URL}/api/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ feedback: feedbackText }) });
-                if (response.ok) { feedbackMessageDiv.textContent = 'Thank you!'; feedbackMessageDiv.className = 'feedback-success-message'; feedbackMessageDiv.style.display = 'block'; setTimeout(() => closeFeedbackModal(), 1500); }
-                else { throw new Error('Failed to send feedback.'); }
-            } catch (error) { feedbackMessageDiv.textContent = 'Error. Please try again.'; feedbackMessageDiv.className = 'feedback-error-message'; feedbackMessageDiv.style.display = 'block'; }
-        }
+# Search Routes
+@app.route('/api/search/videos', methods=['GET'])
+@login_required
+def search_videos():
+    """Search videos by title and description"""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if not query:
+            return jsonify({'success': False, 'message': 'Search query is required'}), 400
+        
+        videos = Video.query.filter(
+            Video.is_active == True,
+            db.or_(
+                Video.title.ilike(f'%{query}%'),
+                Video.description.ilike(f'%{query}%'),
+                Video.hashtags.ilike(f'%{query}%') # Search by hashtags
+            )
+        ).order_by(Video.created_at.desc()).all()
+        
+        video_list = []
+        for video in videos:
+            # Determine correct playback URL
+            playback_url = None
+            if video.local_file_path:
+                playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url: # This holds the public YouTube URL
+                playback_url = video.youtube_url
 
-        // Watch streak (unchanged)
-        async function updateDailyWatchStreak() {
-             // (Identical to previous correct version)
-            const streakCountElement = document.getElementById('streak-count');
-            const csrfToken = document.getElementById('csrf_token').value;
-             try {
-                const response = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
-                const data = await response.json();
-                if (data.success) { streakCountElement.textContent = data.streak; }
-            } catch (error) { console.error('Error updating watch streak:', error); }
-        }
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url,
+                'youtube_video_id': video.youtube_video_id,
+                'thumbnail_url': video.thumbnail_url,
+                'created_at': video.created_at.isoformat(),
+                'local_file_path': playback_url, # Frontend will use this for playback
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count
+            })
+        
+        return jsonify({
+            'success': True,
+            'videos': video_list,
+            'query': query,
+            'count': len(video_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching videos: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Search failed'}), 500
 
-    </script>
-</body>
-</html>
+@app.route('/api/search/comments', methods=['GET'])
+@login_required
+def search_comments():
+    """Search comments by text"""
+    try:
+        query = request.args.get('q', '').strip()
+        video_id = request.args.get('video_id', type=int)
+        
+        if not query:
+            return jsonify({'success': False, 'message': 'Search query is required'}), 400
+        
+        comment_query = Comment.query.filter(
+            Comment.text.ilike(f'%{query}%')
+        )
+        
+        if video_id:
+            comment_query = comment_query.filter_by(video_id=video_id)
+        
+        comments = comment_query.order_by(Comment.created_at.desc()).all()
+        
+        current_user_id = session['user_id']
+        comment_list = []
+        for comment in comments:
+            comment_data = comment.to_dict(current_user_id)
+            comment_data['video_title'] = comment.video.title
+            comment_data['video_id'] = comment.video.id
+            comment_list.append(comment_data)
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'query': query,
+            'count': len(comment_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error searching comments: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Search failed'}), 500
+
+@app.route('/api/videos/categorized', methods=['GET'])
+@login_required
+def get_categorized_videos():
+    """
+    API to get videos based on their featured_tag.
+    Also handles "Trending Now" and "New This Week" logic.
+    Query parameters:
+        tag: 'Trending Now', 'Snayvu Originals', 'Shorts', 'New This Week', 'Emotional Picks', 'Live Now', 'Featured Creator', 'Continue Watching'
+        genre: Optional, to filter by genre.
+    """
+    try:
+        tag = request.args.get('tag', '').strip()
+        genre = request.args.get('genre', '').strip()
+        current_user_id = session['user_id']
+
+        if not tag:
+            return jsonify({'success': False, 'message': 'Tag parameter is required'}), 400
+
+        query = Video.query.filter_by(is_active=True)
+
+        # Dynamic Content Categorization Logic
+        if tag == 'Trending Now':
+            # Simple trending: most views in the last 7 days.
+            # You might want to combine with likes_count if views_count is too low.
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.views_count.desc(), Video.likes_count.desc()).limit(10).all()
+        elif tag == 'Snayvu Originals':
+            # Admin-posted videos explicitly tagged as Originals
+            videos = query.filter_by(featured_tag='Snayvu Originals').order_by(Video.created_at.desc()).limit(10).all()
+        elif tag == 'Shorts':
+            # Videos explicitly marked as shorts (or detected as such)
+            videos = query.filter_by(is_short=True).order_by(Video.created_at.desc()).limit(10).all()
+        elif tag == 'New This Week':
+            # Videos created in the last 7 days
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.created_at.desc()).limit(10).all()
+        elif tag == 'Emotional Picks':
+            # Videos explicitly tagged as Emotional Picks
+            videos = query.filter_by(featured_tag='Emotional Picks').order_by(Video.created_at.desc()).limit(10).all()
+        elif tag == 'Live Now':
+            # Placeholder for live streams - would need actual live stream integration
+            videos = query.filter_by(featured_tag='Live').order_by(Video.created_at.desc()).limit(5).all() # Fetch few conceptual live videos
+        elif tag == 'Featured Creator':
+            # Videos explicitly tagged by admin to showcase creators
+            videos = query.filter_by(featured_tag='Featured Creator').order_by(Video.created_at.desc()).limit(10).all()
+        elif tag == 'Continue Watching':
+            # Fetch videos from user's watch history that are not completed
+            watch_history_entries = WatchHistory.query.filter_by(
+                user_id=current_user_id,
+                completed=False
+            ).order_by(desc(WatchHistory.watched_at)).limit(10).all()
+            
+            video_ids = [entry.video_id for entry in watch_history_entries]
+            # Fetch the actual video objects based on history order
+            videos_from_history = Video.query.filter(Video.id.in_(video_ids)).order_by(
+                db.case(
+                    {id_: index for index, id_ in enumerate(video_ids)},
+                    value=Video.id
+                )
+            ).all()
+            
+            # Attach progress and total duration for frontend
+            video_map_with_progress = {}
+            for entry in watch_history_entries:
+                video = next((v for v in videos_from_history if v.id == entry.video_id), None)
+                if video:
+                    video.progress_seconds = entry.progress_seconds
+                    video.total_duration = video.duration_seconds # Assuming duration_seconds is set for all videos
+                    video_map_with_progress[video.id] = video
+            videos = [video_map_with_progress[id_] for id_ in video_ids if id_ in video_map_with_progress] # Maintain order
+
+        else:
+            # Default to fetching by the provided featured_tag
+            videos = query.filter_by(featured_tag=tag).order_by(Video.created_at.desc()).limit(10).all()
+
+        video_list = []
+        for video in videos:
+            # Determine correct URL for playback
+            video_playback_url = ''
+            if video.local_file_path:
+                video_playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url: # This holds the public YouTube URL
+                video_playback_url = video.youtube_url
+
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url, # Original YouTube URL
+                'youtube_video_id': video.youtube_video_id, # YouTube ID
+                'thumbnail_url': video.thumbnail_url,
+                'likes_count': video.likes_count,
+                'user_liked': VideoLike.query.filter_by(user_id=current_user_id, video_id=video.id).first() is not None,
+                'created_at': video.created_at.isoformat(),
+                'genre': video.genre,
+                'featured_tag': video.featured_tag,
+                'can_watch': True,
+                'local_file_path': video_playback_url, # This field is the primary playback URL for both types
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count,
+                'hashtags': video.hashtags,
+                'comment_count': Comment.query.filter_by(video_id=video.id).count(),
+                'progress_seconds': getattr(video, 'progress_seconds', 0), # For continue watching
+                'total_duration': getattr(video, 'total_duration', video.duration_seconds) # For continue watching
+            })
+        
+        return jsonify({'success': True, 'videos': video_list})
+    except Exception as e:
+        logger.error(f"Error fetching categorized videos for tag '{tag}': {e}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Failed to load {tag} videos'}), 500
+
+@app.route('/api/feedback', methods=['POST'])
+@login_required
+def submit_feedback():
+    """
+    API to submit user feedback or story suggestions.
+    """
+    try:
+        data = request.get_json()
+        feedback_text = data.get('feedback', '').strip()
+
+        if not feedback_text:
+            return jsonify({'success': False, 'message': 'Feedback text cannot be empty'}), 400
+        
+        user_id = session['user_id']
+        
+        feedback_entry = Feedback(
+            user_id=user_id,
+            feedback_text=feedback_text
+        )
+        db.session.add(feedback_entry)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Feedback submitted successfully!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error submitting feedback for user {session.get('user_id')}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to submit feedback'}), 500
+
+@app.route('/api/user/watch-streak', methods=['GET', 'POST'])
+@login_required
+def user_watch_streak():
+    """
+    API to get and update user's daily watch streak.
+    GET: Returns current streak.
+    POST: Updates streak based on daily activity (e.g., watching a video).
+    """
+    user = User.query.get(session['user_id'])
+
+    if user is None:
+        session.clear()
+        return jsonify({'success': False, 'message': 'User session invalid, please log in again.', 'redirect': url_for('index')}), 401
+
+    today = date.today()
+
+    if request.method == 'GET':
+        return jsonify({
+            'success': True,
+            'streak': user.watch_streak,
+            'last_watch_date': user.last_watch_date.isoformat() if user.last_watch_date else None
+        })
+    
+    elif request.method == 'POST':
+        try:
+            if user.last_watch_date == today:
+                return jsonify({
+                    'success': True,
+                    'message': 'Streak already updated for today',
+                    'streak': user.watch_streak,
+                    'last_watch_date': user.last_watch_date.isoformat()
+                })
+            elif user.last_watch_date == (today - timedelta(days=1)):
+                user.watch_streak += 1
+                logger.info(f"User {user.id} streak incremented to {user.watch_streak}")
+            else:
+                user.watch_streak = 1
+                logger.info(f"User {user.id} streak reset to {user.watch_streak}")
+            
+            user.last_watch_date = today
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Watch streak updated',
+                'streak': user.watch_streak,
+                'last_watch_date': user.last_watch_date.isoformat()
+            })
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating watch streak for user {user.id}: {e}", exc_info=True)
+            return jsonify({'success': False, 'message': 'Failed to update watch streak'}), 500
+
+# --- NEW: Watch History API ---
+@app.route('/api/watch-history/<int:video_id>', methods=['POST'])
+@login_required
+def update_watch_history(video_id):
+    """
+    Update watch history for a video.
+    Expected JSON: {'progress_seconds': int, 'completed': bool}
+    """
+    user_id = session['user_id']
+    data = request.get_json()
+    progress_seconds = data.get('progress_seconds', 0)
+    completed = data.get('completed', False)
+
+    try:
+        video = Video.query.get(video_id)
+        if not video:
+            return jsonify({'success': False, 'message': 'Video not found'}), 404
+
+        history_entry = WatchHistory.query.filter_by(user_id=user_id, video_id=video_id).first()
+
+        if history_entry:
+            history_entry.progress_seconds = progress_seconds
+            history_entry.completed = completed
+            history_entry.watched_at = datetime.utcnow() # Update last watched time
+        else:
+            history_entry = WatchHistory(
+                user_id=user_id,
+                video_id=video_id,
+                progress_seconds=progress_seconds,
+                completed=completed
+            )
+            db.session.add(history_entry)
+        
+        # Increment views_count for trending logic (simple view tracking)
+        # Only increment if progress > 0 (watched some part) and not already incremented recently for this session/video
+        # For simplicity, we just increment on every update with progress > 0.
+        # A more robust system would use a separate view_event table or daily unique views.
+        if progress_seconds > 0 and video.views_count is not None:
+             video.views_count += 1
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Watch history updated'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating watch history for user {user_id}, video {video_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to update watch history'}), 500
+
+# --- NEW: VIDEO UPLOAD ROUTE ---
+# This route is specifically for user uploads via dashboard, not admin panel.
+# Admin panel uses admin_add_video, which is now unified.
+# If users can upload from dashboard without being admin, this route is appropriate for them.
+@app.route('/api/upload-video', methods=['POST'])
+@login_required
+@limiter.limit("5 per hour")
+def upload_video():
+    # This route is for general users to upload via a dashboard modal.
+    # The admin_add_video now handles file uploads from the admin page.
+    # To avoid confusion, you might consider removing this if all uploads are via admin.
+    # However, if non-admin users can upload, this route is appropriate for them.
+    
+    if 'video_file' not in request.files:
+        return jsonify({'success': False, 'message': 'No video file part'}), 400
+    
+    video_file = request.files['video_file']
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    hashtags_str = request.form.get('hashtags', '').strip()
+    duration_str = request.form.get('duration_seconds', '').strip() # Changed from '0' to '' to handle optional empty field
+    is_short_input = request.form.get('is_short', 'false').lower() == 'true'
+
+    if video_file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'}), 400
+
+    if not title:
+        return jsonify({'success': False, 'message': 'Video title is required'}), 400
+
+    allowed_extensions = {'mp4', 'mov', 'avi', 'mkv', 'webm'}
+    if '.' not in video_file.filename or video_file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        return jsonify({'success': False, 'message': 'Unsupported file type'}), 400
+
+    try:
+        duration_seconds = int(duration_str) if duration_str.isdigit() else None # Parse to int or None
+        is_short = is_short_input or (duration_seconds is not None and duration_seconds < 60) # Auto-set is_short if duration provided
+
+        filename = secure_filename(video_file.filename)
+        filename_with_user_id = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+        local_file_path_on_server = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user_id)
+        video_file.save(local_file_path_on_server)
+
+        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Generic thumbnail for now
+
+        # Use the /uploads/ endpoint for playback URL (stored in youtube_url for consistency in frontend)
+        playback_url_for_frontend = url_for('uploaded_file', filename=filename_with_user_id)
+
+        new_video = Video(
+            title=title,
+            description=description if description else None,
+            youtube_url=playback_url_for_frontend, # Stores public URL for local files
+            youtube_video_id=None, # Not a YouTube ID
+            thumbnail_url=thumbnail_url,
+            is_active=True,
+            genre="Uploaded",
+            featured_tag="Just Dropped", # Mark as "Just Dropped"
+            local_file_path=local_file_path_on_server, # Store the actual path on server
+            hashtags=hashtags_str if hashtags_str else None,
+            duration_seconds=duration_seconds, # Can be None
+            is_short=is_short,
+            views_count=0
+        )
+        db.session.add(new_video)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Video uploaded successfully!',
+            'video': {
+                'id': new_video.id,
+                'title': new_video.title,
+                'description': new_video.description,
+                'local_file_path': playback_url_for_frontend, # Frontend will use this for playback
+                'thumbnail_url': new_video.thumbnail_url,
+                'duration_seconds': new_video.duration_seconds,
+                'is_short': new_video.is_short
+            }
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error during video upload: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to upload video. Please try again.'}), 500
+
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    if request.is_json:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    return redirect(url_for('index'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    if request.is_json:
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+    return redirect(url_for('index'))
+
+
+def create_tables():
+    """Create database tables and default admin user"""
+    try:
+        with app.app_context():
+            db.create_all() # This will create all tables and new columns
+
+            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@yourdomain.com')
+            admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+
+            if not User.query.filter_by(email=admin_email).first():
+                admin_user = User(
+                    email=admin_email,
+                    password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
+                    is_admin=True
+                )
+                db.session.add(admin_user)
+                db.session.commit()
+                print(f"Created admin user: {admin_email}")
+
+    except Exception as e:
+        print(f"Database setup error: {e}")
+        print("WARNING: If you added new columns, you might need to delete stories.db and restart.")
+
+
+# Health check endpoint
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
+
+if __name__ == '__main__':
+    create_tables()
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+else:
+    create_tables()
