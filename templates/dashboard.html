@@ -177,17 +177,18 @@
             width: 100%;
             height: 100%;
             background: url('https://placehold.co/1200x400/0a0a0a/333?text=Snayvu+Featured+Content') no-repeat center center/cover; /* Generic Placeholder image */
-            opacity: 0.6; /* Dim the background */
+            /* REMOVED: opacity here if we want a solid image */
             z-index: 1;
+            display: flex; /* Added to center text if needed */
+            align-items: center; /* Added to center text if needed */
+            justify-content: center; /* Added to center text if needed */
+            font-size: 3rem; /* Placeholder text size */
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.2); /* Faded placeholder text */
         }
         .hero-video-placeholder iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            pointer-events: none; /* Disable interaction with muted preview */
+            /* REMOVED: iframe style as iframe is removed from HTML */
+            display: none; /* Ensure it's hidden */
         }
 
         .hero-content {
@@ -198,8 +199,7 @@
         }
 
         .hero-badge {
-            /* Removed, as per request: no specific exclusivity badge */
-            display: none; /* Ensure it's hidden if somehow appears */
+            display: none; /* Ensured hidden */
         }
 
         .hero-title {
@@ -598,6 +598,35 @@
         .upload-status-message.info {
             color: rgba(255, 255, 255, 0.7);
         }
+        /* Feature Specific Content */
+        .feature-content-area {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            min-height: 400px; /* Ensure it takes up space */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        .feature-content-area h2 {
+            color: #a855f7;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .feature-content-area p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+        .feature-content-area .feature-icon {
+            font-size: 4rem;
+            margin-bottom: 30px;
+            color: #6366f1;
+        }
     </style>
 </head>
 <body>
@@ -632,7 +661,7 @@
 
             <div class="sidebar-section-title">Settings & Info</div>
             <ul class="sidebar-menu">
-                <li><a href="#" class="sidebar-menu-item" data-section="account-settings"><span class="sidebar-icon">⚙️</span> Account Settings</a></li>
+                <li><a href="/account-settings" class="sidebar-menu-item"><span class="sidebar-icon">⚙️</span> Account Settings</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="upload" onclick="showUploadModal(); return false;"><span class="sidebar-icon">📤</span> Upload</a></li>
                 <li><a href="/help-support" class="sidebar-menu-item"><span class="sidebar-icon">📞</span> Help & Support</a></li>
                 <li><a href="#" class="sidebar-menu-item" onclick="logout(); return false;"><span class="sidebar-icon">🚪</span> Log Out</a></li>
@@ -657,73 +686,72 @@
         <main class="main-content">
             <section class="hero-banner">
                 <div class="hero-video-placeholder">
-                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&controls=0&loop=1&playlist=dQw4w9WgXcQ&modestbranding=1&playsinline=1"
-                            title="Snayvu Featured Content Preview"
-                            frameborder="0"
-                            allow="autoplay; encrypted-media;"
-                            allowfullscreen></iframe>
-                </div>
+                    </div>
                 <div class="hero-content">
                     <h1 class="hero-title">Experience Snayvu: Create, Watch, Repeat.</h1>
-                    <button class="hero-button" onclick="window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');">Watch Now</button>
+                    <button class="hero-button" onclick="loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');">Explore Content</button>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="trending-now-section">
                 <h2 class="row-header">🔥 Trending Now</h2>
                 <div class="row-content" id="trending-now-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="snayvu-originals-section">
                 <h2 class="row-header">🎬 Snayvu Originals</h2>
                 <div class="row-content" id="snayvu-originals-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="top-creators-section">
                 <h2 class="row-header">🌟 Top Creators This Week</h2>
                 <div class="row-content" id="top-creators-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="new-this-week-section">
                 <h2 class="row-header">🆕 New This Week</h2>
                 <div class="row-content" id="new-this-week-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="emotional-picks-section">
                 <h2 class="row-header">🧠 Emotional Picks</h2>
                 <div class="row-content" id="emotional-picks-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="continue-watching-section">
                 <h2 class="row-header">🧾 Continue Watching</h2>
                 <div class="row-content" id="continue-watching-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="just-dropped-shorts-section">
                 <h2 class="row-header">⚡ Just Dropped (Shorts)</h2>
                 <div class="row-content" id="just-dropped-shorts-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
 
-            <section class="content-row">
+            <section class="content-row" id="live-now-section">
                 <h2 class="row-header">🔴 Live Now</h2>
                 <div class="row-content" id="live-now-row">
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
+
+            <section id="feature-display-area" style="display: none;">
+                </section>
+
         </main>
     </div>
 
@@ -809,17 +837,27 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
-            // Load content for each row
+            // Load content for each row on initial load
             loadHeroBannerContent();
+            loadAllHomepageRows(); // Call a function to load all rows
+        });
+
+        function loadAllHomepageRows() {
+            // Hide any previously loaded feature-specific content
+            document.getElementById('feature-display-area').style.display = 'none';
+
+            // Show all horizontal rows
+            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block');
+
             loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
             loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-            loadContentRow('top-creators-row', 'Top Creators', 'Top Creators'); // Needs backend logic for "Top Creators"
+            loadContentRow('top-creators-row', 'Top Creators', 'Top Creators');
             loadContentRow('new-this-week-row', 'New This Week', 'New Content');
-            loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks'); // Needs Mood AI backend
-            loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching'); // Needs watch history backend
-            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Reusing 'Shorts' tag. Changed tag to 'Just Dropped' as per upload
-            loadContentRow('live-now-row', 'Live Now', 'Live Streams'); // Needs live stream integration
-        });
+            loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
+            loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
+            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+            loadContentRow('live-now-row', 'Live Now', 'Live Streams');
+        }
 
         async function loadUserInfo() {
             try {
@@ -839,10 +877,8 @@
             }
         }
 
-        // Generic function to load content for a horizontal row
         async function loadContentRow(elementId, tag, title) {
             const rowContentElement = document.getElementById(elementId);
-            // Clear previous content but keep placeholder structure for loading
             rowContentElement.innerHTML = `
                 <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading ${title}...</div><div class="tile-meta"></div></div></div>
             `;
@@ -869,20 +905,28 @@
             }
         }
 
-        // Renders a single content tile for a horizontal row
         function renderContentTile(video) {
             let videoSourceUrl = '';
+            // Prioritize local file if available
             if (video.local_file_path) {
-                // If it's a locally uploaded video, use its direct URL
-                videoSourceUrl = video.local_file_path;
+                videoSourceUrl = video.local_file_path; // This URL is already generated by url_for in app.py
             } else if (video.youtube_video_id) {
-                // Otherwise, assume it's a YouTube video for external watch
+                // Fallback to a generic YouTube watch link if no local file (and a valid YouTube ID exists)
                 videoSourceUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            } else {
+                // If neither, just a generic placeholder link
+                videoSourceUrl = '#'; // Or a Snayvu generic video page
             }
+            
+            // Adjust thumbnail URL - use local if available, else YouTube.
+            let thumbnailUrl = video.thumbnail_url;
+            // Note: If you want local video thumbnails, you'd need a backend process
+            // to generate them and store their URLs in thumbnail_url for local files.
+            // For now, this assumes youtube_url has a good thumbnail, or a generic one.
 
             return `
                 <div class="content-tile" onclick="window.open('${videoSourceUrl}', '_blank');">
-                    <img class="tile-thumbnail" src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/180x100/1a1a1a/888?text=Snayvu'">
+                    <img class="tile-thumbnail" src="${thumbnailUrl}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/180x100/1a1a1a/888?text=Snayvu'">
                     <div class="tile-info">
                         <div class="tile-title">${escapeHtml(video.title)}</div>
                         <div class="tile-meta">${video.likes_count || 0} Likes</div>
@@ -894,22 +938,84 @@
         // Load content for the Hero Banner
         async function loadHeroBannerContent() {
             const heroBanner = document.querySelector('.hero-banner');
-            const genericYoutubeVideoId = 'dQw4w9WgXcQ'; // A generic, well-known video ID (Rick Astley - Never Gonna Give You Up)
-            const youtubeEmbedUrl = `https://www.youtube.com/embed/${genericYoutubeVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${genericYoutubeVideoId}&modestbranding=1&playsinline=1`;
-            const youtubeWatchUrl = `https://www.youtube.com/watch?v=${genericYoutubeVideoId}`;
-
-            heroBanner.querySelector('.hero-video-placeholder').innerHTML = `
-                <iframe src="${youtubeEmbedUrl}"
-                        title="Snayvu Featured Content Preview"
-                        frameborder="0"
-                        allow="autoplay; encrypted-media;"
-                        allowfullscreen></iframe>
-            `;
+            // Completely remove iframe and external video logic from here.
+            // Use only static background image and generic text.
+            heroBanner.querySelector('.hero-video-placeholder').innerHTML = ''; // Ensure no iframe is inserted
             heroBanner.querySelector('.hero-title').textContent = 'Experience Snayvu: Create, Watch, Repeat.';
-            heroBanner.querySelector('.hero-button').onclick = () => window.open(youtubeWatchUrl, '_blank');
+            // "Explore Content" button should refresh the homepage rows
+            heroBanner.querySelector('.hero-button').onclick = () => loadAllHomepageRows();
         }
 
-        // --- MODAL & COMMENTING JS FUNCTIONS (Kept from previous version, adapted for context) ---
+        // --- Sidebar Navigation Logic ---
+        function displayFeatureMessage(icon, title, message) {
+            // Hide all horizontal rows
+            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+
+            const featureDisplayArea = document.getElementById('feature-display-area');
+            featureDisplayArea.innerHTML = `
+                <div class="feature-content-area">
+                    <div class="feature-icon">${icon}</div>
+                    <h2>${title}</h2>
+                    <p>${message}</p>
+                    <p>Stay tuned for updates as we build out these exciting features!</p>
+                </div>
+            `;
+            featureDisplayArea.style.display = 'block';
+            window.scrollTo(0, 0); // Scroll to top to show the message
+        }
+
+        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+            item.addEventListener('click', function(event) {
+                // Prevent default link behavior if data-section is present (handled by JS)
+                if (this.dataset.section) {
+                    event.preventDefault();
+                }
+
+                // Update active state in sidebar
+                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
+                this.classList.add('active');
+
+                const section = this.dataset.section;
+
+                // Handle different sections
+                if (section === 'home') {
+                    loadAllHomepageRows(); // Reload all content rows for Home
+                } else if (section === 'discover') {
+                    loadContentRow('trending-now-row', 'Discover', 'Discover Content');
+                    displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
+                } else if (section === 'originals') {
+                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
+                    displayFeatureMessage('🎬', 'Snayvu Originals', 'Dive into our exclusive, binge-worthy premium series and short films.');
+                } else if (section === 'shorts') {
+                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Use 'Shorts' tag for this
+                    displayFeatureMessage('📱', 'Shorts', 'Enjoy quick, engaging vertical videos designed for instant entertainment.');
+                } else if (section === 'channels') {
+                    loadContentRow('top-creators-row', 'Featured Channel', 'Channels'); // Load some relevant videos
+                    displayFeatureMessage('📺', 'Channels', 'Explore the diverse worlds of your favorite creators with their long-form videos and livestreams.');
+                } else if (section === 'live') {
+                    loadContentRow('live-now-row', 'Live', 'Live Now'); // Use 'Live' tag for this
+                    displayFeatureMessage('📡', 'Live Now', 'Catch live broadcasts and interactive sessions from creators in real-time.');
+                } else if (section === 'mood-feed') {
+                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
+                    displayFeatureMessage('🧠', 'For You (Mood Feed)', 'Your personalized feed, curated by mood. Content designed to make you Laugh, Cry, Shock, Think, or Uplift.');
+                }
+                // Personal Feed sections (These are conceptual and require more complex backend work)
+                else if (section === 'continue-watching') {
+                    displayFeatureMessage('🧾', 'Continue Watching', 'Seamlessly pick up where you left off. This feature needs backend integration for watch history.');
+                } else if (section === 'watchlist') {
+                    displayFeatureMessage('⭐', 'Watchlist', 'Save your favorite videos and series to watch later. This feature needs backend integration for saved content.');
+                } else if (section === 'my-circle') {
+                    displayFeatureMessage('🧍', 'My Circle', 'Share private content and engage exclusively with your closest connections. This feature needs backend integration for private content.');
+                } else if (section === 'my-reactions') {
+                    displayFeatureMessage('💬', 'My Reactions', 'View and manage all your facial reaction clips posted in response to content. This feature needs backend integration for user reactions.');
+                } else if (section === 'creator-dashboard') {
+                    displayFeatureMessage('📈', 'Creator Dashboard', 'Access your analytics, manage uploads, and track your performance as a creator. This feature needs backend integration for creator analytics.');
+                }
+                // Account Settings, Upload, Help & Support, Logout are handled by specific `href` or `onclick`
+            });
+        });
+
+        // --- MODAL & COMMENTING JS FUNCTIONS (Kept from previous version) ---
 
         function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
         function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
@@ -1019,62 +1125,6 @@
 
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
-        // General event listener for sidebar navigation clicks
-        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
-            item.addEventListener('click', function(event) {
-                // Prevent default link behavior if data-section is present (handled by JS)
-                if (this.dataset.section) {
-                    event.preventDefault();
-                }
-
-                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
-                this.classList.add('active');
-
-                const section = this.dataset.section;
-                // Handle different sections
-                if (section === 'home') {
-                    // Refresh all rows on home click
-                    loadHeroBannerContent();
-                    loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
-                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-                    loadContentRow('top-creators-row', 'Top Creators', 'Top Creators');
-                    loadContentRow('new-this-week-row', 'New This Week', 'New Content');
-                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
-                    loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
-                    loadContentRow('live-now-row', 'Live Now', 'Live Streams');
-                } else if (section === 'discover') {
-                    // Example: Load more content related to discover, or navigate to a discover page
-                    alert('Discover section clicked! Implement dynamic content or navigate to /discover page.');
-                } else if (section === 'shorts') {
-                     // Example: Load specific shorts feed data, or open a dedicated shorts viewer
-                     alert('Shorts section clicked! Implement a vertical shorts viewer here.');
-                } else if (section === 'channels') {
-                    // Example: Load specific channel data, or navigate to channels page
-                    alert('Channels section clicked! Implement channel Browse here.');
-                } else if (section === 'live') {
-                    // Example: Load specific live streams
-                    alert('Live Now section clicked! Implement live stream display here.');
-                } else if (section === 'mood-feed') {
-                    // Example: Trigger Mood AI content loading
-                    alert('Mood Feed clicked! Implement AI-curated content here.');
-                } else if (section === 'continue-watching') {
-                    alert('Continue Watching clicked! Needs backend integration for watch history.');
-                } else if (section === 'watchlist') {
-                    alert('Watchlist clicked! Needs backend integration for saved videos.');
-                } else if (section === 'my-circle') {
-                    alert('My Circle clicked! Needs backend integration for private content.');
-                } else if (section === 'my-reactions') {
-                    alert('My Reactions clicked! Needs backend integration for user reaction videos.');
-                } else if (section === 'creator-dashboard') {
-                    alert('Creator Dashboard clicked! Needs backend integration for creator analytics.');
-                } else if (section === 'account-settings') {
-                    alert('Account Settings clicked! Implement user profile/settings page.');
-                }
-                // Upload, Help & Support, Logout are handled by specific `onclick` or `href` attributes
-            });
-        });
-
         // --- NEW: Upload Modal JS ---
         function showUploadModal() {
             document.getElementById('upload-modal').style.display = 'flex';
@@ -1094,7 +1144,7 @@
             const formData = new FormData(this);
             const uploadButton = document.getElementById('upload-submit-btn');
             const statusMessage = document.getElementById('upload-status');
-            const csrfToken = document.getElementById('csrf_token').value;
+            const csrfToken = document.getElementById('csrf_token').value; // Get the CSRF token
 
             uploadButton.disabled = true;
             statusMessage.textContent = 'Uploading... Please wait.';
@@ -1114,11 +1164,9 @@
                 if (response.ok) { // Check if response status is 2xx
                     statusMessage.textContent = data.message || 'Upload successful!';
                     statusMessage.className = 'upload-status-message success';
-                    // Optional: Refresh the 'Just Dropped' section to show new video
-                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Refresh the 'Just Dropped' section
                     setTimeout(closeUploadModal, 2000); // Close modal after 2 seconds
                 } else {
-                    // Handle API errors (e.g., validation errors, file size limits)
                     statusMessage.textContent = data.message || 'Upload failed.';
                     statusMessage.className = 'upload-status-message error';
                 }
