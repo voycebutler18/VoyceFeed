@@ -16,7 +16,7 @@
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #0a0a0a; /* Dark background */
             color: white;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Prevent horizontal scroll from off-canvas sidebar */
             line-height: 1.6;
         }
 
@@ -40,8 +40,8 @@
             z-index: 1000;
             display: flex;
             flex-direction: column;
-            transition: width 0.3s ease, transform 0.3s ease; /* Added transform for hidden state */
-            transform: translateX(0); /* Default visible */
+            transition: transform 0.3s ease; /* Transition for sliding in/out */
+            transform: translateX(0); /* Default visible on desktop */
         }
 
         .sidebar-logo {
@@ -153,20 +153,19 @@
             position: fixed;
             top: 15px;
             left: 15px;
-            z-index: 1001; /* Above sidebar */
+            z-index: 1001; /* Above sidebar when open */
             background: rgba(26, 26, 26, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
             width: 40px;
             height: 40px;
             border-radius: 8px;
-            display: flex;
+            display: none; /* Hidden by default, shown on mobile */
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
             cursor: pointer;
             transition: background 0.2s ease;
-            display: none; /* Hidden by default, shown on mobile */
         }
         .sidebar-toggle-btn:hover {
             background: rgba(255, 255, 255, 0.1);
@@ -179,7 +178,22 @@
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto; /* Allows main content to scroll independently */
-            transition: margin-left 0.3s ease; /* For future collapsible sidebar */
+            transition: margin-left 0.3s ease; /* For desktop sidebar transition */
+        }
+
+        /* Overlay when sidebar is open on mobile */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999; /* Below sidebar, above main content */
+            display: none; /* Hidden by default */
+        }
+        .overlay.active {
+            display: block;
         }
 
         /* Hero Banner */
@@ -190,7 +204,7 @@
             position: relative;
             margin-bottom: 40px;
             padding: 30px;
-            min-height: 250px; /* Adjust as needed */
+            min-height: 250px;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -202,7 +216,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('https://placehold.co/1200x400/0a0a0a/333?text=Snayvu+Featured+Content') no-repeat center center/cover; /* Generic Placeholder image */
+            background: url('https://placehold.co/1200x400/0a0a0a/333?text=Snayvu+Featured+Content') no-repeat center center/cover;
             z-index: 1;
             display: flex;
             align-items: center;
@@ -220,7 +234,7 @@
         }
 
         .hero-badge {
-            display: none; /* Ensured hidden */
+            display: none;
         }
 
         .hero-title {
@@ -230,7 +244,7 @@
         }
 
         .hero-button {
-            background: linear-gradient(45deg, #a855f7, #6366f1); /* Snayvu gradient */
+            background: linear-gradient(45deg, #a855f7, #6366f1);
             color: white;
             border: none;
             padding: 12px 25px;
@@ -260,12 +274,12 @@
 
         .row-content {
             display: flex;
-            overflow-x: auto; /* Horizontal scroll */
+            overflow-x: auto;
             gap: 15px;
-            padding-bottom: 10px; /* Space for scrollbar */
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-            scrollbar-width: thin; /* Firefox */
-            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+            padding-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
         }
 
         /* Custom scrollbar for rows */
@@ -285,28 +299,88 @@
         }
 
         .content-tile {
-            flex-shrink: 0; /* Prevent shrinking */
-            width: 180px; /* Fixed width for tiles */
+            flex-shrink: 0;
+            width: 250px; /* Increased width for video player */
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            padding-bottom: 10px;
+            display: flex;
+            flex-direction: column;
         }
         .content-tile:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
         }
 
-        .tile-thumbnail {
+        .tile-media-container {
+            position: relative;
             width: 100%;
-            height: 100px; /* Fixed height for consistency */
-            object-fit: cover;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+        }
+        .tile-media-container video,
+        .tile-media-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
             display: block;
         }
 
+        .tile-media-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+        .tile-media-overlay:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .tile-media-overlay .play-icon {
+            font-size: 3rem;
+            color: white;
+            opacity: 0.8;
+        }
+        .content-tile.playing .tile-media-overlay {
+            display: none; /* Hide overlay when playing */
+        }
+        .content-tile:not(.playing):hover .tile-media-overlay {
+             background: rgba(0, 0, 0, 0.3); /* Slightly lighter overlay on hover */
+        }
+
+        .tile-thumbnail-img {
+             width: 100%;
+             height: 100%;
+             object-fit: cover;
+             position: absolute; /* Cover container */
+             z-index: 1; /* Below overlay */
+        }
+        .content-tile.playing .tile-thumbnail-img {
+            display: none; /* Hide thumbnail when video is playing */
+        }
+
+
         .tile-info {
             padding: 10px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .tile-title {
@@ -314,9 +388,13 @@
             font-weight: 600;
             line-height: 1.3;
             margin-bottom: 5px;
-            white-space: nowrap;
+            white-space: normal; /* Allow title to wrap */
             overflow: hidden;
             text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Show up to 2 lines */
+            -webkit-box-orient: vertical;
+            flex-grow: 1;
         }
 
         .tile-meta {
@@ -325,11 +403,57 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-top: 5px;
         }
+        .tile-progress-bar-container {
+            width: 100%;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 1.5px;
+            margin-top: 5px;
+        }
+        .tile-progress-bar-fill {
+            height: 100%;
+            background-color: #a855f7;
+            width: 0%;
+        }
+
+
+        .tile-actions {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px 10px;
+            margin-top: 5px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .tile-action-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background 0.2s ease;
+        }
+        .tile-action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .tile-action-btn.liked {
+            color: #a855f7;
+        }
+        .tile-action-btn.commented {
+            color: #4ade80;
+        }
+
 
         /* Footer */
         .footer {
-            background: #1a1a1a; /* Match sidebar background */
+            background: #1a1a1a;
             padding: 30px 20px;
             text-align: center;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -385,36 +509,43 @@
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .sidebar {
-                width: 250px; /* Full width for overlay/off-canvas */
-                transform: translateX(-100%); /* Start off-screen */
-                position: fixed; /* Keep it fixed for off-canvas */
+                width: 250px;
+                transform: translateX(-100%);
+                position: fixed;
                 z-index: 1000;
-                box-shadow: 0 0 30px rgba(0,0,0,0.5); /* Add shadow for off-canvas effect */
+                box-shadow: 0 0 30px rgba(0,0,0,0.5);
             }
             .sidebar.active {
-                transform: translateX(0); /* Slide in */
+                transform: translateX(0);
             }
             .sidebar-logo, .sidebar-section-title, .sidebar-footer-links, .sidebar-copyright, .sidebar-account-info {
-                display: flex; /* Display content inside sidebar when open */
-                flex-direction: column; /* Ensure vertical layout for info group */
-                align-items: flex-start; /* Align content to left inside sidebar */
-                width: 100%; /* Ensure they take full width */
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+                padding: 0 20px;
             }
             .sidebar-account-info {
-                padding: 0 20px 20px; /* Restore padding */
+                align-items: flex-start;
             }
+
             .sidebar-menu-item {
-                justify-content: flex-start; /* Align menu items to left */
-                padding: 12px 20px; /* Restore padding */
+                justify-content: flex-start;
+                padding: 12px 20px;
             }
             .sidebar-icon {
-                margin-right: 15px; /* Restore margin */
+                margin-right: 15px;
             }
 
             .main-content {
-                margin-left: 0; /* No static margin on mobile */
+                margin-left: 0;
                 padding: 15px;
             }
+            
+            .sidebar-toggle-btn {
+                display: flex;
+            }
+
             .hero-title {
                 font-size: 2rem;
             }
@@ -424,15 +555,18 @@
             .content-tile {
                 width: 150px; /* Smaller tiles on mobile */
             }
-
-            /* Show toggle button on mobile */
-            .sidebar-toggle-btn {
-                display: flex; /* Show the hamburger menu button */
+            .tile-title {
+                font-size: 0.85rem;
+            }
+            .tile-action-btn {
+                font-size: 0.75rem;
+                gap: 3px;
             }
         }
         
-        /* Modals (Keep previous modal styles as they are generic) */
+        /* Modals (generic styles, adjusted for video player modal) */
         .modal {
+            display: none;
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -441,7 +575,6 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(5px);
-            display: flex;
             justify-content: center;
             align-items: center;
         }
@@ -580,7 +713,8 @@
             font-weight: 500;
         }
         #upload-form input[type="text"],
-        #upload-form textarea {
+        #upload-form textarea,
+        #upload-form input[type="number"] {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -637,13 +771,35 @@
         .upload-status-message.info {
             color: rgba(255, 255, 255, 0.7);
         }
+
+        /* Progress Bar for Upload */
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #6366f1, #a855f7);
+            width: 0%;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 0.8rem;
+            transition: width 0.3s ease;
+        }
+
         /* Feature Specific Content */
         .feature-content-area {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
             padding: 40px;
             text-align: center;
-            min-height: 400px; /* Ensure it takes up space */
+            min-height: 400px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -679,7 +835,6 @@
 
             <ul class="sidebar-menu">
                 <li><a href="/dashboard" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="discover"><span class="sidebar-icon">🔍</span> Discover</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="originals"><span class="sidebar-icon">🎬</span> Snayvu Originals</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="shorts"><span class="sidebar-icon">📱</span> Shorts</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="channels"><span class="sidebar-icon">📺</span> Channels</a></li>
@@ -723,6 +878,8 @@
             </ul>
             <div class="sidebar-copyright">© 2024 Snayvu. All rights reserved.</div>
         </aside>
+
+        <div class="overlay" id="sidebar-overlay"></div>
 
         <main class="main-content" id="main-content">
             <section class="hero-banner">
@@ -858,11 +1015,22 @@
                 <label for="upload-hashtags">Hashtags (e.g., #short #comedy)</label>
                 <input type="text" id="upload-hashtags" name="hashtags" maxlength="200">
 
+                <label for="upload-duration">Video Duration (seconds)</label>
+                <input type="number" id="upload-duration" name="duration_seconds" placeholder="e.g., 30 for shorts, 120 for longer videos" required>
+                <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">Manually enter video duration for categorization.</small>
+
+                <input type="checkbox" id="upload-is-short" name="is_short" style="width: auto; margin-right: 10px;">
+                <label for="upload-is-short" style="display: inline;">Mark as Short (under 60 seconds)</label>
+                <br><br>
+
                 <label for="upload-file">Select Video File</label>
                 <input type="file" id="upload-file" name="video_file" accept="video/mp4,video/mov,video/avi,video/mkv,video/webm" required>
                 
                 <button type="submit" id="upload-submit-btn">Upload</button>
                 <p class="upload-status-message" id="upload-status"></p>
+                <div class="progress-container" id="upload-progress-container">
+                    <div class="progress-bar" id="upload-progress-bar">0%</div>
+                </div>
             </form>
         </div>
     </div>
@@ -875,53 +1043,185 @@
         const BASE_URL = window.location.origin;
         let currentUser = null;
         let currentUserName = 'User';
+        let activeVideoPlayer = null; // Track the currently playing video element
+        let videoObserver = null; // Will be initialized after DOM loads
 
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
-            loadHeroBannerContent(); // Ensure hero banner is loaded correctly
-            loadAllHomepageRows(); // Load all content rows for the initial homepage view
+            loadHeroBannerContent();
+            loadAllHomepageRows();
+            initializeVideoObserver();
 
-            // Initialize sidebar toggle on mobile
             document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
-            // Close sidebar when clicking outside on mobile
-            document.getElementById('main-content').addEventListener('click', function(event) {
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar.classList.contains('active') && !sidebar.contains(event.target) && !document.getElementById('sidebar-toggle-btn').contains(event.target)) {
-                    toggleSidebar();
-                }
-            });
+            document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
         });
 
-        // Function to toggle sidebar visibility on mobile
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            sidebar.classList.toggle('active');
-            // Optional: You could dim the main content when sidebar is active
-            // if (sidebar.classList.contains('active')) {
-            //     mainContent.style.filter = 'brightness(50%)';
-            // } else {
-            //     mainContent.style.filter = 'none';
-            // }
+        // Initialize Intersection Observer for video autoplay
+        function initializeVideoObserver() {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.6
+            };
+
+            videoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const tile = entry.target;
+                    if (entry.isIntersecting) {
+                        // Only autoplay if not paused by mouse interaction
+                        if (!tile.dataset.pausedByMouse) {
+                            playVideoInTile(tile, true); // true = muted autoplay
+                        }
+                    } else {
+                        pauseVideoInTile(tile);
+                    }
+                });
+            }, observerOptions);
         }
 
+        // Function to play a video in a tile
+        function playVideoInTile(tile, muted = false) {
+            const videoElement = tile.querySelector('video');
+            const iframeElement = tile.querySelector('iframe');
+            
+            // Pause any currently active video player
+            if (activeVideoPlayer && activeVideoPlayer !== videoElement && activeVideoPlayer !== iframeElement) {
+                pauseCurrentVideo();
+            }
 
-        // Function to load all homepage rows
+            if (videoElement) {
+                videoElement.muted = muted;
+                videoElement.currentTime = 0; // Start from beginning
+                videoElement.play().then(() => {
+                    tile.classList.add('playing');
+                    activeVideoPlayer = videoElement;
+                    tile.dataset.pausedByMouse = 'false';
+                    
+                    // Update watch history periodically
+                    videoElement.ontimeupdate = () => {
+                        updateWatchHistory(tile.dataset.videoId, videoElement.currentTime, videoElement.duration);
+                    };
+                    
+                    videoElement.onended = () => {
+                        updateWatchHistory(tile.dataset.videoId, videoElement.duration, videoElement.duration);
+                        tile.classList.remove('playing');
+                        activeVideoPlayer = null;
+                    };
+                }).catch(error => {
+                    console.warn('Autoplay prevented for video:', tile.dataset.videoId, error);
+                });
+            } else if (iframeElement) {
+                tile.classList.add('playing');
+                activeVideoPlayer = iframeElement;
+                tile.dataset.pausedByMouse = 'false';
+            }
+        }
+
+        // Function to pause a video in a tile
+        function pauseVideoInTile(tile) {
+            const videoElement = tile.querySelector('video');
+            const iframeElement = tile.querySelector('iframe');
+            
+            if (videoElement) {
+                videoElement.pause();
+                tile.classList.remove('playing');
+                updateWatchHistory(tile.dataset.videoId, videoElement.currentTime, videoElement.duration);
+            } else if (iframeElement) {
+                tile.classList.remove('playing');
+            }
+            
+            if (activeVideoPlayer === videoElement || activeVideoPlayer === iframeElement) {
+                activeVideoPlayer = null;
+            }
+        }
+
+        // Function to pause currently active video
+        function pauseCurrentVideo() {
+            if (activeVideoPlayer) {
+                if (activeVideoPlayer.tagName === 'VIDEO') {
+                    activeVideoPlayer.pause();
+                }
+                activeVideoPlayer.closest('.content-tile').classList.remove('playing');
+                activeVideoPlayer = null;
+            }
+        }
+
+        // Toggle play/pause when clicking on video overlay
+        function toggleVideoPlay(tile) {
+            const videoElement = tile.querySelector('video');
+            
+            if (videoElement) {
+                if (videoElement.paused) {
+                    // Pause any other playing video first
+                    pauseCurrentVideo();
+                    
+                    // Play this video unmuted (user initiated)
+                    videoElement.muted = false;
+                    videoElement.play().then(() => {
+                        tile.classList.add('playing');
+                        activeVideoPlayer = videoElement;
+                        tile.dataset.pausedByMouse = 'false';
+                    }).catch(error => {
+                        console.error('Play failed:', error);
+                        // Fallback to muted play
+                        videoElement.muted = true;
+                        videoElement.play();
+                    });
+                } else {
+                    pauseVideoInTile(tile);
+                    tile.dataset.pausedByMouse = 'true';
+                }
+            }
+        }
+
+        // Function to update watch history
+        async function updateWatchHistory(videoId, progressSeconds, totalDuration) {
+            if (!videoId || !currentUser) return;
+
+            const completed = (progressSeconds >= (totalDuration * 0.95)) && totalDuration > 0;
+            const csrfToken = document.getElementById('csrf_token').value;
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/watch-history/${videoId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        progress_seconds: Math.floor(progressSeconds),
+                        completed: completed
+                    })
+                });
+                if (!response.ok) {
+                    console.error('Failed to update watch history:', await response.json());
+                }
+            } catch (error) {
+                console.error('Error sending watch history:', error);
+            }
+        }
+
+        // Toggle sidebar visibility on mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
         function loadAllHomepageRows() {
-            // Hide any previously loaded feature-specific content
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block'); // Show all rows
-            document.getElementById('feature-display-area').style.display = 'none'; // Hide feature specific area
+            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block');
+            document.getElementById('feature-display-area').style.display = 'none';
 
             loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
             loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-            loadContentRow('top-creators-row', 'Top Creators', 'Top Creators');
+            loadContentRow('top-creators-row', 'Featured Creator', 'Top Creators');
             loadContentRow('new-this-week-row', 'New This Week', 'New Content');
             loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
             loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Changed tag from 'Shorts' to 'Just Dropped' for consistency with upload
+            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
             loadContentRow('live-now-row', 'Live Now', 'Live Streams');
         }
-
 
         async function loadUserInfo() {
             try {
@@ -953,6 +1253,14 @@
 
                 if (data.success && data.videos.length > 0) {
                     rowContentElement.innerHTML = data.videos.map(video => renderContentTile(video)).join('');
+                    
+                    // Observe new video tiles for autoplay
+                    const newTiles = rowContentElement.querySelectorAll('.content-tile:not(.placeholder)');
+                    newTiles.forEach(tile => {
+                        if (tile.querySelector('video') || tile.querySelector('iframe')) {
+                            videoObserver.observe(tile);
+                        }
+                    });
                 } else {
                     rowContentElement.innerHTML = `
                         <div class="empty-state-small" style="padding: 20px; width: 100%; flex-shrink: 0; text-align: center;">
@@ -970,51 +1278,234 @@
         }
 
         function renderContentTile(video) {
-            let videoSourceUrl = '';
-            // Prioritize local file if available
-            if (video.local_file_path) {
-                videoSourceUrl = video.local_file_path; // This URL is already generated by url_for in app.py
+            let mediaHtml = '';
+            let mediaType = '';
+            let playbackSource = video.local_file_path;
+            let thumbnailUrl = video.thumbnail_url || 'https://placehold.co/250x140/1a1a1a/888?text=Snayvu';
+
+            if (playbackSource && !video.youtube_video_id) {
+                // Local video file
+                mediaType = 'video';
+                mediaHtml = `
+                    <video class="tile-video" preload="metadata" muted playsinline loop>
+                        <source src="${playbackSource}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="${escapeHtml(video.title)} Thumbnail">
+                    <div class="tile-media-overlay" onclick="toggleVideoPlay(this.closest('.content-tile'))">
+                        <span class="play-icon">▶</span>
+                    </div>
+                `;
             } else if (video.youtube_video_id) {
-                // Fallback to a generic YouTube watch link if no local file (and a valid YouTube ID exists)
-                videoSourceUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`; // Corrected YouTube URL
+                // YouTube video
+                mediaType = 'youtube';
+                const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${video.youtube_video_id}&modestbranding=1&playsinline=1`;
+                mediaHtml = `
+                    <iframe class="tile-iframe" src="${youtubeEmbedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
+                    <img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="${escapeHtml(video.title)} Thumbnail">
+                    <div class="tile-media-overlay" onclick="window.open('https://www.youtube.com/watch?v=${video.youtube_video_id}', '_blank');">
+                        <span class="play-icon">▶</span>
+                    </div>
+                `;
             } else {
-                // If neither, just a generic placeholder link
-                videoSourceUrl = '#'; // Or a Snayvu generic video page
+                // Fallback
+                mediaHtml = `<img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="No Video Source">`;
             }
+
+            const progressPercentage = video.duration_seconds && video.progress_seconds > 0
+                ? (video.progress_seconds / video.duration_seconds) * 100
+                : 0;
             
-            // Adjust thumbnail URL - use local if available, else YouTube.
-            let thumbnailUrl = video.thumbnail_url;
-            // Note: If you want local video thumbnails, you'd need a backend process
-            // to generate them and store their URLs in thumbnail_url for local files.
-            // For now, this assumes youtube_url has a good thumbnail, or a generic one.
+            const progressBarHtml = `
+                <div class="tile-progress-bar-container">
+                    <div class="tile-progress-bar-fill" style="width: ${progressPercentage}%;"></div>
+                </div>
+            `;
 
             return `
-                <div class="content-tile" onclick="window.open('${videoSourceUrl}', '_blank');">
-                    <img class="tile-thumbnail" src="${thumbnailUrl}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/180x100/1a1a1a/888?text=Snayvu'">
+                <div class="content-tile" data-video-id="${video.id}" data-media-type="${mediaType}">
+                    <div class="tile-media-container">
+                        ${mediaHtml}
+                    </div>
+                    ${progressBarHtml}
                     <div class="tile-info">
                         <div class="tile-title">${escapeHtml(video.title)}</div>
-                        <div class="tile-meta">${video.likes_count || 0} Likes</div>
+                        <div class="tile-meta">
+                            ${video.genre ? `<span>${escapeHtml(video.genre)}</span> | ` : ''}
+                            ${video.is_short ? 'Short' : 'Long-form'} | 
+                            ${video.views_count} Views
+                        </div>
+                        <div class="tile-actions">
+                            <button class="tile-action-btn ${video.user_liked ? 'liked' : ''}" onclick="toggleVideoLike(${video.id})">
+                                ❤️ <span id="likes-count-${video.id}">${video.likes_count || 0}</span>
+                            </button>
+                            <button class="tile-action-btn" onclick="viewVideoComments(${video.id})">
+                                💬 <span id="comments-count-${video.id}">${video.comment_count || 0}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        // Load content for the Hero Banner
-        async function loadHeroBannerContent() {
-            const heroBanner = document.querySelector('.hero-banner');
-            // Completely remove iframe and external video logic from here.
-            // Use only static background image and generic text.
-            heroBanner.querySelector('.hero-video-placeholder').innerHTML = ''; // Ensure no iframe is inserted
-            heroBanner.querySelector('.hero-title').textContent = 'Experience Snayvu: Create, Watch, Repeat.';
-            // "Explore Content" button should refresh the homepage rows
-            heroBanner.querySelector('.hero-button').onclick = () => loadAllHomepageRows();
+        // Event delegation for hover autoplay
+        document.addEventListener('mouseover', function(e) {
+            const tile = e.target.closest('.content-tile');
+            if (tile && tile.dataset.mediaType === 'video') {
+                playVideoInTile(tile, true); // Muted autoplay on hover
+            }
+        });
+
+        document.addEventListener('mouseout', function(e) {
+            const tile = e.target.closest('.content-tile');
+            if (tile && tile.dataset.mediaType === 'video') {
+                pauseVideoInTile(tile);
+                tile.dataset.pausedByMouse = 'true';
+            }
+        });
+
+        // Like/Comment functions
+        async function toggleVideoLike(videoId) {
+            const csrfToken = document.getElementById('csrf_token').value;
+            try {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const likeButton = document.querySelector(`.content-tile[data-video-id="${videoId}"] .tile-action-btn`);
+                    if (likeButton) {
+                        likeButton.classList.toggle('liked', data.liked);
+                        likeButton.querySelector('span:last-child').textContent = data.likes_count;
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+            }
         }
 
-        // --- Sidebar Navigation Logic ---
-        function displayFeatureMessage(icon, title, message) {
-            // Hide all horizontal rows
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+        async function viewVideoComments(videoId) {
+            // Implementation for viewing comments
+            console.log('View comments for video:', videoId);
+        }
 
+        // Modal functions
+        function closeLikesModal() {
+            document.getElementById('likes-modal').style.display = 'none';
+        }
+
+        function closeCommentsModal() {
+            document.getElementById('comments-modal').style.display = 'none';
+        }
+
+        function showFeedbackModal() {
+            document.getElementById('feedback-modal').style.display = 'flex';
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedback-modal').style.display = 'none';
+        }
+
+        function showUploadModal() {
+            document.getElementById('upload-modal').style.display = 'flex';
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').style.display = 'none';
+        }
+
+        async function submitFeedback() {
+            const feedbackText = document.getElementById('feedback-text').value.trim();
+            if (!feedbackText) return;
+            
+            // Implementation for submitting feedback
+            console.log('Feedback submitted:', feedbackText);
+            closeFeedbackModal();
+        }
+
+        async function handleLogoutClick() {
+            const csrfToken = document.getElementById('csrf_token').value;
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    window.location.href = `${BASE_URL}/`;
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                window.location.href = `${BASE_URL}/`;
+            }
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function loadHeroBannerContent() {
+            // Implementation for loading hero banner
+        }
+
+        function updateDailyWatchStreak() {
+            // Implementation for updating watch streak
+        }
+
+        // Sidebar navigation
+        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+            item.addEventListener('click', function(event) {
+                if (this.dataset.section) {
+                    event.preventDefault();
+                }
+
+                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
+                this.classList.add('active');
+
+                const section = this.dataset.section;
+                if (section === 'home') {
+                    loadAllHomepageRows();
+                } else if (section === 'discover') {
+                    displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
+                } else if (section === 'originals') {
+                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                    document.getElementById('snayvu-originals-section').style.display = 'block';
+                    document.getElementById('feature-display-area').style.display = 'none';
+                } else if (section === 'shorts') {
+                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                    document.getElementById('just-dropped-shorts-section').style.display = 'block';
+                    document.getElementById('feature-display-area').style.display = 'none';
+                } else if (section === 'channels') {
+                    loadContentRow('top-creators-row', 'Featured Creator', 'Channels');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                    document.getElementById('top-creators-section').style.display = 'block';
+                    document.getElementById('feature-display-area').style.display = 'none';
+                } else if (section === 'live') {
+                    loadContentRow('live-now-row', 'Live', 'Live Now');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                    document.getElementById('live-now-section').style.display = 'block';
+                    document.getElementById('feature-display-area').style.display = 'none';
+                } else if (section === 'mood-feed') {
+                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
+                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                    document.getElementById('emotional-picks-section').style.display = 'block';
+                    document.getElementById('feature-display-area').style.display = 'none';
+                } else {
+                    displayFeatureMessage('🚧', 'Coming Soon', 'This feature is under development.');
+                }
+            });
+        });
+
+        function displayFeatureMessage(icon, title, message) {
+            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
             const featureDisplayArea = document.getElementById('feature-display-area');
             featureDisplayArea.innerHTML = `
                 <div class="feature-content-area">
@@ -1025,265 +1516,91 @@
                 </div>
             `;
             featureDisplayArea.style.display = 'block';
-            window.scrollTo(0, 0); // Scroll to top to show the message
+            window.scrollTo(0, 0);
         }
 
-        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
-            item.addEventListener('click', function(event) {
-                // Prevent default link behavior if data-section is present (handled by JS)
-                if (this.dataset.section) {
-                    event.preventDefault();
-                }
-
-                // Update active state in sidebar
-                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
-                this.classList.add('active');
-
-                const section = this.dataset.section;
-
-                // Handle different sections
-                if (section === 'home') {
-                    loadAllHomepageRows(); // Reload all content rows for Home
-                } else if (section === 'discover') {
-                    displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
-                } else if (section === 'originals') {
-                    // Load the Originals row and scroll to it
-                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
-                    document.getElementById('snayvu-originals-section').style.display = 'block'; // Show only this row
-                    document.getElementById('feature-display-area').style.display = 'none'; // Hide generic message
-                    window.scrollTo(0, document.getElementById('snayvu-originals-section').offsetTop); // Scroll to it
-                } else if (section === 'shorts') {
-                    // Load Shorts content and display a message
-                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Use 'Shorts' tag for this
-                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
-                    document.getElementById('just-dropped-shorts-section').style.display = 'block'; // Show only this row
-                    displayFeatureMessage('📱', 'Shorts', 'Enjoy quick, engaging vertical videos designed for instant entertainment.');
-                } else if (section === 'channels') {
-                    // Load some relevant videos and display a message
-                    loadContentRow('top-creators-row', 'Featured Channel', 'Channels');
-                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
-                    document.getElementById('top-creators-section').style.display = 'block'; // Show only this row
-                    displayFeatureMessage('📺', 'Channels', 'Explore the diverse worlds of your favorite creators with their long-form videos and livestreams.');
-                } else if (section === 'live') {
-                    // Load 'Live' tagged content and display message
-                    loadContentRow('live-now-row', 'Live', 'Live Now');
-                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
-                    document.getElementById('live-now-section').style.display = 'block'; // Show only this row
-                    displayFeatureMessage('📡', 'Live Now', 'Catch live broadcasts and interactive sessions from creators in real-time.');
-                } else if (section === 'mood-feed') {
-                    // Load 'Emotional Picks' and display message
-                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
-                    document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows first
-                    document.getElementById('emotional-picks-section').style.display = 'block'; // Show only this row
-                    displayFeatureMessage('🧠', 'For You (Mood Feed)', 'Your personalized feed, curated by mood. Content designed to make you Laugh, Cry, Shock, Think, or Uplift.');
-                }
-                // Personal Feed sections (These are conceptual and require more complex backend work)
-                else if (section === 'continue-watching') {
-                    displayFeatureMessage('🧾', 'Continue Watching', 'Seamlessly pick up where you left off. This feature needs backend integration for watch history.');
-                } else if (section === 'watchlist') {
-                    displayFeatureMessage('⭐', 'Watchlist', 'Save your favorite videos and series to watch later. This feature needs backend integration for saved content.');
-                } else if (section === 'my-circle') {
-                    displayFeatureMessage('🧍', 'My Circle', 'Share private content and engage exclusively with your closest connections. This feature needs backend integration for private content.');
-                } else if (section === 'my-reactions') {
-                    displayFeatureMessage('💬', 'My Reactions', 'View and manage all your facial reaction clips posted in response to content. This feature needs backend integration for user reactions.');
-                } else if (section === 'creator-dashboard') {
-                    displayFeatureMessage('📈', 'Creator Dashboard', 'Access your analytics, manage uploads, and track your performance as a creator. This feature needs backend integration for creator analytics.');
-                }
-                // Account Settings, Upload, Help & Support, Logout are handled by specific `href` or `onclick`
-                // Account Settings and Help & Support already have direct `href`
-            });
-        });
-
-        // --- Handle Logout Click (to ensure client-side redirect) ---
-        async function handleLogoutClick() {
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    }
-                });
-                const data = await response.json();
-                
-                if (data.success && data.redirect) {
-                    window.location.href = data.redirect; // Redirect to the login/index page
-                } else {
-                    console.error('Logout failed:', data.message || 'Unknown error');
-                    window.location.href = `${BASE_URL}/`; // Fallback to force redirect
-                }
-            } catch (error) {
-                console.error('Error during logout:', error);
-                window.location.href = `${BASE_URL}/`; // Force redirect even on network error
-            }
-        }
-
-
-        // --- MODAL & COMMENTING JS FUNCTIONS (Kept from previous version) ---
-
-        function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
-        function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
-
-        async function viewVideoComments(videoId) {
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                document.getElementById('comments-content').innerHTML = `<div class="loading-small"><div class="loading-spinner"></div><div>Loading comments...</div></div>`;
-                document.getElementById('comments-modal').style.display = 'block';
-                const response = await fetch(`${BASE_URL}/api/admin/videos/${videoId}/comments`, { headers: { 'X-CSRFToken': csrfToken } });
-                const data = await response.json();
-                if (data.success) { displayCommentsModal(data.comments); }
-                else { document.getElementById('comments-content').innerHTML = `<div class="empty-state-small"><div class="empty-icon">❌</div><div>Failed to load comments: ${escapeHtml(data.message || 'Unknown error')}</div></div>`; }
-            } catch (error) { console.error('Error loading comments for modal:', error); document.getElementById('comments-content').innerHTML = `<div class="empty-state-small"><div class="empty-icon">❌</div><div>Failed to load comments due to a connection error.</div></div>`; }
-        }
-
-        function displayCommentsModal(comments) {
-            const commentsContent = document.getElementById('comments-content');
-            if (comments.length === 0) { commentsContent.innerHTML = `<div class="empty-state-small"><div class="empty-icon">💬</div><div>No comments yet</div><div style="margin-top: 5px; font-size: 0.8rem;">Be the first to comment!</div></div>`; return; }
-            commentsContent.innerHTML = comments.map(comment => `
-                <div class="comment-item">
-                    <div class="user-info">
-                        <div class="user-avatar">${generateAvatar(comment.author)}</div>
-                        <div class="user-details">
-                            <div class="user-name">${escapeHtml(comment.author)}</div>
-                            <div class="user-email">${escapeHtml(comment.user_email)}</div> <div class="comment-text">${escapeHtml(comment.text)}</div>
-                            <div class="comment-meta">
-                                <span class="comment-time">${formatTimeAgo(comment.created_at)}</span>
-                                <span class="comment-likes">❤️ ${comment.likes || 0}</span>
-                                ${comment.replies && comment.replies.length > 0 ? `<span>💬 ${comment.replies.length} replies</span>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    ${currentUser && currentUser.is_admin ? `<button class="delete-comment-btn" onclick="deleteCommentFromModal(${comment.id})">Delete</button>` : ''}
-                </div>
-            `).join('');
-        }
-
-        async function deleteCommentFromModal(commentId) {
-            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) { return; }
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken } });
-                const result = await response.json();
-                if (result.success) {
-                    const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
-                    if (commentElement) { commentElement.remove(); }
-                } else { alert('Failed to delete comment: ' + (result.message || 'Unknown error')); }
-            } catch (error) { console.error('Error deleting comment:', error); alert('Failed to delete comment. Please try again.'); }
-        }
-
-        function formatTimeAgo(dateString) {
-            const date = new Date(dateString); const now = new Date(); const diff = now - date;
-            const minutes = Math.floor(diff / 60000); const hours = Math.floor(diff / 3600000); const days = Math.floor(diff / 86400000);
-            if (days > 0) { return `${days} day${days > 1 ? 's' : ''} ago`; } else if (hours > 0) { return `${hours} hour${hours > 1 ? 's' : ''} ago`; } else if (minutes > 0) { return `${minutes} minute${minutes > 1 ? 's' : ''} ago`; } else { return 'Just now'; }
-        }
-
-        function toggleBehindTheStory(videoId) {
-            const contentDiv = document.getElementById(`behind-the-story-${videoId}`);
-            if (contentDiv) {
-                if (contentDiv.style.display === 'none' || contentDiv.style.display === '') { contentDiv.style.display = 'block'; } else { contentDiv.style.display = 'none'; }
-            }
-        }
-
-        function showFeedbackModal() {
-            document.getElementById('feedback-modal').style.display = 'flex';
-            document.getElementById('feedback-text').value = '';
-            document.getElementById('feedback-message').style.display = 'none';
-            document.getElementById('feedback-message').className = 'feedback-success-message';
-        }
-
-        function closeFeedbackModal() { document.getElementById('feedback-modal').style.display = 'none'; }
-
-        async function submitFeedback() {
-            const feedbackText = document.getElementById('feedback-text').value.trim();
-            const feedbackMessageDiv = document.getElementById('feedback-message');
-            const csrfToken = document.getElementById('csrf_token').value;
-            if (!feedbackText) {
-                feedbackMessageDiv.textContent = 'Feedback cannot be empty.'; feedbackMessageDiv.className = 'feedback-error-message'; feedbackMessageDiv.style.display = 'block'; return;
-            }
-            feedbackMessageDiv.textContent = 'Sending feedback...'; feedbackMessageDiv.className = 'feedback-success-message'; feedbackMessageDiv.style.display = 'block';
-            try {
-                const response = await fetch(`${BASE_URL}/api/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ feedback: feedbackText }) });
-                const data = await response.json();
-                if (response.ok) {
-                    feedbackMessageDiv.textContent = 'Thank you for your feedback!'; feedbackMessageDiv.className = 'feedback-success-message'; document.getElementById('feedback-text').value = ''; setTimeout(() => closeFeedbackModal(), 2000);
-                } else { throw new Error(data.message || 'Failed to send feedback.'); }
-            } catch (error) {
-                console.error('Error sending feedback:', error); feedbackMessageDiv.textContent = error.message || 'Error sending feedback. Please try again.'; feedbackMessageDiv.className = 'feedback-error-message';
-            }
-        }
-
-        async function updateDailyWatchStreak() {
-            const streakCountElement = document.getElementById('streak-count');
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const getResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'GET', headers: { 'X-CSRFToken': csrfToken } });
-                const getData = await getResponse.json();
-                if (getData.success) {
-                    streakCountElement.textContent = getData.streak;
-                    const postResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
-                    const postData = await postResponse.json();
-                    if (postData.success) { streakCountElement.textContent = postData.streak; console.log('Daily watch streak updated to:', postData.streak); } else { console.warn('Failed to update streak:', postData.message); }
-                } else { console.error('Failed to load streak:', getData.message); streakCountElement.textContent = 'N/A'; }
-            } catch (error) { console.error('Error updating daily watch streak:', error); streakCountElement.textContent = 'N/A'; }
-        }
-
-        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-
-        // --- NEW: Upload Modal JS ---
-        function showUploadModal() {
-            document.getElementById('upload-modal').style.display = 'flex';
-            document.getElementById('upload-form').reset(); // Clear form fields
-            document.getElementById('upload-status').textContent = ''; // Clear status message
-            document.getElementById('upload-status').className = 'upload-status-message info'; // Reset class
-            document.getElementById('upload-submit-btn').disabled = false; // Enable button
-        }
-
-        function closeUploadModal() {
-            document.getElementById('upload-modal').style.display = 'none';
-        }
-
+        // Upload form handling
         document.getElementById('upload-form').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Prevent default form submission
-
+            event.preventDefault();
             const formData = new FormData(this);
             const uploadButton = document.getElementById('upload-submit-btn');
             const statusMessage = document.getElementById('upload-status');
-            const csrfToken = document.getElementById('csrf_token').value; // Get the CSRF token
+            const progressBarContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const csrfToken = document.getElementById('csrf_token').value;
+
+            // Basic validation
+            const durationInput = document.getElementById('upload-duration').value.trim();
+            if (!durationInput || isNaN(durationInput) || parseInt(durationInput) <= 0) {
+                statusMessage.textContent = 'Please enter a valid video duration in seconds.';
+                statusMessage.className = 'upload-status-message error';
+                statusMessage.style.display = 'block';
+                return;
+            }
+
+            formData.append('duration_seconds', parseInt(durationInput));
+            formData.append('is_short', document.getElementById('upload-is-short').checked ? 'true' : 'false');
 
             uploadButton.disabled = true;
             statusMessage.textContent = 'Uploading... Please wait.';
             statusMessage.className = 'upload-status-message info';
+            statusMessage.style.display = 'block';
+            progressBarContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
 
-            try {
-                const response = await fetch(`${BASE_URL}/api/upload-video`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': csrfToken // Include CSRF token for file uploads
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${BASE_URL}/api/upload-video`, true);
+            xhr.setRequestHeader('X-CSRFToken', csrfToken);
+
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.style.width = percentComplete.toFixed(0) + '%';
+                    progressBar.textContent = percentComplete.toFixed(0) + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                uploadButton.disabled = false;
+                progressBarContainer.style.display = 'none';
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+                        statusMessage.textContent = result.message || 'Upload successful!';
+                        statusMessage.className = 'upload-status-message success';
+                        loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+                        setTimeout(closeUploadModal, 2000);
+                    } else {
+                        statusMessage.textContent = result.message || `Upload failed with status: ${xhr.status}.`;
+                        statusMessage.className = 'upload-status-message error';
                     }
-                });
-
-                const data = await response.json();
-
-                if (response.ok) { // Check if response status is 2xx
-                    statusMessage.textContent = data.message || 'Upload successful!';
-                    statusMessage.className = 'upload-status-message success';
-                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Refresh the 'Just Dropped' section
-                    setTimeout(closeUploadModal, 2000); // Close modal after 2 seconds
-                } else {
-                    statusMessage.textContent = data.message || 'Upload failed.';
+                } catch (e) {
+                    statusMessage.textContent = `Upload failed: Server error or invalid response. Status: ${xhr.status}`;
                     statusMessage.className = 'upload-status-message error';
                 }
-            } catch (error) {
-                console.error('Error during upload:', error);
-                statusMessage.textContent = 'Network error or server unreachable. Please try again.';
-                statusMessage.className = 'upload-status-message error';
-            } finally {
+            };
+
+            xhr.onerror = function() {
                 uploadButton.disabled = false;
-            }
+                progressBarContainer.style.display = 'none';
+                statusMessage.textContent = 'Network error during upload. Please check your connection.';
+                statusMessage.className = 'upload-status-message error';
+            };
+
+            xhr.send(formData);
+        });
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(e) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (modal.style.display === 'flex' && !modal.querySelector('.modal-content').contains(e.target)) {
+                    modal.style.display = 'none';
+                }
+            });
         });
     </script>
 </body>
-</html>
+</html>-menu-item" data-section="discover"><span class="sidebar-icon">🔍</span> Discover</a></li>
+                <li><a href="#" class="sidebar
