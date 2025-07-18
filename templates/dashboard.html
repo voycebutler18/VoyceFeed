@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snayvu – The Super Platform</title>
+    <title>Snayvu – Create. Watch. Repeat.</title>
     <style>
-        /* General Styles */
+        /* Base Styles */
         * {
             margin: 0;
             padding: 0;
@@ -14,787 +14,391 @@
 
         body {
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0a0a0a;
+            background: #0a0a0a; /* Dark background */
             color: white;
             overflow-x: hidden;
             line-height: 1.6;
         }
 
-        /* Header */
-        .header {
+        /* Layout Grid */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Left Sidebar Menu */
+        .sidebar {
+            width: 250px; /* Fixed width, can be adjusted or made collapsible with JS */
+            background: #1a1a1a; /* Slightly lighter dark background for sidebar */
+            padding: 20px 0;
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
+            bottom: 0;
+            overflow-y: auto; /* Scrollable sidebar */
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
             z-index: 1000;
-            padding: 15px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .header-content {
-            max-width: 600px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.8rem; /* Slightly larger for emphasis */
-            font-weight: 800; /* Bolder */
-            background: linear-gradient(45deg, #a855f7, #6366f1); /* Snayvu brand gradient */
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            cursor: pointer;
-            text-shadow: 0 0 15px rgba(168, 85, 247, 0.4); /* Glow effect */
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-info-group {
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
-            gap: 5px;
+            transition: width 0.3s ease; /* For future collapsible feature */
         }
 
-        .user-email {
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-
-        .streak-tracker {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid rgba(255, 215, 0, 0.4);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #ffd700;
-            box-shadow: 0 2px 5px rgba(255, 215, 0, 0.1);
-            transition: all 0.2s ease;
-        }
-        .streak-tracker:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(255, 215, 0, 0.2);
-        }
-        .streak-icon {
-            margin-right: 5px;
-            font-size: 1em;
-        }
-
-        .logout-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        /* Main Content */
-        .main-content {
-            margin-top: 80px;
-            padding: 20px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .welcome-section {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px 20px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); /* Snayvu gradient with transparency */
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .welcome-title {
+        .sidebar-logo {
             font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #6366f1, #a855f7); /* Snayvu gradient */
+            font-weight: 800;
+            background: linear-gradient(45deg, #a855f7, #6366f1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-
-        .welcome-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.8;
-            line-height: 1.5;
-        }
-
-        /* General Dashboard Section Styling */
-        .dashboard-section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-header {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #a855f7; /* Snayvu accent color */
+            text-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
             text-align: center;
+            margin-bottom: 30px;
+            padding: 0 20px;
         }
 
-        .section-content {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        .sidebar-section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 20px 20px 10px;
         }
 
-        .story-item {
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu-item {
             display: flex;
             align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px 15px;
-            border-radius: 12px;
+            padding: 12px 20px;
             cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: background 0.2s ease, color 0.2s ease;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none; /* For anchor tags */
         }
-        .story-item:hover {
-            background: rgba(255, 255, 255, 0.07);
-            transform: translateY(-2px);
+
+        .sidebar-menu-item:hover {
+            background: rgba(99, 102, 241, 0.1); /* Light Snayvu accent hover */
+            color: white;
         }
-        .story-thumbnail {
-            width: 80px;
-            height: 45px;
-            border-radius: 8px;
+
+        .sidebar-menu-item.active {
+            background: rgba(168, 85, 247, 0.2); /* Snayvu accent for active item */
+            color: white;
+            font-weight: 600;
+        }
+
+        .sidebar-icon {
+            margin-right: 15px;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .sidebar-menu-item:hover .sidebar-icon,
+        .sidebar-menu-item.active .sidebar-icon {
+            color: white;
+        }
+        
+        .sidebar-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 20px 0;
+        }
+
+        .sidebar-footer-links {
+            list-style: none;
+            padding: 0 20px;
+            margin-top: auto; /* Pushes footer to the bottom */
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-footer-item {
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-footer-item a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .sidebar-footer-item a:hover {
+            color: white;
+        }
+
+        .sidebar-copyright {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            margin-top: 15px;
+            padding: 0 20px;
+        }
+        
+        .sidebar-account-info {
+            display: flex;
+            align-items: center;
+            padding: 0 20px 20px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Main Homepage Body */
+        .main-content {
+            margin-left: 250px; /* Offset for the fixed sidebar */
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto; /* Allows main content to scroll independently */
+            transition: margin-left 0.3s ease; /* For future collapsible sidebar */
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(to right, #1f1f1f, #2a2a2a);
+            border-radius: 15px;
             overflow: hidden;
-            flex-shrink: 0;
+            position: relative;
+            margin-bottom: 40px;
+            padding: 30px;
+            min-height: 250px; /* Adjust as needed */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
         }
-        .story-thumbnail img {
+
+        .hero-video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            background: url('https://placehold.co/1200x400/0a0a0a/333?text=Featured+Series+Preview') no-repeat center center/cover; /* Placeholder image */
+            opacity: 0.6; /* Dim the background */
+            z-index: 1;
         }
-        .story-details {
-            flex-grow: 1;
-        }
-        .story-title {
-            font-size: 1rem;
-            font-weight: 500;
-            margin-bottom: 5px;
-            line-height: 1.3;
-        }
-        .story-meta {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-        .story-genre-tag {
-            background: rgba(99, 102, 241, 0.2); /* Matching Snayvu accent */
-            color: #6366f1;
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 0.75em;
-            margin-left: 5px;
-        }
-
-        /* Video Feed (General Stream) */
-        .video-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        .video-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-        .video-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .video-container {
-            position: relative;
-            width: 100%;
-            height: 0;
-            padding-bottom: 56.25%; /* 16:9 aspect ratio */
-            background: #000;
-        }
-        .video-container iframe {
+        .hero-video-placeholder iframe {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             border: none;
+            pointer-events: none; /* Disable interaction with muted preview */
         }
 
-        .video-info {
-            padding: 20px;
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            color: white;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
         }
 
-        .video-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-
-        .video-description {
-            font-size: 1rem;
-            opacity: 0.8;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .video-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-            opacity: 0.6;
-            margin-bottom: 20px;
-        }
-
-        .video-date {
-            font-weight: 500;
-        }
-
-        .video-duration {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 4px 8px;
-            border-radius: 6px;
+        .hero-badge {
+            background: linear-gradient(45deg, #f0f0f0, #cccccc);
+            color: #333;
+            padding: 5px 12px;
+            border-radius: 8px;
             font-size: 0.8rem;
-        }
-
-        /* Video Actions */
-        .video-actions {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 10px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        .action-btn.liked {
-            background: rgba(168, 85, 247, 0.2); /* Snayvu accent for liked state */
-            color: #a855f7;
-            border-color: rgba(168, 85, 247, 0.3);
-        }
-        .action-btn.liked:hover {
-            background: rgba(168, 85, 247, 0.3);
-        }
-
-        .share-menu {
-            position: relative;
+            font-weight: 600;
             display: inline-block;
-        }
-
-        .share-dropdown {
-            display: none;
-            position: absolute;
-            bottom: 100%; /* Position above button */
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(25, 25, 25, 0.95); /* Darker background for dropdown */
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-            padding: 10px 0;
-            min-width: 200px;
-            z-index: 10;
-            animation: fadeIn 0.2s ease-out;
-        }
-        .share-dropdown.active {
-            display: block;
-        }
-
-        .share-option {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            color: white;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .share-option:last-child {
-            border-bottom: none;
-        }
-        .share-option:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .share-icon {
-            font-size: 1.2rem;
-        }
-
-        /* Behind the Story */
-        .behind-the-story-toggle {
-            display: block;
-            width: fit-content;
-            margin: 0 auto 15px;
-            padding: 8px 15px;
-            background: rgba(99, 102, 241, 0.2);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            border-radius: 8px;
-            color: #6366f1;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .behind-the-story-toggle:hover {
-            background: rgba(99, 102, 241, 0.3);
-            transform: translateY(-1px);
-        }
-        .behind-the-story-content {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            display: none;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .behind-the-story-content p {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            opacity: 0.8;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Comments System */
-        .comments-section {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 20px;
-        }
-
-        .comments-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .comments-count {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #a855f7; /* Snayvu accent for comments */
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .comments-count:hover {
-            opacity: 1;
-            transform: translateY(-1px);
-        }
-
-        .comments-toggle {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-        .comments-toggle:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .comment-form {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 25px;
-            align-items: flex-start;
-        }
-
-        .comment-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #6366f1, #a855f7); /* Snayvu gradient */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-
-        .comment-input-container {
-            flex: 1;
-            position: relative;
-        }
-
-        .comment-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            resize: vertical;
-            min-height: 44px;
-            transition: all 0.3s ease;
-        }
-        .comment-input:focus {
-            outline: none;
-            border-color: #a855f7; /* Snayvu accent color */
-            background: rgba(255, 255, 255, 0.15);
-        }
-        .comment-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .comment-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .comment-btn {
-            background: #a855f7; /* Snayvu accent color */
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .comment-btn:hover {
-            background: #9333ea; /* Darker Snayvu accent */
-            transform: translateY(-1px);
-        }
-        .comment-btn:disabled {
-            background: rgba(255, 255, 255, 0.1);
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .cancel-btn {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-        .cancel-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .comments-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .comment {
-            display: flex;
-            gap: 12px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-        .comment:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .comment-content {
-            flex: 1;
-        }
-
-        .comment-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .comment-author {
-            font-weight: 600;
-            color: #a855f7; /* Snayvu accent color */
-            font-size: 0.95rem;
-        }
-
-        .comment-time {
-            font-size: 0.85rem;
-            opacity: 0.6;
-        }
-
-        .comment-text {
-            font-size: 0.95rem;
-            line-height: 1.5;
-            margin-bottom: 12px;
-            word-wrap: break-word;
-        }
-
-        .comment-footer {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .comment-like-btn, .comment-reply-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            cursor: pointer;
-            font-size: 0.85rem;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-        .comment-like-btn:hover, .comment-reply-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        .comment-like-btn.liked {
-            color: #a855f7; /* Snayvu accent color */
-        }
-        .comment-like-btn.liked:hover {
-            color: #9333ea; /* Darker Snayvu accent */
-        }
-
-        .replies {
-            margin-left: 52px;
-            margin-top: 15px;
-            padding-left: 20px;
-            border-left: 2px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .reply {
-            margin-bottom: 15px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .reply-form {
-            margin-top: 15px;
-            margin-left: 52px;
-        }
-
-        .reply-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.9rem;
             margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        .reply-input:focus {
-            outline: none;
-            border-color: #a855f7; /* Snayvu accent color */
-            background: rgba(255, 255, 255, 0.15);
-        }
-        .reply-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Loading/Empty/Error States */
-        .loading, .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            opacity: 0.7;
+        .hero-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
         }
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #a855f7; /* Snayvu accent color */
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+
+        .hero-button {
+            background: linear-gradient(45deg, #a855f7, #6366f1); /* Snayvu gradient */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .hero-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
         }
-        .loading-text {
-            font-size: 1.1rem;
+
+        /* Horizontal Content Rows */
+        .content-row {
+            margin-bottom: 40px;
         }
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-        .empty-title {
+
+        .row-header {
             font-size: 1.5rem;
             font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .empty-subtitle {
-            font-size: 1rem;
-        }
-        .error-message {
-            background: rgba(255, 107, 107, 0.1);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
-            padding: 15px 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .comments-empty {
-            text-align: center;
-            padding: 30px 20px;
-            opacity: 0.6;
-        }
-        .comments-empty-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-        }
-        .comments-empty-text {
-            font-size: 1rem;
-            margin-bottom: 5px;
-        }
-        .comments-empty-subtitle {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            margin-bottom: 20px;
+            color: #f0f0f0;
         }
 
-        /* Responsive Design */
+        .row-content {
+            display: flex;
+            overflow-x: auto; /* Horizontal scroll */
+            gap: 15px;
+            padding-bottom: 10px; /* Space for scrollbar */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1); /* Firefox */
+        }
+
+        /* Custom scrollbar for rows */
+        .row-content::-webkit-scrollbar {
+            height: 8px;
+        }
+        .row-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .row-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        .row-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .content-tile {
+            flex-shrink: 0; /* Prevent shrinking */
+            width: 180px; /* Fixed width for tiles */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .content-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .tile-thumbnail {
+            width: 100%;
+            height: 100px; /* Fixed height for consistency */
+            object-fit: cover;
+            display: block;
+        }
+
+        .tile-info {
+            padding: 10px;
+        }
+
+        .tile-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tile-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a1a; /* Match sidebar background */
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+
+        .footer-app-buttons {
+            margin-bottom: 20px;
+        }
+
+        .app-button {
+            display: inline-block;
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin: 0 10px;
+            transition: background 0.2s ease;
+        }
+        .app-button:hover {
+            background: #555;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .footer-links li {
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s ease;
+        }
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-logo-tagline {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Responsive Adjustments */
         @media (max-width: 768px) {
-            .header-content {
-                padding: 0 10px;
+            .sidebar {
+                width: 70px; /* Collapsed sidebar width */
+                padding: 20px 0;
             }
-            .user-email {
-                display: none;
+            .sidebar-logo, .sidebar-section-title, .sidebar-footer-links, .sidebar-copyright, .sidebar-account-info {
+                display: none; /* Hide text elements in collapsed state */
+            }
+            .sidebar-menu-item {
+                justify-content: center; /* Center icons */
+                padding: 12px 0;
+            }
+            .sidebar-icon {
+                margin-right: 0; /* No margin when text is hidden */
             }
             .main-content {
-                padding: 15px;
-                margin-top: 70px;
-            }
-            .welcome-section {
-                margin-bottom: 30px;
-                padding: 20px 15px;
-            }
-            .welcome-title {
-                font-size: 1.5rem;
-            }
-            .welcome-subtitle {
-                font-size: 1rem;
-            }
-            .video-info {
+                margin-left: 70px; /* Adjust offset */
                 padding: 15px;
             }
-            .video-title {
-                font-size: 1.2rem;
+            .hero-title {
+                font-size: 2rem;
             }
-            .video-description {
-                font-size: 0.9rem;
+            .row-header {
+                font-size: 1.3rem;
             }
-            .video-meta {
-                font-size: 0.8rem;
-            }
-            .video-actions {
-                flex-wrap: wrap;
-                gap: 10px;
-                align-items: flex-start;
-            }
-            .action-btn {
-                flex: 1;
-                min-width: 100px;
-                justify-content: center;
-            }
-            .comment-avatar {
-                width: 35px;
-                height: 35px;
-                font-size: 1rem;
-            }
-            .comment-input {
-                font-size: 0.9rem;
-                padding: 10px 14px;
-            }
-            .comment-text {
-                font-size: 0.9rem;
-            }
-            .replies {
-                margin-left: 35px;
-                padding-left: 15px;
-            }
-            .reply-form {
-                margin-left: 35px;
-            }
-            .comments-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-            .comment-footer {
-                gap: 10px;
-            }
-            .comment-like-btn, .comment-reply-btn {
-                padding: 4px 8px;
-                font-size: 0.8rem;
+            .content-tile {
+                width: 150px; /* Smaller tiles on mobile */
             }
         }
-
-        /* Modals */
+        
+        /* Modals (Keep previous modal styles as they are generic) */
         .modal {
             position: fixed;
             z-index: 1000;
@@ -841,8 +445,6 @@
         .close-btn:hover {
             opacity: 1;
         }
-
-        /* Likes and Comments Modal Content */
         .likes-content, .comments-content {
             max-height: 400px;
             overflow-y: auto;
@@ -870,82 +472,32 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #6366f1, #a855f7); /* Snayvu gradient */
+            background: linear-gradient(45deg, #6366f1, #a855f7);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             font-size: 1.1rem;
         }
-        .user-details {
-            flex: 1;
-        }
-        .user-name {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 3px;
-        }
-        .user-email {
-            font-size: 0.85rem;
-            opacity: 0.7;
-        }
-        .like-time, .comment-time {
-            font-size: 0.8rem;
-            opacity: 0.6;
-        }
+        .user-details { flex: 1; }
+        .user-name { font-weight: 600; font-size: 1rem; margin-bottom: 3px; }
+        .user-email { font-size: 0.85rem; opacity: 0.7; }
+        .like-time, .comment-time { font-size: 0.8rem; opacity: 0.6; }
         .comment-text {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            line-height: 1.4;
+            margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; font-size: 0.9rem; line-height: 1.4;
         }
         .comment-meta {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
-            font-size: 0.8rem;
-            opacity: 0.7;
+            display: flex; align-items: center; gap: 15px; margin-top: 10px; font-size: 0.8rem; opacity: 0.7;
         }
-        .comment-likes {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .comment-likes { display: flex; align-items: center; gap: 5px; }
         .delete-comment-btn {
-            background: rgba(255, 107, 107, 0.2);
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
+            background: rgba(255, 107, 107, 0.2); border: 1px solid rgba(255, 107, 107, 0.3); color: #ff6b6b; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.3s ease;
         }
-        .delete-comment-btn:hover {
-            background: rgba(255, 107, 107, 0.3);
-            transform: translateY(-1px);
-        }
-        .empty-state-small {
-            text-align: center;
-            padding: 40px 20px;
-            opacity: 0.6;
-        }
-        .empty-state-small .empty-icon {
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }
-        .loading-small {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .loading-small .loading-spinner {
-            width: 30px;
-            height: 30px;
-            margin: 0 auto 15px;
-        }
+        .delete-comment-btn:hover { background: rgba(255, 107, 107, 0.3); transform: translateY(-1px); }
+        .empty-state-small { text-align: center; padding: 40px 20px; opacity: 0.6; }
+        .empty-state-small .empty-icon { font-size: 2rem; margin-bottom: 15px; }
+        .loading-small { text-align: center; padding: 40px 20px; }
+        .loading-small .loading-spinner { width: 30px; height: 30px; margin: 0 auto 15px; }
 
         /* Floating Feedback Button */
         .feedback-button-container {
@@ -973,177 +525,163 @@
             transform: translateY(-3px) scale(1.05);
             box-shadow: 0 6px 20px rgba(74, 222, 128, 0.6);
         }
-        /* Feedback Modal */
-        #feedback-modal .modal-content {
-            max-width: 450px;
-            padding: 30px;
-        }
+        #feedback-modal .modal-content { max-width: 450px; padding: 30px; }
         #feedback-modal textarea {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-            min-height: 120px;
-            resize: vertical;
-            margin-bottom: 15px;
-            font-family: 'SF Pro Display', sans-serif;
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; min-height: 120px; resize: vertical; margin-bottom: 15px; font-family: 'SF Pro Display', sans-serif;
         }
-        #feedback-modal textarea::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
+        #feedback-modal textarea::placeholder { color: rgba(255, 255, 255, 0.6); }
         #feedback-modal button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(45deg, #4ade80, #22c55e);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            width: 100%; padding: 12px; background: linear-gradient(45deg, #4ade80, #22c55e); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
         }
-        #feedback-modal button:hover {
-            background: linear-gradient(45deg, #22c55e, #4ade80);
-            transform: translateY(-1px);
-        }
-        .feedback-success-message {
-            color: #4ade80;
-            margin-top: 15px;
-            display: none;
-            font-size: 0.9rem;
-        }
-        .feedback-error-message {
-            color: #ff6b6b;
-            margin-top: 15px;
-            display: none;
-            font-size: 0.9rem;
-        }
-
-        /* NEW SNVYU Specific Styles */
-        .close-circle-tab {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.8);
-            margin-top: 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .close-circle-tab:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        /* Placeholder for new UI elements */
-        .feature-placeholder {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px dashed rgba(99, 102, 241, 0.4);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            opacity: 0.8;
-            font-size: 0.9rem;
-            margin-top: 20px;
-            color: #6366f1;
-        }
+        #feedback-modal button:hover { background: linear-gradient(45deg, #22c55e, #4ade80); transform: translateY(-1px); }
+        .feedback-success-message { color: #4ade80; margin-top: 15px; display: none; font-size: 0.9rem; }
+        .feedback-error-message { color: #ff6b6b; margin-top: 15px; display: none; font-size: 0.9rem; }
     </style>
 </head>
 <body>
     <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
 
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">Snayvu</div>
-            <div class="user-menu">
-                <div class="user-info-group">
-                    <span class="user-email" id="user-email">Loading...</span>
-                    <span class="streak-tracker" id="watch-streak"><span class="streak-icon">🔥</span> <span id="streak-count">0</span>-Day Streak</span>
-                </div>
-                <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-logo">Snayvu</div>
+
+            <ul class="sidebar-menu">
+                <li><a href="#" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="discover"><span class="sidebar-icon">🔍</span> Discover</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="originals"><span class="sidebar-icon">🎬</span> Snayvu Originals</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="shorts"><span class="sidebar-icon">📱</span> Shorts</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="channels"><span class="sidebar-icon">📺</span> Channels</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="live"><span class="sidebar-icon">📡</span> Live Now</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="mood-feed"><span class="sidebar-icon">🧠</span> For You (Mood Feed)</a></li>
+            </ul>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-section-title">Personal Feed</div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="sidebar-menu-item" data-section="continue-watching"><span class="sidebar-icon">🧾</span> Continue Watching</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="watchlist"><span class="sidebar-icon">⭐</span> Watchlist</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="my-circle"><span class="sidebar-icon">🧍</span> My Circle</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="my-reactions"><span class="sidebar-icon">💬</span> My Reactions</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="creator-dashboard"><span class="sidebar-icon">📈</span> Creator Dashboard</a></li>
+            </ul>
+
+            <div class="sidebar-divider"></div>
+
+            <div class="sidebar-section-title">Settings & Info</div>
+            <ul class="sidebar-menu">
+                <li><a href="#" class="sidebar-menu-item" data-section="account-settings"><span class="sidebar-icon">⚙️</span> Account Settings</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="upload"><span class="sidebar-icon">📤</span> Upload</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="help-support"><span class="sidebar-icon">📞</span> Help & Support</a></li>
+                <li><a href="#" class="sidebar-menu-item" onclick="logout()"><span class="sidebar-icon">🚪</span> Log Out</a></li>
+            </ul>
+
+            <div class="sidebar-divider"></div>
+            
+            <div class="sidebar-account-info">
+                <span class="user-email" id="user-email">Loading...</span>
+                <span class="streak-tracker" id="watch-streak"><span class="streak-icon">🔥</span> <span id="streak-count">0</span>-Day Streak</span>
             </div>
-        </div>
+
+            <ul class="sidebar-footer-links">
+                <li><a href="#">About</a></li>
+                <li><a href="#">Terms</a></li>
+                <li><a href="#">Privacy</a></li>
+                <li><a href="#">Contact</a></li>
+                <li><a href="#">Careers</a></li>
+            </ul>
+            <div class="sidebar-copyright">© 2024 Snayvu. All rights reserved.</div>
+        </aside>
+
+        <main class="main-content">
+            <section class="hero-banner">
+                <div class="hero-video-placeholder">
+                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&controls=0&loop=1&playlist=dQw4w9WgXcQ&modestbranding=1&playsinline=1"
+                            title="Featured Series Preview"
+                            frameborder="0"
+                            allow="autoplay; encrypted-media;"
+                            allowfullscreen></iframe>
+                </div>
+                <div class="hero-content">
+                    <span class="hero-badge">Snayvu Exclusive</span>
+                    <h1 class="hero-title">The Enigma of Eldoria: Season 2</h1>
+                    <button class="hero-button">Watch Now</button>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🔥 Trending Now</h2>
+                <div class="row-content" id="trending-now-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🎬 Snayvu Originals</h2>
+                <div class="row-content" id="snayvu-originals-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🌟 Top Creators This Week</h2>
+                <div class="row-content" id="top-creators-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🆕 New This Week</h2>
+                <div class="row-content" id="new-this-week-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🧠 Emotional Picks</h2>
+                <div class="row-content" id="emotional-picks-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🧾 Continue Watching</h2>
+                <div class="row-content" id="continue-watching-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">⚡ Just Dropped (Shorts)</h2>
+                <div class="row-content" id="just-dropped-shorts-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            <section class="content-row">
+                <h2 class="row-header">🔴 Live Now</h2>
+                <div class="row-content" id="live-now-row">
+                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
+                </div>
+            </section>
+
+            </main>
     </div>
 
-    <div class="main-content">
-        <div class="welcome-section">
-            <div class="welcome-title">Welcome to Snayvu</div>
-            <div class="welcome-subtitle">
-                The super-platform for stories, streams, and shorts.<br>
-                One app. All formats. Maximum freedom.
-            </div>
-            <div class="feature-placeholder">
-                <p>💡 **Concept: If Netflix, TikTok, and YouTube had a baby, it’d be Snayvu.**</p>
-                <p style="margin-top: 10px;">Future integrations for multi-view, emotional reactions, and more coming soon!</p>
-            </div>
+    <footer class="footer">
+        <div class="footer-app-buttons">
+            <a href="#" class="app-button">Download on the App Store</a>
+            <a href="#" class="app-button">Get it on Google Play</a>
         </div>
-
-        <div class="dashboard-section">
-            <div class="section-header">🎥 Premium Series (Netflix-style)</div>
-            <div class="section-content" id="premium-series-list">
-                <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
-                    <div class="story-details">
-                        <div class="story-title">Loading Premium Series...</div>
-                        <div class="story-meta">Watch streaks, "Continue Watching", and trailers.</div>
-                    </div>
-                </div>
-                <div class="feature-placeholder">
-                    <p>Track your binge-watching and discover new episodic content here.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section">
-            <div class="section-header">⏱ Shorts Feed (TikTok-style)</div>
-            <div class="section-content" id="shorts-feed-list">
-                <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
-                    <div class="story-details">
-                        <div class="story-title">Discovering Viral Shorts...</div>
-                        <div class="story-meta">Instant reactions & mood-based algorithm.</div>
-                    </div>
-                </div>
-                <div class="feature-placeholder">
-                    <p>Experience up to 90-second vertical videos. Look out for reaction clips and duets!</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section">
-            <div class="section-header">📺 Channels (YouTube-style)</div>
-            <div class="section-content" id="channels-list">
-                <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
-                    <div class="story-details">
-                        <div class="story-title">Exploring Creator Channels...</div>
-                        <div class="story-meta">Long-form videos, live streams, and playlists.</div>
-                    </div>
-                </div>
-                <div class="feature-placeholder">
-                    <p>Dive deep into your favorite creators' worlds with their full content libraries and live events.</p>
-                    <button class="close-circle-tab">Explore Close Circle</button> </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section">
-            <div class="section-header">✨ Your Personalized Feed</div>
-            <div class="video-feed" id="video-feed">
-                <div class="loading" id="loading">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">Loading your stories...</div>
-                </div>
-            </div>
-        </div>
-    </div>
+        <ul class="footer-links">
+            <li><a href="#">About</a></li>
+            <li><a href="#">Terms</a></li>
+            <li><a href="#">Privacy</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Careers</a></li>
+        </ul>
+        <div class="footer-logo-tagline">Snayvu – Create. Watch. Repeat.</div>
+    </footer>
 
     <div id="likes-modal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -1183,18 +721,21 @@
 
     <script>
         const BASE_URL = window.location.origin;
-        let videos = [];
         let currentUser = null;
-        let videoLikes = {};
-        let activeReplyForms = {};
-        let currentUserName = 'User';
+        let currentUserName = 'User'; // Default username
 
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
-            loadVideos();
-            loadPremiumSeries(); // New function for Netflix-style content
-            loadShortsFeed();    // New function for TikTok-style content
-            loadChannels();      // New function for YouTube-style content
+            // Load content for each row
+            loadHeroBannerContent();
+            loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
+            loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
+            loadContentRow('top-creators-row', 'Top Creators', 'Top Creators'); // Needs backend logic for "Top Creators"
+            loadContentRow('new-this-week-row', 'New This Week', 'New Content');
+            loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks'); // Needs Mood AI backend
+            loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching'); // Needs watch history backend
+            loadContentRow('just-dropped-shorts-row', 'Shorts', 'Latest Shorts'); // Reusing 'Shorts' tag
+            loadContentRow('live-now-row', 'Live Now', 'Live Streams'); // Needs live stream integration
         });
 
         async function loadUserInfo() {
@@ -1215,324 +756,105 @@
             }
         }
 
-        async function loadVideos() {
+        // Generic function to load content for a horizontal row
+        async function loadContentRow(elementId, tag, title) {
+            const rowContentElement = document.getElementById(elementId);
+            rowContentElement.innerHTML = `
+                <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading ${title}...</div><div class="tile-meta"></div></div></div>
+            `; // Show loading state
+
             try {
-                const response = await fetch(`${BASE_URL}/api/videos`);
+                // Use the existing /api/videos/categorized endpoint
+                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
                 const data = await response.json();
-                if (data.success) {
-                    videos = data.videos;
-                    displayVideos(videos);
+
+                if (data.success && data.videos.length > 0) {
+                    rowContentElement.innerHTML = data.videos.map(video => renderContentTile(video)).join('');
                 } else {
-                    throw new Error(data.message || 'Failed to load videos');
+                    rowContentElement.innerHTML = `
+                        <div class="empty-state-small" style="padding: 20px; width: 100%; flex-shrink: 0; text-align: center;">
+                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">👀</div>
+                            <div style="font-size: 0.9rem;">No ${title} content yet.</div>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                console.error('Error loading videos:', error);
-                showError('Failed to load videos. Please check your connection.');
-            }
-        }
-
-        function displayVideos(videosToShow) {
-            const videoFeed = document.getElementById('video-feed');
-            const loading = document.getElementById('loading');
-            loading.style.display = 'none';
-
-            if (videosToShow.length === 0) {
-                videoFeed.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🎬</div>
-                        <div class="empty-title">No stories yet</div>
-                        <div class="empty-subtitle">New content will appear here as it's added.</div>
-                    </div>
+                console.error(`Error loading ${title}:`, error);
+                rowContentElement.innerHTML = `
+                    <div class="error-message" style="padding: 10px; width: 100%; flex-shrink: 0;">Failed to load ${title}.</div>
                 `;
-                return;
             }
+        }
 
-            videoFeed.innerHTML = '';
-            videosToShow.forEach(video => {
-                const videoCard = createVideoCard(video);
-                videoFeed.appendChild(videoCard);
-                const likeBtn = document.getElementById(`like-btn-${video.id}`);
-                const likeCount = document.getElementById(`like-count-${video.id}`);
-                if (video.user_liked) {
-                    likeBtn.classList.add('liked');
+        // Renders a single content tile for a horizontal row
+        function renderContentTile(video) {
+            // Adjust YouTube URL for external watch
+            const youtubeWatchUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            return `
+                <div class="content-tile" onclick="window.open('${youtubeWatchUrl}', '_blank');">
+                    <img class="tile-thumbnail" src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/180x100/1a1a1a/888?text=Snayvu'">
+                    <div class="tile-info">
+                        <div class="tile-title">${escapeHtml(video.title)}</div>
+                        <div class="tile-meta">${video.likes_count || 0} Likes</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load content for the Hero Banner
+        async function loadHeroBannerContent() {
+            // For simplicity, let's fetch 'Snayvu Originals' and pick the first one
+            // In a real app, this would be a specific "Featured" video endpoint.
+            try {
+                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=Snayvu Originals`);
+                const data = await response.json();
+                if (data.success && data.videos.length > 0) {
+                    const featuredVideo = data.videos[0];
+                    const heroBanner = document.querySelector('.hero-banner');
+                    const youtubeEmbedUrl = `https://www.youtube.com/embed/${featuredVideo.youtube_video_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${featuredVideo.youtube_video_id}&modestbranding=1&playsinline=1`;
+
+                    heroBanner.querySelector('.hero-video-placeholder').innerHTML = `
+                        <iframe src="${youtubeEmbedUrl}"
+                                title="${escapeHtml(featuredVideo.title)} Preview"
+                                frameborder="0"
+                                allow="autoplay; encrypted-media;"
+                                allowfullscreen></iframe>
+                    `;
+                    heroBanner.querySelector('.hero-title').textContent = escapeHtml(featuredVideo.title);
+                    heroBanner.querySelector('.hero-button').onclick = () => window.open(`https://www.youtube.com/watch?v=${featuredVideo.youtube_video_id}`, '_blank');
                 }
-                likeCount.textContent = video.likes_count || 0;
-            });
-            videosToShow.forEach(video => {
-                loadComments(video.id);
-            });
+            } catch (error) {
+                console.error('Error loading hero banner content:', error);
+                // Fallback to static placeholder if API fails
+            }
         }
 
-        function createVideoCard(video) {
-            const card = document.createElement('div');
-            card.className = 'video-card';
-            const createdDate = new Date(video.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&playsinline=1`;
-            const youtubeShareUrl = `https://youtu.be/${video.youtube_video_id}`;
-            const shareTitle = `${video.title} - Snayvu`;
-            const shareText = `Check out this amazing content on Snayvu: ${video.title}`;
+        // All video players from previous version are now handled by the horizontal rows.
+        // The displayVideos function is no longer needed in its original form for the main content feed,
+        // as content is now loaded into specific rows.
+        // However, if you want a general "main feed" that's just a long scroll of videos,
+        // you could adapt the `loadVideos` and `displayVideos` functions to target a specific
+        // large section in the `main-content` area, perhaps above the horizontal rows.
+        // For this specific request, the main feed is now composed of the horizontal rows.
 
-            // All content is free, so no overlay needed
-            const videoPlayerHtml = `
-                <iframe src="${youtubeEmbedUrl}"
-                        title="${escapeHtml(video.title)}"
-                        frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowfullscreen
-                        onload="updateDailyWatchStreak()"></iframe>
-            `;
 
-            const videoActionsHtml = `
-                <div class="video-actions">
-                    <button class="action-btn like-btn" id="like-btn-${video.id}" onclick="toggleVideoLike(${video.id})">
-                        <span>❤️</span>
-                        <span id="like-count-${video.id}">${video.likes_count || 0}</span>
-                    </button>
-                    <div class="share-menu">
-                        <button class="action-btn" onclick="toggleShareMenu(${video.id})">
-                            <span>🔗</span> Share
-                        </button>
-                        <div class="share-dropdown" id="share-menu-${video.id}">
-                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(youtubeShareUrl)}" target="_blank" class="share-option"><span class="share-icon">📘</span> Facebook</a>
-                            <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(youtubeShareUrl)}&text=${encodeURIComponent(shareText)}" target="_blank" class="share-option"><span class="share-icon">🐦</span> Twitter</a>
-                            <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(youtubeShareUrl)}" target="_blank" class="share-option"><span class="share-icon">💼</span> LinkedIn</a>
-                            <a href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + youtubeShareUrl)}" target="_blank" class="share-option"><span class="share-icon">💬</span> WhatsApp</a>
-                            <a href="${youtubeShareUrl}" target="_blank" class="share-option"><span class="share-icon">📺</span> Watch on YouTube</a>
-                            <a href="#" onclick="copyToClipboard('${youtubeShareUrl}', '${escapeHtml(video.title)}'); return false;" class="share-option"><span class="share-icon">📋</span> Copy Link</a>
-                        </div>
-                    </div>
-                </div>
-            `;
+        // --- MODAL & COMMENTING JS FUNCTIONS (Kept from previous version, adapted for context) ---
 
-            const commentsSectionHtml = `
-                <div class="comments-section">
-                    <div class="comments-header">
-                        <div class="comments-count" id="comment-count-${video.id}" onclick="viewVideoComments(${video.id})">0 comments</div>
-                        <button class="comments-toggle" onclick="toggleComments(${video.id})">
-                            <span id="toggle-text-${video.id}">Show Comments</span>
-                        </button>
-                    </div>
-                    <div class="comments-container" id="comments-${video.id}" style="display: none;">
-                        <div class="comment-form">
-                            <div class="comment-avatar">${generateAvatar(currentUserName)}</div>
-                            <div class="comment-input-container">
-                                <textarea class="comment-input" id="comment-input-${video.id}" placeholder="Add a comment..." rows="1"></textarea>
-                                <div class="comment-actions" id="comment-actions-${video.id}" style="display: none;">
-                                    <button class="cancel-btn" onclick="cancelComment(${video.id})">Cancel</button>
-                                    <button class="comment-btn" onclick="postComment(${video.id})">Post</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="comments-list" id="comments-list-${video.id}"></div>
-                    </div>
-                </div>
-            `;
+        // These functions need actual element IDs from the new structure if they are to be used directly on the main page.
+        // Currently, comments are assumed to be part of a modal view if accessed via `viewVideoComments`.
+        // The `createVideoCard` function no longer exists, but `renderContentTile` takes its place.
+        // If you need comments on specific video *tiles* in the rows, you'd need to add comment icons/buttons to `renderContentTile`
+        // and adapt the comment loading/display logic to be per-tile. For now, it's assumed comments are viewed via a modal.
 
-            card.innerHTML = `
-                <div class="video-container">${videoPlayerHtml}</div>
-                <div class="video-info">
-                    <div class="video-title">${escapeHtml(video.title)}</div>
-                    ${video.description ? `<div class="video-description">${escapeHtml(video.description)}</div>` : ''}
-                    <div class="video-meta">
-                        <span class="video-date">${createdDate}</span>
-                        <span class="video-duration">New</span>
-                    </div>
-                    ${video.description ? `
-                        <button class="behind-the-story-toggle" onclick="toggleBehindTheStory(${video.id})">Behind the Story</button>
-                        <div class="behind-the-story-content" id="behind-the-story-${video.id}">
-                            <p>This story was inspired by [Creator's Insight for ${escapeHtml(video.title)}].</p>
-                            <p>My goal was to [Explain Creative Goal].</p>
-                        </div>
-                    ` : ''}
-                    ${videoActionsHtml}
-                    ${commentsSectionHtml}
-                </div>
-            `;
+        // Placeholder for functions that might be called if comments were on main page videos
+        function toggleVideoLike(videoId) { console.log('Toggle video like placeholder for video:', videoId); }
+        function toggleShareMenu(videoId) { console.log('Toggle share menu placeholder for video:', videoId); }
 
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('focus', function() { showCommentActions(video.id); });
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('input', function() { autoResizeTextarea(this); });
-            card.querySelector(`#comment-input-${video.id}`).addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postComment(video.id); } });
-            return card;
-        }
 
-        function generateAvatar(name) { return name.charAt(0).toUpperCase(); }
-        async function toggleVideoLike(videoId) {
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    const likeBtn = document.getElementById(`like-btn-${videoId}`);
-                    const likeCount = document.getElementById(`like-count-${videoId}`);
-                    if (data.liked) { likeBtn.classList.add('liked'); } else { likeBtn.classList.remove('liked'); }
-                    likeCount.textContent = data.likes_count;
-                    videoLikes[videoId] = data.liked;
-                } else { console.error('Failed to toggle like:', data.message); }
-            } catch (error) { console.error('Error toggling like:', error); }
-        }
-        function toggleShareMenu(videoId) {
-            const shareMenu = document.getElementById(`share-menu-${videoId}`);
-            shareMenu.classList.toggle('active');
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.share-menu')) { shareMenu.classList.remove('active'); }
-            });
-        }
-        function copyToClipboard(url, title) {
-            const linkToCopy = url;
-            navigator.clipboard.writeText(linkToCopy).then(() => {
-                const Toast = { show: (message) => { const toast = document.createElement('div'); toast.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 0.9rem;`; toast.textContent = message; document.body.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); } };
-                Toast.show(`Link copied! "${title}"`);
-            }).catch(() => {
-                const textArea = document.createElement('textarea'); textArea.value = linkToCopy; document.body.appendChild(textArea); textArea.select(); document.execCommand('copy'); document.body.removeChild(textArea);
-                const Toast = { show: (message) => { const toast = document.createElement('div'); toast.style.cssText = `position: fixed; top: 20px; right: 20px; background: #4CAF50; color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 0.9rem;`; toast.textContent = message; document.body.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); } };
-                Toast.show(`Link copied! "${title}"`);
-            });
-        }
-        async function loadComments(videoId) {
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
-                const data = await response.json();
-                if (data.success) { displayComments(videoId, data.comments); updateCommentCount(videoId, data.comments); }
-                else { console.error('Failed to load comments:', data.message); }
-            } catch (error) { console.error('Error loading comments:', error); }
-        }
-        function displayComments(videoId, comments) {
-            const commentsList = document.getElementById(`comments-list-${videoId}`);
-            if (comments.length === 0) { commentsList.innerHTML = `<div class="comments-empty"><div class="comments-empty-icon">💬</div><div class="comments-empty-text">No comments yet</div><div class="comments-empty-subtitle">Be the first to share your thoughts!</div></div>`; return; }
-            commentsList.innerHTML = comments.map(comment => renderComment(comment, videoId)).join('');
-        }
-        function renderComment(comment, videoId) {
-            const repliesHtml = comment.replies.map(reply => renderReply(reply, videoId)).join('');
-            const canDelete = currentUser && (currentUser.id === comment.user_id || currentUser.is_admin);
-            const deleteButton = canDelete ? `<button class="delete-comment-btn" onclick="deleteComment(${comment.id}, ${videoId})">Delete</button>` : '';
-            return `
-                <div class="comment">
-                    <div class="comment-avatar">${generateAvatar(comment.author)}</div>
-                    <div class="comment-content">
-                        <div class="comment-header">
-                            <div class="comment-author">${escapeHtml(comment.author)}</div>
-                            <div class="comment-time">${comment.time}</div>
-                        </div>
-                        <div class="comment-text">${escapeHtml(comment.text)}</div>
-                        <div class="comment-footer">
-                            <button class="comment-like-btn ${comment.liked ? 'liked' : ''}" onclick="toggleCommentLike(${comment.id})"><span>❤️</span><span id="comment-like-count-${comment.id}">${comment.likes}</span></button>
-                            <button class="comment-reply-btn" onclick="showReplyForm(${comment.id}, ${videoId})"><span>↩️</span>Reply</button>
-                            ${deleteButton}
-                        </div>
-                        ${repliesHtml ? `<div class="replies">${repliesHtml}</div>` : ''}
-                        <div class="reply-form" id="reply-form-${comment.id}" style="display: none;">
-                            <textarea class="reply-input" id="reply-input-${comment.id}" placeholder="Write a reply..." rows="2"></textarea>
-                            <div class="comment-actions">
-                                <button class="cancel-btn" onclick="cancelReply(${comment.id})">Cancel</button>
-                                <button class="comment-btn" onclick="postReply(${comment.id}, ${videoId})">Post</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        function renderReply(reply, videoId) {
-            const canDelete = currentUser && (currentUser.id === reply.user_id || currentUser.is_admin);
-            const deleteButton = canDelete ? `<button class="delete-comment-btn" onclick="deleteComment(${reply.id}, ${videoId})">Delete</button>` : '';
-            return `
-                <div class="reply">
-                    <div class="comment-header">
-                        <div class="comment-author">${escapeHtml(reply.author)}</div>
-                        <div class="comment-time">${reply.time}</div>
-                    </div>
-                    <div class="comment-text">${escapeHtml(reply.text)}</div>
-                    <div class="comment-footer">
-                        <button class="comment-like-btn ${reply.liked ? 'liked' : ''}" onclick="toggleCommentLike(${reply.id})"><span>❤️</span><span id="comment-like-count-${reply.id}">${reply.likes}</span></button>
-                        ${deleteButton}
-                    </div>
-                </div>
-            `;
-        }
-        function updateCommentCount(videoId, comments) {
-            const totalComments = comments.reduce((total, comment) => { return total + 1 + (comment.replies ? comment.replies.length : 0); }, 0);
-            document.getElementById(`comment-count-${videoId}`).textContent = `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`;
-        }
-        function toggleComments(videoId) {
-            const commentsContainer = document.getElementById(`comments-${videoId}`);
-            const toggleText = document.getElementById(`toggle-text-${videoId}`);
-            if (commentsContainer.style.display === 'none' || commentsContainer.style.display === '') {
-                commentsContainer.style.display = 'block'; toggleText.textContent = 'Hide Comments';
-            } else { commentsContainer.style.display = 'none'; toggleText.textContent = 'Show Comments'; }
-        }
-        function showCommentActions(videoId) { document.getElementById(`comment-actions-${videoId}`).style.display = 'flex'; }
-        function cancelComment(videoId) {
-            const input = document.getElementById(`comment-input-${videoId}`);
-            input.value = ''; input.style.height = 'auto'; document.getElementById(`comment-actions-${videoId}`).style.display = 'none'; input.blur();
-        }
-        async function postComment(videoId) {
-            const input = document.getElementById(`comment-input-${videoId}`);
-            const text = input.value.trim(); if (!text) return;
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ text }) });
-                const data = await response.json();
-                if (data.success) { input.value = ''; input.style.height = 'auto'; cancelComment(videoId); loadComments(videoId); }
-                else { console.error('Failed to post comment:', data.message); }
-            } catch (error) { console.error('Error posting comment:', error); }
-        }
-        async function toggleCommentLike(commentId) {
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}/like`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
-                const data = await response.json();
-                if (data.success) {
-                    const likeBtn = document.querySelector(`[onclick="toggleCommentLike(${commentId})"]`);
-                    if (data.liked) { likeBtn.classList.add('liked'); } else { likeBtn.classList.remove('liked'); }
-                    document.getElementById(`comment-like-count-${commentId}`).textContent = data.likes_count;
-                } else { console.error('Failed to toggle comment like:', data.message); }
-            } catch (error) { console.error('Error toggling comment like:', error); }
-        }
-        function showReplyForm(commentId, videoId) {
-            for (const id in activeReplyForms) { if (activeReplyForms[id] === videoId && id != commentId) { cancelReply(id); } }
-            document.getElementById(`reply-form-${commentId}`).style.display = 'block';
-            document.getElementById(`reply-input-${commentId}`).focus();
-            activeReplyForms[commentId] = videoId;
-        }
-        function cancelReply(commentId) {
-            document.getElementById(`reply-input-${commentId}`).value = '';
-            document.getElementById(`reply-form-${commentId}`).style.display = 'none';
-            delete activeReplyForms[commentId];
-        }
-        async function postReply(commentId, videoId) {
-            const replyInput = document.getElementById(`reply-input-${commentId}`);
-            const text = replyInput.value.trim(); if (!text) return;
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ text, parent_id: commentId }) });
-                const data = await response.json();
-                if (data.success) { replyInput.value = ''; cancelReply(commentId); loadComments(videoId); }
-                else { console.error('Failed to post reply:', data.message); }
-            } catch (error) { console.error('Error posting reply:', error); }
-        }
-        function autoResizeTextarea(textarea) { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }
-        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-        function showError(message) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('video-feed').innerHTML = `<div class="error-message">${message}</div>`;
-        }
-        async function logout() {
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
-                const data = await response.json();
-                if (data.success) { window.location.href = `${BASE_URL}/`; } else { console.error('Logout failed:', data.message); }
-            } catch (error) { console.error('Error during logout:', error); window.location.href = `${BASE_URL}/`; }
-        }
-        document.addEventListener('click', function(e) {
-            document.querySelectorAll('.share-dropdown').forEach(menu => { if (!e.target.closest('.share-menu') && menu.classList.contains('active')) { menu.classList.remove('active'); } });
-            const likesModal = document.getElementById('likes-modal'); const commentsModal = document.getElementById('comments-modal'); const feedbackModal = document.getElementById('feedback-modal');
-            if (likesModal.style.display === 'block' && !e.target.closest('.modal-content')) { closeLikesModal(); }
-            if (commentsModal.style.display === 'block' && !e.target.closest('.modal-content')) { closeCommentsModal(); }
-            if (feedbackModal.style.display === 'block' && !e.target.closest('.modal-content') && !e.target.closest('.feedback-button-container')) { closeFeedbackModal(); }
-        });
+        // MODAL FUNCTIONS (These are called from admin, or potentially from a detailed video view)
+        function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
+        function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
+
         async function viewVideoComments(videoId) {
             const csrfToken = document.getElementById('csrf_token').value;
             try {
@@ -1544,6 +866,7 @@
                 else { document.getElementById('comments-content').innerHTML = `<div class="empty-state-small"><div class="empty-icon">❌</div><div>Failed to load comments: ${escapeHtml(data.message || 'Unknown error')}</div></div>`; }
             } catch (error) { console.error('Error loading comments for modal:', error); document.getElementById('comments-content').innerHTML = `<div class="empty-state-small"><div class="empty-icon">❌</div><div>Failed to load comments due to a connection error.</div></div>`; }
         }
+
         function displayCommentsModal(comments) {
             const commentsContent = document.getElementById('comments-content');
             if (comments.length === 0) { commentsContent.innerHTML = `<div class="empty-state-small"><div class="empty-icon">💬</div><div>No comments yet</div><div style="margin-top: 5px; font-size: 0.8rem;">Be the first to comment!</div></div>`; return; }
@@ -1565,6 +888,7 @@
                 </div>
             `).join('');
         }
+
         async function deleteCommentFromModal(commentId) {
             if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) { return; }
             const csrfToken = document.getElementById('csrf_token').value;
@@ -1574,118 +898,22 @@
                 if (result.success) {
                     const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
                     if (commentElement) { commentElement.remove(); }
-                    videos.forEach(video => { if (document.getElementById(`comments-${video.id}`).style.display === 'block') { loadComments(video.id); } });
+                    // Re-evaluate if comments need reloading in main feed if this modal is context-aware
                 } else { alert('Failed to delete comment: ' + (result.message || 'Unknown error')); }
             } catch (error) { console.error('Error deleting comment:', error); alert('Failed to delete comment. Please try again.'); }
         }
-        async function deleteComment(commentId, videoId) {
-            if (!confirm('Are you sure you want to delete this comment? This action cannot be undone.')) { return; }
-            const csrfToken = document.getElementById('csrf_token').value;
-            try {
-                const response = await fetch(`${BASE_URL}/api/comments/${commentId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
-                const result = await response.json();
-                if (result.success) { loadComments(videoId); } else { alert('Failed to delete comment: ' + (result.message || 'Unknown error')); }
-            } catch (error) { console.error('Error deleting comment:', error); alert('Failed to delete comment. Please try again.'); }
-        }
-        function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
-        function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
+
+        // Functions below are generalized and don't require specific video card context
         function formatTimeAgo(dateString) {
             const date = new Date(dateString); const now = new Date(); const diff = now - date;
             const minutes = Math.floor(diff / 60000); const hours = Math.floor(diff / 3600000); const days = Math.floor(diff / 86400000);
             if (days > 0) { return `${days} day${days > 1 ? 's' : ''} ago`; } else if (hours > 0) { return `${hours} hour${hours > 1 ? 's' : ''} ago`; } else if (minutes > 0) { return `${minutes} minute${minutes > 1 ? 's' : ''} ago`; } else { return 'Just now'; }
         }
-        function renderStoryItemHtml(video, type) {
-            const youtubeShareUrl = `https://youtu.be/${video.youtube_video_id}`;
-            let metaInfo = '';
-            if (type === 'top-story') { metaInfo = `Likes: ${video.likes_count || 0}`; }
-            else if (type === 'new-series' && video.genre) { metaInfo = `Genre: ${escapeHtml(video.genre)}`; }
-            else { metaInfo = `Added: ${new Date(video.created_at).toLocaleDateString()}`; }
-            return `
-                <div class="story-item" onclick="window.open('${youtubeShareUrl}', '_blank');">
-                    <div class="story-thumbnail"><img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/80x45/1a1a1a/888?text=Video'"></div>
-                    <div class="story-details">
-                        <div class="story-title">${escapeHtml(video.title)}</div>
-                        <div class="story-meta">${metaInfo}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Renamed and adapted from loadTopStories and loadNewSeries
-        async function loadCategorizedContent(sectionId, tag, title, emptyMessage) {
-            const listElement = document.getElementById(sectionId);
-            listElement.innerHTML = `
-                <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Loading" alt="Loading"></div>
-                    <div class="story-details">
-                        <div class="story-title">Loading ${title}...</div>
-                        <div class="story-meta"></div>
-                    </div>
-                </div>
-            `;
-
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
-                const data = await response.json();
-
-                if (data.success && data.videos.length > 0) {
-                    listElement.innerHTML = data.videos.map(video => renderStoryItemHtml(video, tag.toLowerCase().replace(' ', '-'))).join('');
-                } else {
-                    listElement.innerHTML = `
-                        <div class="empty-state-small" style="padding: 10px 0;">
-                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">${emptyMessage.icon}</div>
-                            <div>${emptyMessage.text}</div>
-                            <div style="font-size: 0.8rem; opacity: 0.7;">${emptyMessage.subtext}</div>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error(`Error loading ${title}:`, error);
-                listElement.innerHTML = `<div class="empty-state-small" style="padding: 10px 0; color: #ff6b6b;"><div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">❌</div>Failed to load ${title}.</div>`;
-            }
-        }
-
-        async function loadPremiumSeries() {
-            await loadCategorizedContent('premium-series-list', 'Premium Series', 'Premium Series', {
-                icon: '🎬',
-                text: 'No Premium Series yet.',
-                subtext: 'Mark videos as "Premium Series" in admin to see them here.'
-            });
-        }
-
-        async function loadShortsFeed() {
-            await loadCategorizedContent('shorts-feed-list', 'Shorts', 'Shorts Feed', {
-                icon: '⏱️',
-                text: 'No Shorts yet.',
-                subtext: 'Add short-form content and mark them as "Shorts" in admin.'
-            });
-        }
-
-        async function loadChannels() {
-            // For now, this is just a placeholder. True channel functionality would require distinct backend data.
-            const channelsList = document.getElementById('channels-list');
-            channelsList.innerHTML = `
-                <div class="story-item placeholder">
-                    <div class="story-thumbnail"><img src="https://placehold.co/80x45/1a1a1a/888?text=Creators" alt="Loading"></div>
-                    <div class="story-details">
-                        <div class="story-title">Loading Top Channels...</div>
-                        <div class="story-meta">Explore diverse creators.</div>
-                    </div>
-                </div>
-            `;
-            // If you had a /api/channels endpoint, you would fetch and render them here.
-            // Example: const response = await fetch(`${BASE_URL}/api/channels`);
-            // This is primarily for visual representation of the concept.
-        }
 
         function toggleBehindTheStory(videoId) {
             const contentDiv = document.getElementById(`behind-the-story-${videoId}`);
             if (contentDiv) {
-                if (contentDiv.style.display === 'none' || contentDiv.style.display === '') {
-                    contentDiv.style.display = 'block';
-                } else {
-                    contentDiv.style.display = 'none';
-                }
+                if (contentDiv.style.display === 'none' || contentDiv.style.display === '') { contentDiv.style.display = 'block'; } else { contentDiv.style.display = 'none'; }
             }
         }
 
@@ -1696,43 +924,24 @@
             document.getElementById('feedback-message').className = 'feedback-success-message';
         }
 
-        function closeFeedbackModal() {
-            document.getElementById('feedback-modal').style.display = 'none';
-        }
+        function closeFeedbackModal() { document.getElementById('feedback-modal').style.display = 'none'; }
 
         async function submitFeedback() {
             const feedbackText = document.getElementById('feedback-text').value.trim();
             const feedbackMessageDiv = document.getElementById('feedback-message');
             const csrfToken = document.getElementById('csrf_token').value;
-
             if (!feedbackText) {
-                feedbackMessageDiv.textContent = 'Feedback cannot be empty.';
-                feedbackMessageDiv.className = 'feedback-error-message';
-                feedbackMessageDiv.style.display = 'block';
-                return;
+                feedbackMessageDiv.textContent = 'Feedback cannot be empty.'; feedbackMessageDiv.className = 'feedback-error-message'; feedbackMessageDiv.style.display = 'block'; return;
             }
-
-            feedbackMessageDiv.textContent = 'Sending feedback...';
-            feedbackMessageDiv.className = 'feedback-success-message';
-            feedbackMessageDiv.style.display = 'block';
-
+            feedbackMessageDiv.textContent = 'Sending feedback...'; feedbackMessageDiv.className = 'feedback-success-message'; feedbackMessageDiv.style.display = 'block';
             try {
-                const response = await fetch(`${BASE_URL}/api/feedback`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                    body: JSON.stringify({ feedback: feedbackText })
-                });
+                const response = await fetch(`${BASE_URL}/api/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ feedback: feedbackText }) });
                 const data = await response.json();
                 if (response.ok) {
-                    feedbackMessageDiv.textContent = 'Thank you for your feedback!';
-                    feedbackMessageDiv.className = 'feedback-success-message';
-                    document.getElementById('feedback-text').value = '';
-                    setTimeout(() => closeFeedbackModal(), 2000);
+                    feedbackMessageDiv.textContent = 'Thank you for your feedback!'; feedbackMessageDiv.className = 'feedback-success-message'; document.getElementById('feedback-text').value = ''; setTimeout(() => closeFeedbackModal(), 2000);
                 } else { throw new Error(data.message || 'Failed to send feedback.'); }
             } catch (error) {
-                console.error('Error sending feedback:', error);
-                feedbackMessageDiv.textContent = error.message || 'Error sending feedback. Please try again.';
-                feedbackMessageDiv.className = 'feedback-error-message';
+                console.error('Error sending feedback:', error); feedbackMessageDiv.textContent = error.message || 'Error sending feedback. Please try again.'; feedbackMessageDiv.className = 'feedback-error-message';
             }
         }
 
@@ -1746,13 +955,42 @@
                     streakCountElement.textContent = getData.streak;
                     const postResponse = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                     const postData = await postResponse.json();
-                    if (postData.success) {
-                        streakCountElement.textContent = postData.streak;
-                        console.log('Daily watch streak updated to:', postData.streak);
-                    } else { console.warn('Failed to update streak:', postData.message); }
+                    if (postData.success) { streakCountElement.textContent = postData.streak; console.log('Daily watch streak updated to:', postData.streak); } else { console.warn('Failed to update streak:', postData.message); }
                 } else { console.error('Failed to load streak:', getData.message); streakCountElement.textContent = 'N/A'; }
             } catch (error) { console.error('Error updating daily watch streak:', error); streakCountElement.textContent = 'N/A'; }
         }
+
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+        // General event listener for sidebar navigation clicks
+        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+            item.addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent default link behavior
+                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
+                this.classList.add('active');
+
+                const section = this.dataset.section;
+                // In a real app, you would load content dynamically here
+                // For now, this is just a conceptual navigation
+                console.log('Navigated to section:', section);
+                // You might scroll to a specific part of the page or fetch new data
+                // For instance, if 'shorts' opens a dedicated shorts viewer, you'd navigate there.
+                // For 'home', just reload the content rows.
+                if (section === 'home') {
+                    loadHeroBannerContent();
+                    loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
+                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
+                    loadContentRow('top-creators-row', 'Top Creators', 'Top Creators');
+                    loadContentRow('new-this-week-row', 'New This Week', 'New Content');
+                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
+                    loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
+                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Latest Shorts');
+                    loadContentRow('live-now-row', 'Live Now', 'Live Streams');
+                }
+                // For other sections like 'Shorts', 'Live Now', 'Discover', 'Channels' etc.
+                // You would implement specific content loading or page transitions here.
+            });
+        });
     </script>
 </body>
 </html>
