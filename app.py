@@ -14,6 +14,8 @@ import logging # Import the logging module
 from flask_wtf.csrf import CSRFProtect # Import CSRFProtect
 from flask_limiter import Limiter # Import Limiter
 from flask_limiter.util import get_remote_address # Import get_remote_address
+from werkzeug.utils import secure_filename # Added for file uploads
+from flask import send_from_directory # Added for serving uploaded files
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -101,9 +103,9 @@ class Video(db.Model):
     genre = db.Column(db.String(100), nullable=True)
     featured_tag = db.Column(db.String(50), nullable=True)
     # NEW: Store local file path if uploaded directly
-    local_file_path = db.Column(db.String(500), nullable=True) 
+    local_file_path = db.Column(db.String(500), nullable=True)
     # NEW: Store hashtags
-    hashtags = db.Column(db.String(500), nullable=True) 
+    hashtags = db.Column(db.String(500), nullable=True)
 
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
@@ -297,8 +299,6 @@ def account_settings_page():
     return render_template('account_settings.html', user=user)
 
 # Serve uploaded media files
-from flask import send_from_directory # Import needed for send_from_directory
-
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # Ensure the file is within the UPLOAD_FOLDER for security
@@ -379,8 +379,8 @@ def login():
 def logout():
     """User logout endpoint"""
     session.clear()
-    flash('You have been logged out successfully.', 'info')
-    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
+    flash('You have been logged out successfully.', 'info') # Added flash message
+    return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')}) # Return redirect URL
 
 @app.route('/api/auth/check')
 @login_required
@@ -789,8 +789,7 @@ def admin_add_video():
         if not video_id:
             return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
         
-        existing_video = Video.query.filter_by(youtube_video_id=video_id).first()
-        if existing_video:
+        existing_video = Video.query.filter_by(youtube_video_id=video_id).first():
             return jsonify({'success': False, 'message': 'This video has already been added'}), 400
         
         thumbnail_url = get_youtube_thumbnail(video_id)
@@ -1254,6 +1253,14 @@ def user_watch_streak():
     POST: Updates streak based on daily activity (e.g., watching a video).
     """
     user = User.query.get(session['user_id'])
+
+    # ADD THIS CHECK:
+    if user is None:
+        # If user is None, the session is invalid or user was deleted.
+        # Clear the session and redirect to login.
+        session.clear()
+        return jsonify({'success': False, 'message': 'User session invalid, please log in again.', 'redirect': url_for('index')}), 401
+
     today = date.today()
 
     if request.method == 'GET':
@@ -1298,8 +1305,8 @@ def user_watch_streak():
 
 
 # --- NEW: VIDEO UPLOAD ROUTE ---
-from werkzeug.utils import secure_filename
-from flask import send_from_directory
+# from werkzeug.utils import secure_filename # Already imported at top
+# from flask import send_from_directory # Already imported at top
 
 @app.route('/api/upload-video', methods=['POST'])
 @login_required
@@ -1343,7 +1350,7 @@ def upload_video():
         new_video = Video(
             title=title,
             description=description if description else None,
-            youtube_url=file_path, # Storing local path here for playback (will be served by /uploads route)
+            youtube_url=url_for('uploaded_file', filename=filename_with_user), # Storing local path URL here for playback
             youtube_video_id=youtube_video_id_placeholder, # Placeholder
             thumbnail_url=thumbnail_url,
             is_active=True,
