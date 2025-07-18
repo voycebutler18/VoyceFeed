@@ -298,6 +298,101 @@
             display: none;
         }
 
+        /* START NEW VIDEO CARD STYLES */
+.video-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 25px;
+    display: flex;
+    gap: 25px;
+}
+
+.video-main-content {
+    flex: 1;
+}
+
+.video-sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.video-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+
+.video-description {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.video-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 20px;
+    margin-bottom: 20px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-label {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.detail-value {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.view-file-link {
+    color: #4ade80;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.video-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.edit-btn {
+    background: rgba(74, 222, 128, 0.2);
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    color: #4ade80;
+}
+
+.delete-btn {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+/* END NEW VIDEO CARD STYLES */
+
         .progress-bar {
             width: 0%;
             height: 20px;
@@ -997,65 +1092,76 @@
 
         // Display videos in the list
         // Display videos in the list
-        function displayVideos(videos) {
-            const videoList = document.getElementById('video-list');
-            
-            if (videos.length === 0) {
-                videoList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; opacity: 0.6;">
-                        <div style="font-size: 3rem; margin-bottom: 20px;">📹</div>
-                        <div style="font-size: 1.2rem;">No videos yet</div>
-                        <div style="margin-top: 10px;">Add your first video above to get started!</div>
-                    </div>
-                `;
-                return;
-            }
+        // Display videos in the list
+function displayVideos(videos) {
+    const videoList = document.getElementById('video-list');
+    
+    if (videos.length === 0) {
+        videoList.innerHTML = `<div style="text-align: center; padding: 40px; opacity: 0.6;">No videos yet.</div>`;
+        return;
+    }
 
-            videoList.innerHTML = videos.map(video => {
-                const sourceLink = video.local_file_path ? 
-                    `<a href="${video.local_file_path}" target="_blank" style="color: #4ade80;">View File</a>` : 
-                    (video.youtube_url ? `<a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>` : 'N/A');
+    videoList.innerHTML = videos.map(video => {
+        const sourceLink = video.local_file_path 
+            ? `<a href="${video.local_file_path}" target="_blank" class="view-file-link">View File</a>` 
+            : (video.youtube_url ? `<a href="${video.youtube_url}" target="_blank" class="view-file-link">View on YouTube</a>` : 'N/A');
 
-                const durationDisplay = video.duration_seconds !== null ? 
-                    `${formatDuration(video.duration_seconds)}` : 'N/A';
+        const durationDisplay = video.duration_seconds !== null 
+            ? `${formatDuration(video.duration_seconds)}` 
+            : 'N/A';
 
-                return `
-                <div class="video-item" data-video-id="${video.id}">
-                    <div class="video-thumbnail">
-                        <img src="${video.thumbnail_url || 'https://via.placeholder.com/120x68/333/fff?text=Video'}" alt="${escapeHtml(video.title)}" onerror="this.src='https://via.placeholder.com/120x68/333/fff?text=Video'">
-                    </div>
-                    <div class="video-info">
-                        <div class="video-title">${escapeHtml(video.title)}</div>
-                        <div class="video-description">${escapeHtml(video.description || 'No description')}</div>
-                        <div class="video-meta">
-                            <span>Added: ${formatDate(video.created_at)}</span>
-                            <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> 
-                            <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span> 
-                            <span><strong>Duration:</strong> ${durationDisplay}</span>
-                            <span><strong>Short:</strong> ${video.is_short ? 'Yes' : 'No'}</span>
-                            <span><strong>Views:</strong> ${video.views_count || 0}</span>
-                            <span><strong>Hashtags:</strong> ${escapeHtml(video.hashtags || 'None')}</span>
-                            <span>Source: ${sourceLink}</span>
-                        </div>
-                        <div class="video-stats">
-                            <div class="stat-item likes" onclick="viewVideoLikes(${video.id})">
-                                <span>❤️</span>
-                                <span>${video.likes_count || 0} likes</span>
-                            </div>
-                            <div class="stat-item comments" onclick="viewVideoComments(${video.id})">
-                                <span>💬</span>
-                                <span>${video.comment_count || 0} comments</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="video-actions">
-                        <button class="action-btn edit" onclick="editVideo(${video.id})">Edit</button>
-        _                <button class="action-btn delete" onclick="deleteVideo(${video.id})">Delete</button>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
+        // This is the new HTML structure
+        return `
+        <div class="video-card">
+            <div class="video-main-content">
+                <h3 class="video-title">${escapeHtml(video.title)}</h3>
+                <p class="video-description">${escapeHtml(video.description || 'No description')}</p>
+                
+                <div class="video-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Added:</span>
+                        <span class="detail-value">${formatDate(video.created_at)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Genre:</span>
+                        <span class="detail-value">${escapeHtml(video.genre || 'N/A')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Tag:</span>
+                        <span class="detail-value">${escapeHtml(video.featured_tag || 'None')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value">${durationDisplay}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Short:</span>
+                        <span class="detail-value">${video.is_short ? 'Yes' : 'No'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Views:</span>
+                        <span class="detail-value">${video.views_count || 0}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Hashtags:</span>
+                        <span class="detail-value">${escapeHtml(video.hashtags || 'None')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Source:</span>
+                        <span class="detail-value">${sourceLink}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="video-sidebar">
+                <div class="video-actions">
+                    <button class="action-btn edit-btn" onclick="editVideo(${video.id})">Edit</button>
+                    <button class="action-btn delete-btn" onclick="deleteVideo(${video.id})">Delete</button>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
 
         // Handle form submission - Add New Video
         document.getElementById('add-video-form').addEventListener('submit', async function(e) {
