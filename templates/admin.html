@@ -198,10 +198,10 @@
         }
         /* Style for select dropdown arrow */
         .form-group select {
-            appearance: none; /* Remove default browser arrow */
+            appearance: none;
             -webkit-appearance: none;
             -moz-appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* Custom arrow */
+            background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
             background-repeat: no-repeat;
             background-position: right 15px center;
             background-size: 18px;
@@ -222,7 +222,7 @@
             color: rgba(255, 255, 255, 0.6);
         }
         .form-group select option {
-            background: #2a5298; /* Dark background for options */
+            background: #2a5298;
             color: white;
         }
 
@@ -256,6 +256,58 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        /* Video Source Selection */
+        .video-source-options {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .video-source-option input[type="radio"] {
+            display: none;
+        }
+        .video-source-option label {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+            border: 2px solid transparent;
+        }
+        .video-source-option input[type="radio"]:checked + label {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: #4ade80;
+        }
+        .video-source-option label:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .video-source-container {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        /* Progress bar styles */
+        .progress-container {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none; /* Hidden by default */
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: #4ade80;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 0.8rem;
+            transition: width 0.1s ease;
         }
 
         /* Video Management */
@@ -409,21 +461,21 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(5px);
-            display: flex; /* Added to center content */
-            justify-content: center; /* Added to center content */
-            align-items: center; /* Added to center content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .modal-content {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            margin: auto; /* Changed from 5% auto to auto */
+            margin: auto;
             padding: 30px;
             border-radius: 20px;
             width: 90%;
             max-width: 600px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            max-height: 80vh; /* Added to allow scrolling if content is too long */
-            overflow-y: auto; /* Added to allow scrolling if content is too long */
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .modal-header {
@@ -723,15 +775,47 @@
                     <label for="video-description">Description (Optional)</label>
                     <textarea id="video-description" name="description" placeholder="Brief description of your story..."></textarea>
                 </div>
-
+                
                 <div class="form-group">
                     <label for="video-hashtags">Hashtags (e.g., #short #comedy)</label>
                     <input type="text" id="video-hashtags" name="hashtags" placeholder="Add relevant hashtags, comma-separated">
                 </div>
-                
-                <div class="form-group">
-                    <label for="youtube-url">YouTube URL (Paste link here)</label>
-                    <input type="url" id="youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." required>
+
+                <div class="video-source-options">
+                    <div class="video-source-option">
+                        <input type="radio" id="source-youtube" name="video_source_type" value="youtube_url" checked>
+                        <label for="source-youtube">YouTube URL</label>
+                    </div>
+                    <div class="video-source-option">
+                        <input type="radio" id="source-upload" name="video_source_type" value="file_upload">
+                        <label for="source-upload">Upload File</label>
+                    </div>
+                </div>
+
+                <div class="video-source-container" id="youtube-source-container">
+                    <div class="form-group">
+                        <label for="youtube-url">YouTube URL (Paste link here)</label>
+                        <input type="url" id="youtube-url" name="youtube_url" placeholder="http://youtube.com/watch?v=..." required>
+                    </div>
+                </div>
+
+                <div class="video-source-container" id="file-upload-source-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="video-file">Select Video File</label>
+                        <input type="file" id="video-file" name="video_file" accept="video/mp4,video/mov,video/avi,video/mkv,video/webm">
+                        <div class="progress-container" id="upload-progress-container">
+                            <div class="progress-bar" id="upload-progress-bar">0%</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration-seconds">Video Duration (seconds)</label>
+                        <input type="number" id="duration-seconds" name="duration_seconds" placeholder="e.g., 30 for shorts, 120 for longer videos">
+                        <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">Manually enter video duration for categorization.</small>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="is-short-video" name="is_short" style="width: auto; margin-right: 10px;">
+                        <label for="is-short-video" style="display: inline;">Mark as Short (under 60 seconds)</label>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -749,7 +833,7 @@
                         <option value="Emotional Picks">Emotional Picks</option>
                         <option value="Live Now">Live Now</option>
                         <option value="Featured Creator">Featured Creator</option>
-                    </select>
+                        <option value="Shorts">Shorts</option> <option value="Long-form">Long-form</option> </select>
                 </div>
                 
                 <button type="submit" class="add-video-btn" id="add-btn">
@@ -790,10 +874,16 @@
                     <input type="text" id="edit-video-hashtags" name="hashtags">
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="edit-youtube-url-group">
                     <label for="edit-youtube-url">YouTube URL (Paste link here)</label>
-                    <input type="url" id="edit-youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." readonly>
+                    <input type="url" id="edit-youtube-url" name="youtube_url" placeholder="http://youtube.com/watch?v=..." readonly>
                     <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">YouTube URL cannot be changed after creation.</small>
+                </div>
+
+                <div class="form-group" id="edit-local-file-path-group" style="display:none;">
+                    <label for="edit-local-file-path">Local File Path</label>
+                    <input type="text" id="edit-local-file-path" name="local_file_path" readonly>
+                    <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">Local file path cannot be changed.</small>
                 </div>
 
                 <div class="form-group">
@@ -811,13 +901,20 @@
                         <option value="Emotional Picks">Emotional Picks</option>
                         <option value="Live Now">Live Now</option>
                         <option value="Featured Creator">Featured Creator</option>
+                        <option value="Shorts">Shorts</option>
+                        <option value="Long-form">Long-form</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-is-short">Is Short Video? (Under 60 seconds)</label>
-                    <input type="checkbox" id="edit-is-short" name="is_short" style="width: auto;">
-                    <small style="color: rgba(255,255,255,0.7); display: inline-block; margin-left: 10px;">Manually set if this is a short video.</small>
+                    <label for="edit-duration-seconds">Video Duration (seconds)</label>
+                    <input type="number" id="edit-duration-seconds" name="duration_seconds" placeholder="e.g., 30, 120">
+                    <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">Manually update for accurate categorization.</small>
+                </div>
+                
+                <div class="form-group">
+                    <input type="checkbox" id="edit-is-short" name="is_short" style="width: auto; margin-right: 10px;">
+                    <label for="edit-is-short" style="display: inline;">Mark as Short (under 60 seconds)</label>
                 </div>
                 
                 <button type="submit" class="add-video-btn" id="edit-btn">
@@ -855,11 +952,45 @@
         let isSubmitting = false;
         let editingVideoId = null;
 
-        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             loadStats();
             loadVideos();
+            
+            // Event listeners for video source type radio buttons
+            document.querySelectorAll('input[name="video_source_type"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    toggleVideoSourceInput(this.value);
+                });
+            });
+
+            // Handle the initial state when page loads (default is YouTube URL)
+            toggleVideoSourceInput(document.querySelector('input[name="video_source_type"]:checked').value);
         });
+
+        // Function to toggle between YouTube URL and File Upload inputs
+        function toggleVideoSourceInput(sourceType) {
+            const youtubeContainer = document.getElementById('youtube-source-container');
+            const fileUploadContainer = document.getElementById('file-upload-source-container');
+            const youtubeUrlInput = document.getElementById('youtube-url');
+            const videoFileInput = document.getElementById('video-file');
+            const durationInput = document.getElementById('duration-seconds');
+            const isShortCheckbox = document.getElementById('is-short-video');
+
+            if (sourceType === 'youtube_url') {
+                youtubeContainer.style.display = 'block';
+                youtubeUrlInput.setAttribute('required', 'required');
+                fileUploadContainer.style.display = 'none';
+                videoFileInput.removeAttribute('required');
+                durationInput.removeAttribute('required'); // Duration not required for YT URL
+                isShortCheckbox.checked = false; // Reset short status for YT
+            } else if (sourceType === 'file_upload') {
+                youtubeContainer.style.display = 'none';
+                youtubeUrlInput.removeAttribute('required');
+                fileUploadContainer.style.display = 'block';
+                videoFileInput.setAttribute('required', 'required');
+                durationInput.setAttribute('required', 'required'); // Duration required for local upload
+            }
+        }
 
         // Load dashboard statistics
         async function loadStats() {
@@ -910,7 +1041,15 @@
                 return;
             }
 
-            videoList.innerHTML = videos.map(video => `
+            videoList.innerHTML = videos.map(video => {
+                const sourceLink = video.local_file_path ? 
+                    `<a href="${video.local_file_path}" target="_blank" style="color: #4ade80;">View File</a>` : 
+                    `<a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a>`;
+
+                const durationDisplay = video.duration_seconds !== null ? 
+                    `${formatDuration(video.duration_seconds)}` : 'N/A';
+
+                return `
                 <div class="video-item">
                     <div class="video-thumbnail">
                         <img src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://via.placeholder.com/120x68/333/fff?text=Video'">
@@ -921,11 +1060,12 @@
                         <div class="video-meta">
                             <span>Added ${formatDate(video.created_at)}</span>
                             <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> 
-                            <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span>
-                            <span>Short: ${video.is_short ? 'Yes' : 'No'}</span> <!-- Display is_short -->
-                            <span>Views: ${video.views_count || 0}</span> <!-- Display views_count -->
-                            <span>Hashtags: ${escapeHtml(video.hashtags || 'None')}</span> <!-- Display hashtags -->
-                            ${video.youtube_url ? `<span><a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View Source</a></span>` : ''}
+                            <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span> 
+                            <span>Duration: ${durationDisplay}</span>
+                            <span>Short: ${video.is_short ? 'Yes' : 'No'}</span>
+                            <span>Views: ${video.views_count || 0}</span>
+                            <span>Hashtags: ${escapeHtml(video.hashtags || 'None')}</span>
+                            <span>Source: ${sourceLink}</span>
                         </div>
                         <div class="video-stats">
                             <div class="stat-item likes" onclick="viewVideoLikes(${video.id})">
@@ -943,7 +1083,8 @@
                         <button class="action-btn delete" onclick="deleteVideo(${video.id})">Delete</button>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Handle form submission - Add New Video
@@ -952,54 +1093,108 @@
             
             if (isSubmitting) return;
             
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
+            const sourceType = document.querySelector('input[name="video_source_type"]:checked').value;
+            const form = this;
+            const formData = new FormData();
             
-            const csrfToken = document.getElementById('csrf_token').value;
+            // Add common fields
+            formData.append('title', document.getElementById('video-title').value.trim());
+            formData.append('description', document.getElementById('video-description').value.trim());
+            formData.append('hashtags', document.getElementById('video-hashtags').value.trim());
+            formData.append('genre', document.getElementById('video-genre').value.trim());
+            formData.append('featured_tag', document.getElementById('video-featured-tag').value);
+            formData.append('video_source_type', sourceType);
 
-            // Validation
-            if (!data.title.trim()) {
-                showMessage('Title is required', 'error');
-                return;
-            }
-            
-            if (!data.youtube_url.trim()) {
-                showMessage('YouTube URL is required', 'error');
-                return;
-            }
-            
-            if (!isValidYouTubeUrl(data.youtube_url)) {
-                showMessage('Please enter a valid YouTube URL', 'error');
-                return;
-            }
-            
-            setButtonLoading(true);
-            
-            try {
-                const response = await fetch('/api/admin/videos', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage('Video added successfully!', 'success');
-                    this.reset();
-                    loadVideos();
-                    loadStats();
+            // Add source-specific fields
+            if (sourceType === 'youtube_url') {
+                const youtubeUrl = document.getElementById('youtube-url').value.trim();
+                if (!youtubeUrl) { showMessage('YouTube URL is required', 'error'); return; }
+                if (!isValidYouTubeUrl(youtubeUrl)) { showMessage('Please enter a valid YouTube URL', 'error'); return; }
+                formData.append('youtube_url', youtubeUrl);
+                // For YT, is_short & duration are manual override, if provided.
+                if (document.getElementById('is-short-video').checked) {
+                    formData.append('is_short', 'true');
+                    formData.append('duration_seconds', document.getElementById('duration-seconds').value.trim() || '');
                 } else {
-                    showMessage(result.message || 'Failed to add video', 'error');
+                    formData.append('is_short', 'false');
+                    formData.append('duration_seconds', '');
                 }
-            } catch (error) {
-                console.error('Error adding video:', error);
-                showMessage('Failed to add video. Please try again.', 'error');
-            } finally {
-                setButtonLoading(false);
+
+                // If adding YouTube URL, send JSON
+                const data = Object.fromEntries(formData.entries()); // Convert FormData to plain object for JSON
+                setButtonLoading(true);
+                try {
+                    const response = await fetch('/api/admin/videos', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json', // Important for JSON payload
+                            'X-CSRFToken': document.getElementById('csrf_token').value
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (result.success) { showMessage('Video added successfully!', 'success'); form.reset(); loadVideos(); loadStats(); }
+                    else { showMessage(result.message || 'Failed to add video', 'error'); }
+                } catch (error) { console.error('Error adding video:', error); showMessage('Failed to add video. Please try again.', 'error'); }
+                finally { setButtonLoading(false); }
+
+            } else if (sourceType === 'file_upload') {
+                const videoFile = document.getElementById('video-file').files[0];
+                const durationSeconds = document.getElementById('duration-seconds').value.trim();
+                const isShortVideo = document.getElementById('is-short-video').checked;
+
+                if (!videoFile) { showMessage('Please select a video file', 'error'); return; }
+                if (!durationSeconds) { showMessage('Video duration is required for uploaded files', 'error'); return; }
+                
+                formData.append('video_file', videoFile);
+                formData.append('duration_seconds', durationSeconds);
+                formData.append('is_short', isShortVideo);
+
+                // Show progress bar
+                const progressBarContainer = document.getElementById('upload-progress-container');
+                const progressBar = document.getElementById('upload-progress-bar');
+                progressBarContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+
+                setButtonLoading(true);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/admin/videos', true);
+                xhr.setRequestHeader('X-CSRFToken', document.getElementById('csrf_token').value);
+
+                xhr.upload.onprogress = function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete.toFixed(0) + '%';
+                        progressBar.textContent = percentComplete.toFixed(0) + '%';
+                    }
+                };
+
+                xhr.onload = function() {
+                    setButtonLoading(false);
+                    progressBarContainer.style.display = 'none'; // Hide progress bar
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const result = JSON.parse(xhr.responseText);
+                        if (result.success) { showMessage('Video uploaded successfully!', 'success'); form.reset(); loadVideos(); loadStats(); }
+                        else { showMessage(result.message || 'Failed to upload video', 'error'); }
+                    } else {
+                        try {
+                            const result = JSON.parse(xhr.responseText);
+                            showMessage(result.message || `Upload failed with status: ${xhr.status}`, 'error');
+                        } catch (e) {
+                            showMessage(`Upload failed with status: ${xhr.status} (Server Error)`, 'error');
+                        }
+                    }
+                };
+
+                xhr.onerror = function() {
+                    setButtonLoading(false);
+                    progressBarContainer.style.display = 'none';
+                    showMessage('Network error during upload. Please try again.', 'error');
+                };
+
+                xhr.send(formData);
             }
         });
 
@@ -1020,8 +1215,20 @@
                 return;
             }
             
-            // YouTube URL is readonly, so no validation needed here.
-            
+            // Only validate YouTube URL if it's the source type and not empty
+            if (data.youtube_url && !isValidYouTubeUrl(data.youtube_url)) {
+                showEditMessage('Please enter a valid YouTube URL', 'error');
+                return;
+            }
+
+            // Ensure duration is number or null
+            if (data.duration_seconds && !/^\d+$/.test(data.duration_seconds)) {
+                showEditMessage('Duration must be a number.', 'error');
+                return;
+            }
+            data.duration_seconds = data.duration_seconds ? parseInt(data.duration_seconds) : null;
+            data.is_short = document.getElementById('edit-is-short').checked; // Get checkbox value
+
             setEditButtonLoading(true);
             
             try {
@@ -1098,11 +1305,28 @@
                     if (video) {
                         document.getElementById('edit-video-title').value = video.title;
                         document.getElementById('edit-video-description').value = video.description || '';
-                        document.getElementById('edit-youtube-url').value = video.youtube_url || ''; // Populate YouTube URL
+                        document.getElementById('edit-video-hashtags').value = video.hashtags || '';
                         document.getElementById('edit-video-genre').value = video.genre || '';
                         document.getElementById('edit-video-featured-tag').value = video.featured_tag || '';
-                        document.getElementById('edit-video-hashtags').value = video.hashtags || ''; // Populate hashtags
-                        document.getElementById('edit-is-short').checked = video.is_short; // Populate is_short checkbox
+                        document.getElementById('edit-duration-seconds').value = video.duration_seconds !== null ? video.duration_seconds : '';
+                        document.getElementById('edit-is-short').checked = video.is_short;
+
+                        // Show/hide YouTube URL or Local File Path based on video type
+                        if (video.youtube_url && video.youtube_video_id && !video.local_file_path) { // It's a YouTube video
+                            document.getElementById('edit-youtube-url-group').style.display = 'block';
+                            document.getElementById('edit-local-file-path-group').style.display = 'none';
+                            document.getElementById('edit-youtube-url').value = video.youtube_url;
+                            document.getElementById('edit-youtube-url').setAttribute('readonly', 'readonly'); // Make read-only
+                        } else if (video.local_file_path) { // It's a local file
+                            document.getElementById('edit-youtube-url-group').style.display = 'none';
+                            document.getElementById('edit-local-file-path-group').style.display = 'block';
+                            document.getElementById('edit-local-file-path').value = video.local_file_path; // This is already the URL
+                        } else { // Fallback if no specific source type
+                            document.getElementById('edit-youtube-url-group').style.display = 'block';
+                            document.getElementById('edit-local-file-path-group').style.display = 'none';
+                            document.getElementById('edit-youtube-url').value = '';
+                            document.getElementById('edit-youtube-url').removeAttribute('readonly'); // Allow editing if unknown source
+                        }
                         
                         document.getElementById('edit-modal').style.display = 'flex';
                     } else {
@@ -1406,7 +1630,7 @@
                 button.disabled = false;
                 button.innerHTML = 'Add Video to Feed';
             }
-            isSubmitting = loading; // Set global submitting state
+            isSubmitting = loading;
         }
 
         // Set edit button loading state for Update Video
@@ -1420,7 +1644,7 @@
                 button.disabled = false;
                 button.innerHTML = 'Update Video';
             }
-            isSubmitting = loading; // Set global submitting state
+            isSubmitting = loading;
         }
 
         // Validate YouTube URL
@@ -1436,6 +1660,21 @@
                 month: 'short',
                 day: 'numeric'
             });
+        }
+
+        // Format duration (seconds to HH:MM:SS or MM:SS)
+        function formatDuration(seconds) {
+            if (seconds === null || isNaN(seconds)) return 'N/A';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+
+            const pad = (num) => num.toString().padStart(2, '0');
+
+            if (hours > 0) {
+                return `${hours}:${pad(minutes)}:${pad(remainingSeconds)}`;
+            }
+            return `${pad(minutes)}:${pad(remainingSeconds)}`;
         }
 
         // Escape HTML (already defined)
