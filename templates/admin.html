@@ -326,16 +326,15 @@
         }
 
         .video-item {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 20px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex; /* Changed */
+    gap: 20px;
+    align-items: flex-start; /* Changed */
+    transition: all 0.3s ease;
+}
         .video-item:hover {
             background: rgba(255, 255, 255, 0.1);
             transform: translateY(-2px);
