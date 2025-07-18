@@ -1052,12 +1052,10 @@
                     const videoElement = tile.querySelector('video.tile-video'); // Select HTML5 video specifically
                     const iframeElement = tile.querySelector('iframe.tile-iframe'); // Select iframe specifically
 
-                    // Pause all other videos if a new one is coming into view
-                    if (entry.isIntersecting) {
-                        if (currentPlayingVideoElement && currentPlayingVideoElement !== videoElement && currentPlayingVideoElement !== iframeElement) {
-                            pauseVideo(currentPlayingVideoElement);
-                        }
-                    } else { // If element is not intersecting, pause it
+                    // Pause all other videos if a new one is coming into view OR if the current one goes out of view
+                    if (currentPlayingVideoElement && currentPlayingVideoElement !== videoElement && currentPlayingVideoElement !== iframeElement) {
+                        pauseVideo(currentPlayingVideoElement);
+                    } else if (!entry.isIntersecting) { // If *this* video is no longer intersecting, pause it
                         if (videoElement && videoElement === currentPlayingVideoElement) {
                             pauseVideo(videoElement);
                         } else if (iframeElement && iframeElement === currentPlayingVideoElement) {
@@ -1068,8 +1066,8 @@
                     // Attempt to play/pause the current entry based on intersection
                     if (videoElement) {
                         if (entry.isIntersecting) {
-                            // Only play if not explicitly paused by user (future feature) or by mouseout
-                            if (!tile.dataset.pausedByUser) {
+                            // Only play if not explicitly paused by user
+                            if (!videoElement.dataset.pausedByUser) {
                                 videoElement.muted = true; // Always start muted for autoplay
                                 videoElement.play().then(() => {
                                     tile.classList.add('playing');
@@ -1085,7 +1083,7 @@
                                         }
                                     };
                                     videoElement.onended = () => {
-                                        updateWatchHistory(tile.dataset.videoId, videoElement.duration, videoElement.duration, true);
+                                        updateWatchHistory(tile.dataset.videoId, videoElement.duration, videoElement.duration, true); // Mark completed
                                         tile.classList.remove('playing');
                                         currentPlayingVideoElement = null;
                                         videoElement.currentTime = 0; // Reset for next loop
@@ -1097,22 +1095,22 @@
                                 });
                             }
                         } else {
-                            if (videoElement.pausedByObserver === undefined || videoElement.pausedByObserver === true) { // Avoid re-pausing if already paused by another event
+                            // If not intersecting, ensure it's paused. Avoid infinite loops if already paused.
+                            if (!videoElement.paused) {
                                 videoElement.pause();
                                 tile.classList.remove('playing');
-                                currentPlayingVideoElement = null;
+                                currentPlayingVideoElement = null; // Remove from tracking if it goes out of view
                             }
                         }
-                    } else if (iframeElement) { // For YouTube iframes, less direct control
+                    } else if (iframeElement) { // For YouTube iframes, less direct control over play/pause
                         if (entry.isIntersecting) {
                             // YouTube iframes handle their own autoplay if URL has autoplay=1.
-                            // The key is to stop them when they are not intersecting.
+                            // We just ensure they are registered as currently playing and hide thumbnail.
                             tile.classList.add('playing');
                             currentPlayingVideoElement = iframeElement;
-                            // For YouTube, updating watch history continuously would require YT Player API
                         } else {
                            // Stop YouTube iframe playback by resetting its src
-                           const originalSrc = iframeElement.src.replace('autoplay=1', 'autoplay=0').replace('mute=1', 'mute=0'); // Ensure it's not autoplaying/muting on re-load
+                           const originalSrc = iframeElement.src.replace('autoplay=1', 'autoplay=0').replace('mute=1', 'mute=0');
                            iframeElement.src = ''; // Stop current playback
                            iframeElement.src = originalSrc; // Reset src without autoplay
                            tile.classList.remove('playing');
@@ -1122,15 +1120,18 @@
                 });
             }, { threshold: 0.6 }); // Play when 60% of the video is visible
 
-            // Observe content rows for dynamically added tiles
+            // Observe all dynamically added content tiles
             const rowContents = document.querySelectorAll('.row-content');
             rowContents.forEach(row => {
                 const observer = new MutationObserver((mutationsList) => {
                     for (const mutation of mutationsList) {
                         if (mutation.type === 'childList') {
                             mutation.addedNodes.forEach(node => {
-                                if (node.nodeType === 1 && node.classList.contains('content-tile') && (node.querySelector('video.tile-video') || node.querySelector('iframe.tile-iframe'))) {
-                                    videoIntersectionObserver.observe(node);
+                                if (node.nodeType === 1 && node.classList.contains('content-tile')) {
+                                    // Make sure we only observe actual video tiles
+                                    if (node.querySelector('video.tile-video') || node.querySelector('iframe.tile-iframe')) {
+                                        videoIntersectionObserver.observe(node);
+                                    }
                                 }
                             });
                         }
@@ -1138,7 +1139,7 @@
                 });
                 observer.observe(row, { childList: true });
             });
-            // Initial observation for already existing tiles
+            // Initial observation for already existing tiles (on first load)
             document.querySelectorAll('.content-tile:not(.placeholder)').forEach(tile => {
                 if (tile.querySelector('video.tile-video') || tile.querySelector('iframe.tile-iframe')) {
                     videoIntersectionObserver.observe(tile);
@@ -1146,15 +1147,60 @@
             });
         });
 
+        // Function to handle manual play/pause click on overlay or tile
+        function togglePlayManual(mediaElement, tile) {
+            // Prevent event from bubbling up and interfering with IntersectionObserver if it's the video/iframe itself being clicked
+            event.stopPropagation(); 
+
+            if (!mediaElement) return;
+
+            // For HTML5 video elements (local files)
+            if (mediaElement.tagName === 'VIDEO') {
+                if (mediaElement.paused) {
+                    // Pause any other video playing before playing this one
+                    if (currentPlayingVideoElement && currentPlayingVideoElement !== mediaElement) {
+                        pauseVideo(currentPlayingVideoElement);
+                    }
+                    mediaElement.muted = false; // Unmute on explicit click
+                    mediaElement.play().then(() => {
+                        tile.classList.add('playing');
+                        currentPlayingVideoElement = mediaElement;
+                        mediaElement.dataset.pausedByUser = 'false'; // Mark not paused by user
+                    }).catch(error => {
+                        console.error('Manual Play prevented:', error);
+                        // Even manual play can be prevented if browser decides (rare for user interaction)
+                    });
+                } else {
+                    mediaElement.pause();
+                    tile.classList.remove('playing');
+                    currentPlayingVideoElement = null;
+                    mediaElement.dataset.pausedByUser = 'true'; // Mark paused by user
+                }
+            } 
+            // For YouTube iframes (since direct play/pause is not easily controllable by JS)
+            else if (mediaElement.tagName === 'IFRAME') {
+                const videoId = tile.dataset.videoId;
+                // If it's a YouTube iframe, clicking the overlay should take them to YouTube.
+                // This is generally the most consistent cross-browser behavior for YouTube embeds with minimal controls.
+                if (videoId) {
+                    window.open(`http://youtube.com/watch?v=${videoId}`, '_blank');
+                }
+            }
+        }
+
         // Function to explicitly pause a video (HTML5 or YouTube iframe)
         function pauseVideo(mediaElement) {
             if (mediaElement && mediaElement.tagName === 'VIDEO') {
-                mediaElement.pause();
-                mediaElement.closest('.content-tile').classList.remove('playing');
+                if (!mediaElement.paused) { // Only pause if it's actually playing
+                    mediaElement.pause();
+                    mediaElement.closest('.content-tile').classList.remove('playing');
+                    mediaElement.muted = true; // Re-mute when paused by observer or other event
+                }
             } else if (mediaElement && mediaElement.tagName === 'IFRAME') {
+                // To stop YouTube iframe playback: reload a blank src or the original src without autoplay
                 const originalSrc = mediaElement.src.replace('autoplay=1', 'autoplay=0').replace('mute=1', 'mute=0');
                 mediaElement.src = ''; // Stop current playback
-                mediaElement.src = originalSrc; // Reset src without autoplay
+                mediaElement.src = originalSrc; // Reset src without autoplay, also unmute it (by removing mute=1)
                 mediaElement.closest('.content-tile').classList.remove('playing');
             }
             if (currentPlayingVideoElement === mediaElement) {
@@ -1162,42 +1208,13 @@
             }
         }
 
-        // Function to explicitly play a video (HTML5 only via click for unmute/control)
-        function playVideo(tile) {
-            const videoElement = tile.querySelector('video.tile-video');
-            if (videoElement) {
-                if (currentPlayingVideoElement && currentPlayingVideoElement !== videoElement) {
-                    pauseVideo(currentPlayingVideoElement);
-                }
-                videoElement.muted = false; // Unmute on explicit play
-                videoElement.play();
-                tile.classList.add('playing');
-                currentPlayingVideoElement = videoElement;
-                videoElement.ontimeupdate = () => {
-                    updateWatchHistory(tile.dataset.videoId, videoElement.currentTime, videoElement.duration);
-                     if (videoElement.duration > 0) {
-                        const progressFill = tile.querySelector('.tile-progress-bar-fill');
-                        if (progressFill) {
-                            progressFill.style.width = (videoElement.currentTime / videoElement.duration) * 100 + '%';
-                        }
-                    }
-                };
-                videoElement.onended = () => {
-                    updateWatchHistory(tile.dataset.videoId, videoElement.duration, videoElement.duration, true);
-                    tile.classList.remove('playing');
-                    currentPlayingVideoElement = null;
-                    videoElement.currentTime = 0;
-                };
-            }
-        }
-
-        // --- Watch History Update (Backend API Call) ---
+        // Function to update watch history (call this when video plays/pauses/ends)
         async function updateWatchHistory(videoId, progressSeconds, totalDuration, completed = false) {
             if (!videoId || !currentUser) return; // Only update if video ID and user are available
 
-            totalDuration = totalDuration || 1; // Prevent division by zero if duration is unknown
+            totalDuration = totalDuration || 1; // Prevent division by zero if duration is unknown or 0
 
-            const actualCompleted = completed || (progressSeconds > (totalDuration * 0.95) && totalDuration > 0);
+            const actualCompleted = completed || (progressSeconds > (totalDuration * 0.95) && totalDuration > 0); // Consider 95% watched as complete
 
             const csrfToken = document.getElementById('csrf_token').value;
             try {
@@ -1220,7 +1237,7 @@
             }
         }
 
-        // --- Other core functions ---
+        // --- Standard functions ---
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -1296,72 +1313,6 @@
             }
         }
 
-        // Renders a single content tile with integrated player and interaction buttons
-        function renderContentTile(video) {
-            let mediaHtml = '';
-            let mediaType = '';
-            let playbackSource = video.local_file_path; // local_file_path holds the direct playback URL or YouTube URL
-            let thumbnailUrl = video.thumbnail_url || 'https://placehold.co/180x100/1a1a1a/888?text=Snayvu';
-
-            // Determine if it's a local video or YouTube
-            // If youtube_video_id is present AND local_file_path is not, assume YouTube
-            if (video.youtube_video_id && !video.local_file_path) {
-                mediaType = 'youtube';
-                const youtubeEmbedUrl = `https://www.youtube.com/embed/$7{video.youtube_video_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${video.youtube_video_id}&modestbranding=1&playsinline=1`;
-                mediaHtml = `
-                    <iframe class="tile-iframe" src="${youtubeEmbedUrl}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen></iframe>
-                `;
-            } else if (playbackSource) { // It's a local file (playbackSource is its URL)
-                mediaType = 'video';
-                mediaHtml = `
-                    <video class="tile-video" src="${playbackSource}" preload="metadata" muted playsinline loop></video>
-                `;
-            } else {
-                // Fallback for no playable source (shouldn't happen with proper data)
-                mediaType = 'none';
-                mediaHtml = `<img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="No Video Source">`;
-            }
-
-            // Progress bar for Continue Watching
-            const progressPercentage = (video.progress_seconds && video.duration_seconds && video.duration_seconds > 0)
-                ? (video.progress_seconds / video.duration_seconds) * 100
-                : 0;
-            const progressBarHtml = `
-                <div class="tile-progress-bar-container">
-                    <div class="tile-progress-bar-fill" style="width: ${progressPercentage}%;"></div>
-                </div>
-            `;
-
-            return `
-                <div class="content-tile" data-video-id="${video.id}" data-media-type="${mediaType}"
-                     onclick="${mediaType !== 'none' ? `togglePlayManual(this.querySelector('.tile-video') || this.querySelector('.tile-iframe'), this)` : ''}">
-                    <div class="tile-media-container">
-                        ${mediaHtml}
-                        <img class="tile-thumbnail-img" src="${thumbnailUrl}" alt="${escapeHtml(video.title)} Thumbnail">
-                        <div class="tile-media-overlay">
-                            <span class="play-icon">▶</span>
-                        </div>
-                    </div>
-                    ${progressBarHtml}
-                    <div class="tile-info">
-                        <div class="tile-title">${escapeHtml(video.title)}</div>
-                        <div class="tile-meta">
-                            ${video.genre ? `<span>${escapeHtml(video.genre)}</span> | ` : ''}
-                            ${video.is_short ? 'Short' : 'Long-form'} | 
-                            ${video.views_count} Views
-                        </div>
-                        <div class="tile-actions">
-                            <button class="tile-action-btn ${video.user_liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleVideoLike(${video.id});">
-                                ❤️ <span id="likes-count-${video.id}">${video.likes_count || 0}</span>
-                            </button>
-                            <button class="tile-action-btn" onclick="event.stopPropagation(); viewVideoComments(${video.id});">
-                                💬 <span id="comments-count-${video.id}">${video.comment_count || 0}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
 
         // Load content for the Hero Banner (unchanged)
         async function loadHeroBannerContent() {
@@ -1369,6 +1320,103 @@
             heroBanner.querySelector('.hero-video-placeholder').innerHTML = ''; // Ensure no iframe is inserted
             heroBanner.querySelector('.hero-title').textContent = 'Experience Snayvu: Create, Watch, Repeat.';
             heroBanner.querySelector('.hero-button').onclick = () => loadAllHomepageRows();
+        }
+
+        // --- Sidebar Navigation Logic ---
+        function displayFeatureMessage(icon, title, message) {
+            // Pause any currently playing video before displaying message
+            if (currentPlayingVideoElement) {
+                pauseVideo(currentPlayingVideoElement);
+            }
+
+            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+            const featureDisplayArea = document.getElementById('feature-display-area');
+            featureDisplayArea.innerHTML = `
+                <div class="feature-content-area">
+                    <div class="feature-icon">${icon}</div>
+                    <h2>${title}</h2>
+                    <p>${message}</p>
+                    <p>Stay tuned for updates as we build out these exciting features!</p>
+                </div>
+            `;
+            featureDisplayArea.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+            item.addEventListener('click', function(event) {
+                if (this.dataset.section) {
+                    event.preventDefault();
+                }
+
+                document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
+                this.classList.add('active');
+
+                // Close sidebar on mobile after clicking item
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('active')) {
+                    toggleSidebar();
+                }
+
+                const section = this.dataset.section;
+                // Specific section loading (hiding/showing relevant rows)
+                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none'); // Hide all rows initially
+                document.getElementById('feature-display-area').style.display = 'none'; // Hide generic message by default
+                
+                // Pause currently playing video when navigating sections
+                if (currentPlayingVideoElement) {
+                    pauseVideo(currentPlayingVideoElement);
+                }
+
+
+                if (section === 'home') {
+                    loadAllHomepageRows();
+                } else if (section === 'discover') {
+                    displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
+                    document.getElementById('trending-now-section').style.display = 'block'; // Show a relevant row
+                    loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
+                } else if (section === 'originals') {
+                    document.getElementById('snayvu-originals-section').style.display = 'block';
+                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
+                } else if (section === 'shorts') {
+                    document.getElementById('just-dropped-shorts-section').style.display = 'block';
+                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Changed tag to 'Shorts'
+                } else if (section === 'channels') {
+                    document.getElementById('top-creators-section').style.display = 'block';
+                    loadContentRow('top-creators-row', 'Featured Creator', 'Channels'); // Changed tag to 'Featured Creator'
+                } else if (section === 'live') {
+                    document.getElementById('live-now-section').style.display = 'block';
+                    loadContentRow('live-now-row', 'Live', 'Live Now');
+                } else if (section === 'mood-feed') {
+                    document.getElementById('emotional-picks-section').style.display = 'block';
+                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
+                } else if (section === 'continue-watching') {
+                    document.getElementById('continue-watching-section').style.display = 'block';
+                    loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
+                } else if (section === 'watchlist') {
+                    displayFeatureMessage('⭐', 'Watchlist', 'Save your favorite videos and series to watch later. This feature needs backend integration for saved content.');
+                } else if (section === 'my-circle') {
+                    displayFeatureMessage('🧍', 'My Circle', 'Share private content and engage exclusively with your closest connections. This feature needs backend integration for private content.');
+                } else if (section === 'my-reactions') {
+                    displayFeatureMessage('💬', 'My Reactions', 'View and manage all your facial reaction clips posted in response to content. This feature needs backend integration for user reactions.');
+                } else if (section === 'creator-dashboard') {
+                    displayFeatureMessage('📈', 'Creator Dashboard', 'Access your analytics, manage uploads, and track your performance as a creator. This feature needs backend integration for creator analytics.');
+                }
+            });
+        });
+
+        // Handle Logout Click
+        async function handleLogoutClick() {
+            const csrfToken = document.getElementById('csrf_token').value;
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.success && data.redirect) { window.location.href = data.redirect; }
+                else { console.error('Logout failed:', data.message || 'Unknown error'); window.location.href = `${BASE_URL}/`; }
+            } catch (error) { console.error('Error during logout:', error); window.location.href = `${BASE_URL}/`; }
         }
 
         // General Helper Functions (re-used)
