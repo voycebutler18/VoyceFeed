@@ -1,3 +1,4 @@
+
 # FILE LOCATION: /app.py (root of your GitHub repo)
 # Complete Flask application for subscription-based storytelling website
 
@@ -846,6 +847,41 @@ def admin_get_video_likes(video_id):
         
     except Exception as e:
         logger.error(f"Error fetching video likes for admin: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos/<int:video_id>/comments', methods=['GET'])
+@admin_required
+def admin_get_video_comments(video_id):
+    """Get all comments for a specific video (admin only)"""
+    try:
+        video = Video.query.get_or_404(video_id)
+        
+        comments = Comment.query.filter_by(parent_id=None, video_id=video_id).order_by(Comment.created_at.desc()).all()
+        
+        comment_list = []
+        for comment in comments:
+            replies_count = Comment.query.filter_by(parent_id=comment.id).count()
+            
+            comment_list.append({
+                'id': comment.id,
+                'user_name': comment.user.get_display_name(),
+                'user_email': comment.user.email,
+                'text': comment.text,
+                'likes_count': comment.likes_count,
+                'replies_count': replies_count,
+                'created_at': comment.created_at.isoformat(),
+                'is_reply': comment.parent_id is not None
+            })
+        
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'video_title': video.title,
+            'total_comments': len(comment_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching video comments for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/videos', methods=['POST'])
