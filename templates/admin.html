@@ -1093,6 +1093,7 @@
         // Display videos in the list
         // Display videos in the list
         // Display videos in the list
+// Display videos in the list
 function displayVideos(videos) {
     const videoList = document.getElementById('video-list');
     
@@ -1110,7 +1111,7 @@ function displayVideos(videos) {
             ? `${formatDuration(video.duration_seconds)}` 
             : 'N/A';
 
-        // This is the new HTML structure
+        // This is the updated HTML structure for the video card
         return `
         <div class="video-card">
             <div class="video-main-content">
@@ -1118,38 +1119,27 @@ function displayVideos(videos) {
                 <p class="video-description">${escapeHtml(video.description || 'No description')}</p>
                 
                 <div class="video-details">
-                    <div class="detail-row">
-                        <span class="detail-label">Added:</span>
-                        <span class="detail-value">${formatDate(video.created_at)}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Genre:</span>
-                        <span class="detail-value">${escapeHtml(video.genre || 'N/A')}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Tag:</span>
-                        <span class="detail-value">${escapeHtml(video.featured_tag || 'None')}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Duration:</span>
-                        <span class="detail-value">${durationDisplay}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Short:</span>
-                        <span class="detail-value">${video.is_short ? 'Yes' : 'No'}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Views:</span>
-                        <span class="detail-value">${video.views_count || 0}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Hashtags:</span>
-                        <span class="detail-value">${escapeHtml(video.hashtags || 'None')}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Source:</span>
-                        <span class="detail-value">${sourceLink}</span>
-                    </div>
+                    <span class="detail-label">Added:</span>
+                    <span class="detail-value">${formatDate(video.created_at)}</span>
+                    <span class="detail-label">Genre:</span>
+                    <span class="detail-value">${escapeHtml(video.genre || 'N/A')}</span>
+                    <span class="detail-label">Tag:</span>
+                    <span class="detail-value">${escapeHtml(video.featured_tag || 'None')}</span>
+                    <span class="detail-label">Duration:</span>
+                    <span class="detail-value">${durationDisplay}</span>
+                    <span class="detail-label">Short:</span>
+                    <span class="detail-value">${video.is_short ? 'Yes' : 'No'}</span>
+                    <span class="detail-label">Views:</span>
+                    <span class="detail-value">${video.views_count || 0}</span>
+                    <span class="detail-label">Hashtags:</span>
+                    <span class="detail-value">${escapeHtml(video.hashtags || 'None')}</span>
+                    <span class="detail-label">Source:</span>
+                    <span class="detail-value">${sourceLink}</span>
+                    
+                    <span class="detail-label">Likes:</span>
+                    <span class="detail-value">${video.likes_count || 0}</span>
+                    <span class="detail-label">Comments:</span>
+                    <span class="detail-value">${video.comment_count || 0}</span>
                 </div>
             </div>
             <div class="video-sidebar">
