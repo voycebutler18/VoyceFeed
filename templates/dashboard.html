@@ -1193,6 +1193,22 @@
 
         // --- END NEW VIDEO PLAYER LOGIC ---
 
+        // Records a view for a video
+async function recordView(videoId) {
+    try {
+        const csrfToken = document.getElementById('csrf_token').value;
+        await fetch(`${BASE_URL}/api/videos/${videoId}/view`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        });
+    } catch (error) {
+        console.error('Could not record view:', error);
+    }
+}
+
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
             loadHeroBannerContent();
