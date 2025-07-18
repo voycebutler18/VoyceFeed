@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Voyce Stories</title>
+    <title>Admin Dashboard - Snayvu</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Blue gradient */
             min-height: 100vh;
             color: white;
         }
@@ -41,7 +41,7 @@
         .logo {
             font-size: 1.8rem;
             font-weight: 700;
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            background: linear-gradient(45deg, #a855f7, #6366f1); /* Snayvu gradient */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -185,7 +185,7 @@
 
         .form-group input,
         .form-group textarea,
-        .form-group select { /* Added select here */
+        .form-group select {
             width: 100%;
             padding: 15px;
             border: 2px solid rgba(255, 255, 255, 0.2);
@@ -211,7 +211,7 @@
 
         .form-group input:focus,
         .form-group textarea:focus,
-        .form-group select:focus { /* Added select here */
+        .form-group select:focus {
             outline: none;
             border-color: rgba(255, 255, 255, 0.4);
             background: rgba(255, 255, 255, 0.15);
@@ -221,7 +221,7 @@
         .form-group textarea::placeholder {
             color: rgba(255, 255, 255, 0.6);
         }
-        .form-group select option { /* Styling for select options */
+        .form-group select option {
             background: #2a5298; /* Dark background for options */
             color: white;
         }
@@ -675,7 +675,7 @@
     <div class="header">
         <div class="header-content">
             <div style="display: flex; align-items: center; gap: 15px;">
-                <div class="logo">Stories</div>
+                <div class="logo">Snayvu</div>
                 <div class="admin-badge">Admin</div>
             </div>
             <div class="header-actions">
@@ -723,9 +723,14 @@
                     <label for="video-description">Description (Optional)</label>
                     <textarea id="video-description" name="description" placeholder="Brief description of your story..."></textarea>
                 </div>
+
+                <div class="form-group">
+                    <label for="video-hashtags">Hashtags (e.g., #short #comedy)</label>
+                    <input type="text" id="video-hashtags" name="hashtags" placeholder="Add relevant hashtags, comma-separated">
+                </div>
                 
                 <div class="form-group">
-                    <label for="youtube-url">YouTube URL</label>
+                    <label for="youtube-url">YouTube URL (Paste link here)</label>
                     <input type="url" id="youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." required>
                 </div>
 
@@ -735,12 +740,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="video-featured-tag">Featured Tag (Optional)</label>
+                    <label for="video-featured-tag">Featured Tag (Categorization)</label>
                     <select id="video-featured-tag" name="featured_tag">
                         <option value="">None</option>
-                        <option value="Top Story">Top Story</option>
-                        <option value="New Series">New Series</option>
-                        </select>
+                        <option value="Snayvu Originals">Snayvu Originals</option>
+                        <option value="Trending Now">Trending Now</option>
+                        <option value="New This Week">New This Week</option>
+                        <option value="Emotional Picks">Emotional Picks</option>
+                        <option value="Live Now">Live Now</option>
+                        <option value="Featured Creator">Featured Creator</option>
+                    </select>
                 </div>
                 
                 <button type="submit" class="add-video-btn" id="add-btn">
@@ -775,10 +784,16 @@
                     <label for="edit-video-description">Description (Optional)</label>
                     <textarea id="edit-video-description" name="description"></textarea>
                 </div>
+
+                <div class="form-group">
+                    <label for="edit-video-hashtags">Hashtags (e.g., #short #comedy)</label>
+                    <input type="text" id="edit-video-hashtags" name="hashtags">
+                </div>
                 
                 <div class="form-group">
-                    <label for="edit-youtube-url">YouTube URL</label>
-                    <input type="url" id="edit-youtube-url" name="youtube_url" required>
+                    <label for="edit-youtube-url">YouTube URL (Paste link here)</label>
+                    <input type="url" id="edit-youtube-url" name="youtube_url" placeholder="https://www.youtube.com/watch?v=..." readonly>
+                    <small style="color: rgba(255,255,255,0.7); display: block; margin-top: 5px;">YouTube URL cannot be changed after creation.</small>
                 </div>
 
                 <div class="form-group">
@@ -787,12 +802,22 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="edit-video-featured-tag">Featured Tag (Optional)</label>
+                    <label for="edit-video-featured-tag">Featured Tag (Categorization)</label>
                     <select id="edit-video-featured-tag" name="featured_tag">
                         <option value="">None</option>
-                        <option value="Top Story">Top Story</option>
-                        <option value="New Series">New Series</option>
-                        </select>
+                        <option value="Snayvu Originals">Snayvu Originals</option>
+                        <option value="Trending Now">Trending Now</option>
+                        <option value="New This Week">New This Week</option>
+                        <option value="Emotional Picks">Emotional Picks</option>
+                        <option value="Live Now">Live Now</option>
+                        <option value="Featured Creator">Featured Creator</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-is-short">Is Short Video? (Under 60 seconds)</label>
+                    <input type="checkbox" id="edit-is-short" name="is_short" style="width: auto;">
+                    <small style="color: rgba(255,255,255,0.7); display: inline-block; margin-left: 10px;">Manually set if this is a short video.</small>
                 </div>
                 
                 <button type="submit" class="add-video-btn" id="edit-btn">
@@ -895,7 +920,12 @@
                         <div class="video-description">${escapeHtml(video.description || 'No description')}</div>
                         <div class="video-meta">
                             <span>Added ${formatDate(video.created_at)}</span>
-                            <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span> <span><a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View on YouTube</a></span>
+                            <span>Genre: ${escapeHtml(video.genre || 'N/A')}</span> 
+                            <span>Tag: ${escapeHtml(video.featured_tag || 'None')}</span>
+                            <span>Short: ${video.is_short ? 'Yes' : 'No'}</span> <!-- Display is_short -->
+                            <span>Views: ${video.views_count || 0}</span> <!-- Display views_count -->
+                            <span>Hashtags: ${escapeHtml(video.hashtags || 'None')}</span> <!-- Display hashtags -->
+                            ${video.youtube_url ? `<span><a href="${video.youtube_url}" target="_blank" style="color: #4ade80;">View Source</a></span>` : ''}
                         </div>
                         <div class="video-stats">
                             <div class="stat-item likes" onclick="viewVideoLikes(${video.id})">
@@ -925,13 +955,8 @@
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
-            // NEW: Include genre and featured_tag
-            data.genre = document.getElementById('video-genre').value.trim();
-            data.featured_tag = document.getElementById('video-featured-tag').value;
-            
             // Validation
             if (!data.title.trim()) {
                 showMessage('Title is required', 'error');
@@ -943,7 +968,6 @@
                 return;
             }
             
-            // Validate YouTube URL
             if (!isValidYouTubeUrl(data.youtube_url)) {
                 showMessage('Please enter a valid YouTube URL', 'error');
                 return;
@@ -956,7 +980,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify(data)
                 });
@@ -988,12 +1012,7 @@
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
-
-            // NEW: Include genre and featured_tag from edit modal
-            data.genre = document.getElementById('edit-video-genre').value.trim();
-            data.featured_tag = document.getElementById('edit-video-featured-tag').value;
 
             // Validation
             if (!data.title.trim()) {
@@ -1001,16 +1020,7 @@
                 return;
             }
             
-            if (!data.youtube_url.trim()) {
-                showEditMessage('YouTube URL is required', 'error');
-                return;
-            }
-            
-            // Validate YouTube URL
-            if (!isValidYouTubeUrl(data.youtube_url)) {
-                showEditMessage('Please enter a valid YouTube URL', 'error');
-                return;
-            }
+            // YouTube URL is readonly, so no validation needed here.
             
             setEditButtonLoading(true);
             
@@ -1019,7 +1029,7 @@
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify(data)
                 });
@@ -1050,14 +1060,13 @@
                 return;
             }
             
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
                 const response = await fetch(`/api/admin/videos/${videoId}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 
@@ -1081,24 +1090,21 @@
             editingVideoId = videoId;
             
             try {
-                // Get all videos to find the one being edited
-                // A more efficient way would be to have a /api/admin/videos/<id> endpoint
-                const response = await fetch('/api/admin/videos');
+                const response = await fetch('/api/admin/videos'); // Fetch all videos
                 const data = await response.json();
                 
                 if (data.success) {
                     const video = data.videos.find(v => v.id === videoId);
                     if (video) {
-                        // Fill form with current data
                         document.getElementById('edit-video-title').value = video.title;
                         document.getElementById('edit-video-description').value = video.description || '';
-                        document.getElementById('edit-youtube-url').value = video.youtube_url;
-                        // NEW: Populate genre and featured_tag
+                        document.getElementById('edit-youtube-url').value = video.youtube_url || ''; // Populate YouTube URL
                         document.getElementById('edit-video-genre').value = video.genre || '';
                         document.getElementById('edit-video-featured-tag').value = video.featured_tag || '';
+                        document.getElementById('edit-video-hashtags').value = video.hashtags || ''; // Populate hashtags
+                        document.getElementById('edit-is-short').checked = video.is_short; // Populate is_short checkbox
                         
-                        // Show modal
-                        document.getElementById('edit-modal').style.display = 'flex'; /* Changed to flex to center */
+                        document.getElementById('edit-modal').style.display = 'flex';
                     } else {
                         showMessage('Video not found for editing.', 'error');
                     }
@@ -1137,7 +1143,6 @@
 
         // View video likes (for admin)
         async function viewVideoLikes(videoId) {
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
@@ -1148,11 +1153,11 @@
                     </div>
                 `;
                 
-                document.getElementById('likes-modal').style.display = 'flex'; /* Changed to flex to center */
+                document.getElementById('likes-modal').style.display = 'flex';
                 
                 const response = await fetch(`/api/admin/videos/${videoId}/likes`, {
                     headers: {
-                        'X-CSRFToken': csrfToken /* Include CSRF token for GET if Flask-WTF is configured to check all requests, otherwise it's often not needed for GET. Included for consistency. */
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 const data = await response.json();
@@ -1209,7 +1214,6 @@
 
         // View video comments (for admin)
         async function viewVideoComments(videoId) {
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
@@ -1220,17 +1224,17 @@
                     </div>
                 `;
                 
-                document.getElementById('comments-modal').style.display = 'flex'; /* Changed to flex to center */
+                document.getElementById('comments-modal').style.display = 'flex';
                 
                 const response = await fetch(`/api/admin/videos/${videoId}/comments`, {
                     headers: {
-                        'X-CSRFToken': csrfToken /* Include CSRF token for GET if Flask-WTF is configured to check all requests, otherwise it's often not needed for GET. Included for consistency. */
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 const data = await response.json();
                 
                 if (data.success) {
-                    displayCommentsModal(data.comments);
+                    displayComments(data.comments);
                 } else {
                     document.getElementById('comments-content').innerHTML = `
                         <div class="empty-state-small">
@@ -1291,31 +1295,24 @@
                 return;
             }
             
-            // Get the CSRF token from the hidden input field
             const csrfToken = document.getElementById('csrf_token').value;
 
             try {
                 const response = await fetch(`/api/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRFToken': csrfToken // Include CSRF token
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Remove the comment from display in modal
                     const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
                     if (commentElement) {
                         commentElement.remove();
                     }
-                    // Also refresh the main video list comments count and status
-                    loadVideos();
-                    // Reload comments in the modal if it's still open and has other comments
-                    // NOTE: You'd need a global variable to track which video's comments are in the modal
-                    // e.g., let currentModalVideoId = null; set when viewVideoComments is called.
-                    // if (currentModalVideoId) { viewVideoComments(currentModalVideoId); }
+                    loadVideos(); // Refresh the main video list comments count and status
                 } else {
                     alert('Failed to delete comment: ' + (result.message || 'Unknown error'));
                 }
@@ -1327,9 +1324,7 @@
         
         // Helper to get video ID being viewed in comments modal (if you set it)
         function getCurrentlyViewedVideoIdInCommentsModal() {
-            // Example: if you set a data-video-id on the comments-modal div
-            // return document.getElementById('comments-modal').dataset.videoId;
-            return null; // Implement this if you track it
+            return null; // Not tracked in this admin panel for now
         }
 
         // Close comments modal
@@ -1452,14 +1447,14 @@
 
         // Logout function
         async function logout() {
-            const csrfToken = document.getElementById('csrf_token').value; // Get the CSRF token
+            const csrfToken = document.getElementById('csrf_token').value;
 
             try {
                 const response = await fetch('/api/auth/logout', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken // Include the CSRF token
+                        'X-CSRFToken': csrfToken
                     }
                 });
                 
