@@ -233,6 +233,7 @@ def extract_youtube_video_id(url):
             return match.group(1)
     return None
 
+# THIS IS THE CORRECTED VERSION
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
     return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Standard YouTube thumbnail URL
