@@ -664,7 +664,7 @@
                 <li><a href="/account-settings" class="sidebar-menu-item"><span class="sidebar-icon">⚙️</span> Account Settings</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="upload" onclick="showUploadModal(); return false;"><span class="sidebar-icon">📤</span> Upload</a></li>
                 <li><a href="/help-support" class="sidebar-menu-item"><span class="sidebar-icon">📞</span> Help & Support</a></li>
-                <li><a href="#" class="sidebar-menu-item" onclick="logout(); return false;"><span class="sidebar-icon">🚪</span> Log Out</a></li>
+                <li><a href="#" class="sidebar-menu-item" onclick="handleLogoutClick(); return false;"><span class="sidebar-icon">🚪</span> Log Out</a></li>
             </ul>
 
             <div class="sidebar-divider"></div>
@@ -837,17 +837,15 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
-            // Load content for each row on initial load
-            loadHeroBannerContent();
-            loadAllHomepageRows(); // Call a function to load all rows
+            loadHeroBannerContent(); // Ensure hero banner is loaded correctly
+            loadAllHomepageRows(); // Load all content rows for the initial homepage view
         });
 
+        // Function to load all homepage rows
         function loadAllHomepageRows() {
             // Hide any previously loaded feature-specific content
-            document.getElementById('feature-display-area').style.display = 'none';
-
-            // Show all horizontal rows
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block');
+            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block'); // Show all rows
+            document.getElementById('feature-display-area').style.display = 'none'; // Hide feature specific area
 
             loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
             loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
@@ -855,9 +853,10 @@
             loadContentRow('new-this-week-row', 'New This Week', 'New Content');
             loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
             loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Changed tag from 'Shorts' to 'Just Dropped' for consistency with upload
             loadContentRow('live-now-row', 'Live Now', 'Live Streams');
         }
+
 
         async function loadUserInfo() {
             try {
@@ -981,13 +980,15 @@
                 if (section === 'home') {
                     loadAllHomepageRows(); // Reload all content rows for Home
                 } else if (section === 'discover') {
-                    loadContentRow('trending-now-row', 'Discover', 'Discover Content');
                     displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
+                    // In a real app, you would load content related to discovery here, e.g., loadContentRow('some-discover-row', 'Discover', 'Discover Content');
                 } else if (section === 'originals') {
-                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-                    displayFeatureMessage('🎬', 'Snayvu Originals', 'Dive into our exclusive, binge-worthy premium series and short films.');
+                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals'); // Reload the Originals row
+                    document.getElementById('feature-display-area').style.display = 'none'; // Hide general message
+                    document.getElementById('snayvu-originals-section').style.display = 'block'; // Ensure its specific section is visible
+                    window.scrollTo(0, document.getElementById('snayvu-originals-section').offsetTop); // Scroll to it
                 } else if (section === 'shorts') {
-                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Use 'Shorts' tag for this
+                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts'); // Load Shorts content
                     displayFeatureMessage('📱', 'Shorts', 'Enjoy quick, engaging vertical videos designed for instant entertainment.');
                 } else if (section === 'channels') {
                     loadContentRow('top-creators-row', 'Featured Channel', 'Channels'); // Load some relevant videos
@@ -1014,6 +1015,34 @@
                 // Account Settings, Upload, Help & Support, Logout are handled by specific `href` or `onclick`
             });
         });
+
+        // --- NEW: Handle Logout Click (to ensure client-side redirect) ---
+        async function handleLogoutClick() {
+            const csrfToken = document.getElementById('csrf_token').value;
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.redirect) {
+                    window.location.href = data.redirect; // Redirect to the login/index page
+                } else {
+                    console.error('Logout failed:', data.message || 'Unknown error');
+                    // Fallback to force redirect even if API response is unexpected
+                    window.location.href = `${BASE_URL}/`; 
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+                // Force redirect even if network error
+                window.location.href = `${BASE_URL}/`; 
+            }
+        }
+
 
         // --- MODAL & COMMENTING JS FUNCTIONS (Kept from previous version) ---
 
