@@ -176,7 +176,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: url('https://placehold.co/1200x400/0a0a0a/333?text=Featured+Series+Preview') no-repeat center center/cover; /* Placeholder image */
+            background: url('https://placehold.co/1200x400/0a0a0a/333?text=Snayvu+Featured+Content') no-repeat center center/cover; /* Generic Placeholder image */
             opacity: 0.6; /* Dim the background */
             z-index: 1;
         }
@@ -198,14 +198,8 @@
         }
 
         .hero-badge {
-            background: linear-gradient(45deg, #f0f0f0, #cccccc);
-            color: #333;
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: inline-block;
-            margin-bottom: 10px;
+            /* Removed, as per request: no specific exclusivity badge */
+            display: none; /* Ensure it's hidden if somehow appears */
         }
 
         .hero-title {
@@ -536,6 +530,74 @@
         #feedback-modal button:hover { background: linear-gradient(45deg, #22c55e, #4ade80); transform: translateY(-1px); }
         .feedback-success-message { color: #4ade80; margin-top: 15px; display: none; font-size: 0.9rem; }
         .feedback-error-message { color: #ff6b6b; margin-top: 15px; display: none; font-size: 0.9rem; }
+
+        /* Upload Modal Specific Styles */
+        #upload-modal .modal-content {
+            max-width: 500px;
+        }
+        #upload-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        #upload-form input[type="text"],
+        #upload-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        #upload-form input[type="file"] {
+            margin-bottom: 15px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #upload-form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        #upload-form button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #6366f1, #a855f7);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #upload-form button[type="submit"]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+        }
+        #upload-form button[type="submit"]:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .upload-status-message {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .upload-status-message.success {
+            color: #4ade80;
+        }
+        .upload-status-message.error {
+            color: #ff6b6b;
+        }
+        .upload-status-message.info {
+            color: rgba(255, 255, 255, 0.7);
+        }
     </style>
 </head>
 <body>
@@ -546,7 +608,7 @@
             <div class="sidebar-logo">Snayvu</div>
 
             <ul class="sidebar-menu">
-                <li><a href="#" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
+                <li><a href="/dashboard" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="discover"><span class="sidebar-icon">🔍</span> Discover</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="originals"><span class="sidebar-icon">🎬</span> Snayvu Originals</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="shorts"><span class="sidebar-icon">📱</span> Shorts</a></li>
@@ -571,9 +633,9 @@
             <div class="sidebar-section-title">Settings & Info</div>
             <ul class="sidebar-menu">
                 <li><a href="#" class="sidebar-menu-item" data-section="account-settings"><span class="sidebar-icon">⚙️</span> Account Settings</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="upload"><span class="sidebar-icon">📤</span> Upload</a></li>
-                <li><a href="#" class="sidebar-menu-item" data-section="help-support"><span class="sidebar-icon">📞</span> Help & Support</a></li>
-                <li><a href="#" class="sidebar-menu-item" onclick="logout()"><span class="sidebar-icon">🚪</span> Log Out</a></li>
+                <li><a href="#" class="sidebar-menu-item" data-section="upload" onclick="showUploadModal(); return false;"><span class="sidebar-icon">📤</span> Upload</a></li>
+                <li><a href="/help-support" class="sidebar-menu-item"><span class="sidebar-icon">📞</span> Help & Support</a></li>
+                <li><a href="#" class="sidebar-menu-item" onclick="logout(); return false;"><span class="sidebar-icon">🚪</span> Log Out</a></li>
             </ul>
 
             <div class="sidebar-divider"></div>
@@ -584,11 +646,10 @@
             </div>
 
             <ul class="sidebar-footer-links">
-                <li><a href="#">About</a></li>
-                <li><a href="#">Terms</a></li>
-                <li><a href="#">Privacy</a></li>
-                <li><a href="#">Contact</a></li>
-                <li><a href="#">Careers</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/terms">Terms</a></li>
+                <li><a href="/privacy">Privacy</a></li>
+                <li><a href="/contact">Contact</a></li>
             </ul>
             <div class="sidebar-copyright">© 2024 Snayvu. All rights reserved.</div>
         </aside>
@@ -597,15 +658,14 @@
             <section class="hero-banner">
                 <div class="hero-video-placeholder">
                     <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&controls=0&loop=1&playlist=dQw4w9WgXcQ&modestbranding=1&playsinline=1"
-                            title="Featured Series Preview"
+                            title="Snayvu Featured Content Preview"
                             frameborder="0"
                             allow="autoplay; encrypted-media;"
                             allowfullscreen></iframe>
                 </div>
                 <div class="hero-content">
-                    <span class="hero-badge">Snayvu Exclusive</span>
-                    <h1 class="hero-title">The Enigma of Eldoria: Season 2</h1>
-                    <button class="hero-button">Watch Now</button>
+                    <h1 class="hero-title">Experience Snayvu: Create, Watch, Repeat.</h1>
+                    <button class="hero-button" onclick="window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');">Watch Now</button>
                 </div>
             </section>
 
@@ -664,8 +724,7 @@
                     <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
                 </div>
             </section>
-
-            </main>
+        </main>
     </div>
 
     <footer class="footer">
@@ -674,11 +733,10 @@
             <a href="#" class="app-button">Get it on Google Play</a>
         </div>
         <ul class="footer-links">
-            <li><a href="#">About</a></li>
-            <li><a href="#">Terms</a></li>
-            <li><a href="#">Privacy</a></li>
-            <li><a href="#">Contact</a></li>
-            <li><a href="#">Careers</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/terms">Terms</a></li>
+            <li><a href="/privacy">Privacy</a></li>
+            <li><a href="/contact">Contact</a></li>
         </ul>
         <div class="footer-logo-tagline">Snayvu – Create. Watch. Repeat.</div>
     </footer>
@@ -715,6 +773,31 @@
         </div>
     </div>
 
+    <div id="upload-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Upload Video</div>
+                <button class="close-btn" onclick="closeUploadModal()">×</button>
+            </div>
+            <form id="upload-form">
+                <label for="upload-title">Title</label>
+                <input type="text" id="upload-title" name="title" required maxlength="200">
+
+                <label for="upload-description">Description (Optional)</label>
+                <textarea id="upload-description" name="description" rows="3" maxlength="500"></textarea>
+
+                <label for="upload-hashtags">Hashtags (e.g., #short #comedy)</label>
+                <input type="text" id="upload-hashtags" name="hashtags" maxlength="200">
+
+                <label for="upload-file">Select Video File</label>
+                <input type="file" id="upload-file" name="video_file" accept="video/mp4,video/mov,video/avi,video/mkv,video/webm" required>
+                
+                <button type="submit" id="upload-submit-btn">Upload</button>
+                <p class="upload-status-message" id="upload-status"></p>
+            </form>
+        </div>
+    </div>
+
     <div class="feedback-button-container">
         <button class="feedback-button" onclick="showFeedbackModal()">💡</button>
     </div>
@@ -722,7 +805,7 @@
     <script>
         const BASE_URL = window.location.origin;
         let currentUser = null;
-        let currentUserName = 'User'; // Default username
+        let currentUserName = 'User';
 
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
@@ -734,7 +817,7 @@
             loadContentRow('new-this-week-row', 'New This Week', 'New Content');
             loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks'); // Needs Mood AI backend
             loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching'); // Needs watch history backend
-            loadContentRow('just-dropped-shorts-row', 'Shorts', 'Latest Shorts'); // Reusing 'Shorts' tag
+            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts'); // Reusing 'Shorts' tag. Changed tag to 'Just Dropped' as per upload
             loadContentRow('live-now-row', 'Live Now', 'Live Streams'); // Needs live stream integration
         });
 
@@ -759,12 +842,12 @@
         // Generic function to load content for a horizontal row
         async function loadContentRow(elementId, tag, title) {
             const rowContentElement = document.getElementById(elementId);
+            // Clear previous content but keep placeholder structure for loading
             rowContentElement.innerHTML = `
                 <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading ${title}...</div><div class="tile-meta"></div></div></div>
-            `; // Show loading state
+            `;
 
             try {
-                // Use the existing /api/videos/categorized endpoint
                 const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
                 const data = await response.json();
 
@@ -788,10 +871,17 @@
 
         // Renders a single content tile for a horizontal row
         function renderContentTile(video) {
-            // Adjust YouTube URL for external watch
-            const youtubeWatchUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            let videoSourceUrl = '';
+            if (video.local_file_path) {
+                // If it's a locally uploaded video, use its direct URL
+                videoSourceUrl = video.local_file_path;
+            } else if (video.youtube_video_id) {
+                // Otherwise, assume it's a YouTube video for external watch
+                videoSourceUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+            }
+
             return `
-                <div class="content-tile" onclick="window.open('${youtubeWatchUrl}', '_blank');">
+                <div class="content-tile" onclick="window.open('${videoSourceUrl}', '_blank');">
                     <img class="tile-thumbnail" src="${video.thumbnail_url}" alt="${escapeHtml(video.title)}" onerror="this.src='https://placehold.co/180x100/1a1a1a/888?text=Snayvu'">
                     <div class="tile-info">
                         <div class="tile-title">${escapeHtml(video.title)}</div>
@@ -803,55 +893,24 @@
 
         // Load content for the Hero Banner
         async function loadHeroBannerContent() {
-            // For simplicity, let's fetch 'Snayvu Originals' and pick the first one
-            // In a real app, this would be a specific "Featured" video endpoint.
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=Snayvu Originals`);
-                const data = await response.json();
-                if (data.success && data.videos.length > 0) {
-                    const featuredVideo = data.videos[0];
-                    const heroBanner = document.querySelector('.hero-banner');
-                    const youtubeEmbedUrl = `https://www.youtube.com/embed/${featuredVideo.youtube_video_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${featuredVideo.youtube_video_id}&modestbranding=1&playsinline=1`;
+            const heroBanner = document.querySelector('.hero-banner');
+            const genericYoutubeVideoId = 'dQw4w9WgXcQ'; // A generic, well-known video ID (Rick Astley - Never Gonna Give You Up)
+            const youtubeEmbedUrl = `https://www.youtube.com/embed/${genericYoutubeVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${genericYoutubeVideoId}&modestbranding=1&playsinline=1`;
+            const youtubeWatchUrl = `https://www.youtube.com/watch?v=${genericYoutubeVideoId}`;
 
-                    heroBanner.querySelector('.hero-video-placeholder').innerHTML = `
-                        <iframe src="${youtubeEmbedUrl}"
-                                title="${escapeHtml(featuredVideo.title)} Preview"
-                                frameborder="0"
-                                allow="autoplay; encrypted-media;"
-                                allowfullscreen></iframe>
-                    `;
-                    heroBanner.querySelector('.hero-title').textContent = escapeHtml(featuredVideo.title);
-                    heroBanner.querySelector('.hero-button').onclick = () => window.open(`https://www.youtube.com/watch?v=${featuredVideo.youtube_video_id}`, '_blank');
-                }
-            } catch (error) {
-                console.error('Error loading hero banner content:', error);
-                // Fallback to static placeholder if API fails
-            }
+            heroBanner.querySelector('.hero-video-placeholder').innerHTML = `
+                <iframe src="${youtubeEmbedUrl}"
+                        title="Snayvu Featured Content Preview"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media;"
+                        allowfullscreen></iframe>
+            `;
+            heroBanner.querySelector('.hero-title').textContent = 'Experience Snayvu: Create, Watch, Repeat.';
+            heroBanner.querySelector('.hero-button').onclick = () => window.open(youtubeWatchUrl, '_blank');
         }
-
-        // All video players from previous version are now handled by the horizontal rows.
-        // The displayVideos function is no longer needed in its original form for the main content feed,
-        // as content is now loaded into specific rows.
-        // However, if you want a general "main feed" that's just a long scroll of videos,
-        // you could adapt the `loadVideos` and `displayVideos` functions to target a specific
-        // large section in the `main-content` area, perhaps above the horizontal rows.
-        // For this specific request, the main feed is now composed of the horizontal rows.
-
 
         // --- MODAL & COMMENTING JS FUNCTIONS (Kept from previous version, adapted for context) ---
 
-        // These functions need actual element IDs from the new structure if they are to be used directly on the main page.
-        // Currently, comments are assumed to be part of a modal view if accessed via `viewVideoComments`.
-        // The `createVideoCard` function no longer exists, but `renderContentTile` takes its place.
-        // If you need comments on specific video *tiles* in the rows, you'd need to add comment icons/buttons to `renderContentTile`
-        // and adapt the comment loading/display logic to be per-tile. For now, it's assumed comments are viewed via a modal.
-
-        // Placeholder for functions that might be called if comments were on main page videos
-        function toggleVideoLike(videoId) { console.log('Toggle video like placeholder for video:', videoId); }
-        function toggleShareMenu(videoId) { console.log('Toggle share menu placeholder for video:', videoId); }
-
-
-        // MODAL FUNCTIONS (These are called from admin, or potentially from a detailed video view)
         function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
         function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
 
@@ -898,12 +957,10 @@
                 if (result.success) {
                     const commentElement = document.querySelector(`[onclick="deleteCommentFromModal(${commentId})"]`).closest('.comment-item');
                     if (commentElement) { commentElement.remove(); }
-                    // Re-evaluate if comments need reloading in main feed if this modal is context-aware
                 } else { alert('Failed to delete comment: ' + (result.message || 'Unknown error')); }
             } catch (error) { console.error('Error deleting comment:', error); alert('Failed to delete comment. Please try again.'); }
         }
 
-        // Functions below are generalized and don't require specific video card context
         function formatTimeAgo(dateString) {
             const date = new Date(dateString); const now = new Date(); const diff = now - date;
             const minutes = Math.floor(diff / 60000); const hours = Math.floor(diff / 3600000); const days = Math.floor(diff / 86400000);
@@ -965,18 +1022,18 @@
         // General event listener for sidebar navigation clicks
         document.querySelectorAll('.sidebar-menu-item').forEach(item => {
             item.addEventListener('click', function(event) {
-                event.preventDefault(); // Prevent default link behavior
+                // Prevent default link behavior if data-section is present (handled by JS)
+                if (this.dataset.section) {
+                    event.preventDefault();
+                }
+
                 document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active'));
                 this.classList.add('active');
 
                 const section = this.dataset.section;
-                // In a real app, you would load content dynamically here
-                // For now, this is just a conceptual navigation
-                console.log('Navigated to section:', section);
-                // You might scroll to a specific part of the page or fetch new data
-                // For instance, if 'shorts' opens a dedicated shorts viewer, you'd navigate there.
-                // For 'home', just reload the content rows.
+                // Handle different sections
                 if (section === 'home') {
+                    // Refresh all rows on home click
                     loadHeroBannerContent();
                     loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
                     loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
@@ -984,12 +1041,94 @@
                     loadContentRow('new-this-week-row', 'New This Week', 'New Content');
                     loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
                     loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Latest Shorts');
+                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
                     loadContentRow('live-now-row', 'Live Now', 'Live Streams');
+                } else if (section === 'discover') {
+                    // Example: Load more content related to discover, or navigate to a discover page
+                    alert('Discover section clicked! Implement dynamic content or navigate to /discover page.');
+                } else if (section === 'shorts') {
+                     // Example: Load specific shorts feed data, or open a dedicated shorts viewer
+                     alert('Shorts section clicked! Implement a vertical shorts viewer here.');
+                } else if (section === 'channels') {
+                    // Example: Load specific channel data, or navigate to channels page
+                    alert('Channels section clicked! Implement channel Browse here.');
+                } else if (section === 'live') {
+                    // Example: Load specific live streams
+                    alert('Live Now section clicked! Implement live stream display here.');
+                } else if (section === 'mood-feed') {
+                    // Example: Trigger Mood AI content loading
+                    alert('Mood Feed clicked! Implement AI-curated content here.');
+                } else if (section === 'continue-watching') {
+                    alert('Continue Watching clicked! Needs backend integration for watch history.');
+                } else if (section === 'watchlist') {
+                    alert('Watchlist clicked! Needs backend integration for saved videos.');
+                } else if (section === 'my-circle') {
+                    alert('My Circle clicked! Needs backend integration for private content.');
+                } else if (section === 'my-reactions') {
+                    alert('My Reactions clicked! Needs backend integration for user reaction videos.');
+                } else if (section === 'creator-dashboard') {
+                    alert('Creator Dashboard clicked! Needs backend integration for creator analytics.');
+                } else if (section === 'account-settings') {
+                    alert('Account Settings clicked! Implement user profile/settings page.');
                 }
-                // For other sections like 'Shorts', 'Live Now', 'Discover', 'Channels' etc.
-                // You would implement specific content loading or page transitions here.
+                // Upload, Help & Support, Logout are handled by specific `onclick` or `href` attributes
             });
+        });
+
+        // --- NEW: Upload Modal JS ---
+        function showUploadModal() {
+            document.getElementById('upload-modal').style.display = 'flex';
+            document.getElementById('upload-form').reset(); // Clear form fields
+            document.getElementById('upload-status').textContent = ''; // Clear status message
+            document.getElementById('upload-status').className = 'upload-status-message info'; // Reset class
+            document.getElementById('upload-submit-btn').disabled = false; // Enable button
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').style.display = 'none';
+        }
+
+        document.getElementById('upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+            const uploadButton = document.getElementById('upload-submit-btn');
+            const statusMessage = document.getElementById('upload-status');
+            const csrfToken = document.getElementById('csrf_token').value;
+
+            uploadButton.disabled = true;
+            statusMessage.textContent = 'Uploading... Please wait.';
+            statusMessage.className = 'upload-status-message info';
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/upload-video`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken // Include CSRF token for file uploads
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) { // Check if response status is 2xx
+                    statusMessage.textContent = data.message || 'Upload successful!';
+                    statusMessage.className = 'upload-status-message success';
+                    // Optional: Refresh the 'Just Dropped' section to show new video
+                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+                    setTimeout(closeUploadModal, 2000); // Close modal after 2 seconds
+                } else {
+                    // Handle API errors (e.g., validation errors, file size limits)
+                    statusMessage.textContent = data.message || 'Upload failed.';
+                    statusMessage.className = 'upload-status-message error';
+                }
+            } catch (error) {
+                console.error('Error during upload:', error);
+                statusMessage.textContent = 'Network error or server unreachable. Please try again.';
+                statusMessage.className = 'upload-status-message error';
+            } finally {
+                uploadButton.disabled = false;
+            }
         });
     </script>
 </body>
