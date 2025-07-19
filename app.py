@@ -226,8 +226,6 @@ class WatchHistory(db.Model):
     progress_seconds = db.Column(db.Integer, default=0)
     completed = db.Column(db.Boolean, default=False)
     __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
-        db.UniqueConstraint('user_id', 'video_id'),
-    )
 
 # Helper Functions
 def extract_youtube_video_id(url):
