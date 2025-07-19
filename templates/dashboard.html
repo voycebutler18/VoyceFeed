@@ -1035,7 +1035,38 @@
                 </div>
         </main>
     </div>
-    
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload Video</h3>
+                <button class="close-btn" onclick="closeUploadModal()">&times;</button>
+            </div>
+            <form id="upload-form" enctype="multipart/form-data">
+                <label for="upload-title">Title</label>
+                <input type="text" id="upload-title" name="title" required>
+
+                <label for="upload-description">Description</label>
+                <textarea id="upload-description" name="description"></textarea>
+
+                <label for="upload-hashtags">Hashtags (comma-separated)</label>
+                <input type="text" id="upload-hashtags" name="hashtags">
+
+                <label for="upload-duration">Duration (seconds)</label>
+                <input type="number" id="upload-duration" name="duration_seconds" placeholder="e.g., 180">
+                
+                <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="upload-is-short" name="is_short" value="true">
+                    <label for="upload-is-short" style="margin-bottom: 0;">Is this a Short? (&lt;60s)</label>
+                </div>
+
+                <label for="upload-file">Video File</label>
+                <input type="file" id="upload-file" name="video_file" accept="video/*" required>
+
+                <button type="submit" id="upload-submit-btn">Upload</button>
+                <div id="upload-status" class="upload-status-message"></div>
+            </form>
+        </div>
+    </div>
     <script>
         const BASE_URL = window.location.origin;
         let currentUser = null;
