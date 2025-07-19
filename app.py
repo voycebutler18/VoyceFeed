@@ -127,8 +127,6 @@ class Video(db.Model):
     # ADD THIS LINE
     uploaded_videos = db.relationship('Video', backref='uploader', lazy=True, foreign_keys='Video.uploader_id')
 
-    def check_password(self, password):
-
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
     
