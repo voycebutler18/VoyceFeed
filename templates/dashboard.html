@@ -1712,6 +1712,65 @@ function closeCommentsModal() {
                 if (data.success) { streakCountElement.textContent = data.streak; }
             } catch (error) { console.error('Error updating watch streak:', error); }
         }
+function showSingleCategoryView(title, tag) {
+            showView('single-content-view');
+            document.getElementById('single-view-header').textContent = title;
+            const contentArea = document.getElementById('single-view-content-area');
+            loadContentRow(contentArea, tag, title);
+        }
+
+        /* START: ADD THE NEW FUNCTION HERE */
+        async function showCreatorDashboardView() {
+            showView('creator-dashboard-view');
+            const statsGrid = document.getElementById('creator-stats-grid');
+            const videoList = document.querySelector('#creator-video-list .row-content');
+            statsGrid.innerHTML = '<div class="loading-small" style="text-align: left;">Loading stats...</div>';
+            videoList.innerHTML = '<div class="loading-small" style="text-align: left;">Loading your videos...</div>';
+
+            try {
+                // Fetch the stats and video data from the backend API
+                const response = await fetch(`${BASE_URL}/api/creator/dashboard`);
+                const data = await response.json();
+
+                if (!data.success) throw new Error(data.message);
+
+                // Render the statistics cards
+                const { total_videos, total_views, total_likes, total_comments } = data.stats;
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${total_videos}</div>
+                        <div class="stat-label">Uploads</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${total_views.toLocaleString()}</div>
+                        <div class="stat-label">Total Views</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${total_likes.toLocaleString()}</div>
+                        <div class="stat-label">Total Likes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${total_comments.toLocaleString()}</div>
+                        <div class="stat-label">Total Comments</div>
+                    </div>
+                `;
+
+                // Render the uploaded videos using the existing renderContentTile function
+                if (data.videos && data.videos.length > 0) {
+                    videoList.innerHTML = data.videos.map(video => renderContentTile(video)).join('');
+                } else {
+                    videoList.innerHTML = `<div class="empty-state-small" style="width: 100%;"><div class="empty-icon">📤</div><div>You haven't uploaded any videos yet.</div></div>`;
+                }
+
+            } catch (error) {
+                statsGrid.innerHTML = '';
+                videoList.innerHTML = `<div class="error-message">Could not load dashboard: ${error.message}</div>`;
+            }
+        }
+        /* END: ADD THE NEW FUNCTION HERE */
+
+        function showFeatureComingSoonView(icon, title, message) {
+            // ... this function already exists in your file
 
     </script>
 </body>
