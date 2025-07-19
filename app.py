@@ -135,11 +135,6 @@ class VideoLike(db.Model):
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'video_id'),
-        {'extend_existing': True}
-    )
-
 class Comment(db.Model):
     __tablename__ = 'comment'
     __table_args__ = {'extend_existing': True}
@@ -1001,7 +996,7 @@ def admin_add_video():
             hashtags=hashtags if hashtags else None,
             duration_seconds=duration_seconds,
             is_short=is_short,
-            views_count=0
+            views_count=0,
             uploader_id=session['user_id']
         )
         
