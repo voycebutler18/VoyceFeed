@@ -226,19 +226,15 @@ class Feedback(db.Model):
 
 class WatchHistory(db.Model):
     __tablename__ = 'watch_history'
-    __table_args__ = {'extend_existing': True}
-
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     watched_at = db.Column(db.DateTime, default=datetime.utcnow)
     progress_seconds = db.Column(db.Integer, default=0)
     completed = db.Column(db.Boolean, default=False)
-
-    __table_args__ = (
+    __table_args__ = (db.UniqueConstraint('user_id', 'video_id'),)
         db.UniqueConstraint('user_id', 'video_id'),
     )
-
 
 # Helper Functions
 def extract_youtube_video_id(url):
