@@ -122,6 +122,10 @@ class Video(db.Model):
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
     watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan')
+    # ADD THIS LINE
+    uploaded_videos = db.relationship('Video', backref='uploader', lazy=True, foreign_keys='Video.uploader_id')
+
+    def check_password(self, password):
 
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
