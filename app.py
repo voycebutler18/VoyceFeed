@@ -118,6 +118,8 @@ class Video(db.Model):
     duration_seconds = db.Column(db.Integer, nullable=True)
     is_short = db.Column(db.Boolean, default=False)
     views_count = db.Column(db.Integer, default=0)
+    # ADD THIS LINE
+    uploader_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
