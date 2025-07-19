@@ -1467,6 +1467,12 @@ def get_categorized_videos():
                         video_map_with_progress[video.id] = video
                 videos = [video_map_with_progress[id_] for id_ in video_ids if id_ in video_map_with_progress] # Maintain order
 
+        elif tag == 'Watchlist':
+            watchlist_items = Watchlist.query.filter_by(user_id=current_user_id).order_by(desc(Watchlist.created_at)).all()
+            if watchlist_items:
+                video_ids = [item.video_id for item in watchlist_items]
+                videos = Video.query.filter(Video.id.in_(video_ids)).order_by(desc(Video.created_at)).all()
+
         else:
             # Default to fetching by any other provided featured_tag or return empty
             videos = query.filter_by(featured_tag=tag).order_by(Video.created_at.desc()).limit(10).all()
