@@ -1315,41 +1315,69 @@
         }
         function closeUploadModal() { document.getElementById('upload-modal').style.display = 'none'; }
         
-        document.getElementById('upload-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const uploadButton = document.getElementById('upload-submit-btn');
-            const statusMessage = document.getElementById('upload-status');
-            const csrfToken = document.getElementById('csrf_token').value;
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
+    const uploadButton = document.getElementById('upload-submit-btn');
+    const statusMessage = document.getElementById('upload-status');
+    const csrfToken = document.getElementById('csrf_token').value;
 
-            uploadButton.disabled = true;
-            statusMessage.textContent = 'Uploading...';
-            statusMessage.className = 'upload-status-message info';
+    // Get progress bar elements
+    const progressContainer = document.getElementById('progress-container');
+    const progressBarFill = document.getElementById('progress-bar-fill');
 
-            try {
-                const response = await fetch(`${BASE_URL}/api/upload-video`, {
-                    method: 'POST',
-                    headers: {'X-CSRFToken': csrfToken},
-                    body: formData
-                });
-                const result = await response.json();
-                if (response.ok && result.success) {
-                    statusMessage.textContent = result.message || 'Upload successful!';
-                    statusMessage.className = 'upload-status-message success';
-                    // Refresh relevant rows after upload
-                    loadContentRow(document.querySelector('[data-category="Just Dropped"] .row-content'), 'Just Dropped', 'Latest Shorts');
-                    loadContentRow(document.querySelector('[data-category="New This Week"] .row-content'), 'New This Week', 'New This Week');
-                    setTimeout(closeUploadModal, 2000);
-                } else {
-                    throw new Error(result.message || 'Upload failed.');
-                }
-            } catch (error) {
-                statusMessage.textContent = error.message;
-                statusMessage.className = 'upload-status-message error';
-            } finally {
-                uploadButton.disabled = false;
+    // Reset UI
+    uploadButton.disabled = true;
+    statusMessage.textContent = '';
+    statusMessage.className = 'upload-status-message';
+    progressBarFill.style.width = '0%';
+    progressBarFill.textContent = '0%';
+    progressContainer.style.display = 'block';
+
+    const xhr = new XMLHttpRequest();
+
+    // Event listener for upload progress
+    xhr.upload.addEventListener('progress', function(event) {
+        if (event.lengthComputable) {
+            const percentComplete = Math.round((event.loaded / event.total) * 100);
+            progressBarFill.style.width = percentComplete + '%';
+            progressBarFill.textContent = percentComplete + '%';
+        }
+    });
+
+    // Event listener for when the request is complete
+    xhr.onload = function() {
+        uploadButton.disabled = false;
+        progressContainer.style.display = 'none'; // Hide progress bar on completion
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+            const result = JSON.parse(xhr.responseText);
+            if (result.success) {
+                statusMessage.textContent = result.message || 'Upload successful!';
+                statusMessage.className = 'upload-status-message success';
+                // You can add your content reloading logic here if needed
+                setTimeout(closeUploadModal, 2000);
+            } else {
+                throw new Error(result.message || 'Server returned an error.');
             }
-        });
+        } else {
+            throw new Error(`Upload failed with status: ${xhr.status}`);
+        }
+    };
+
+    // Event listener for network errors
+    xhr.onerror = function() {
+        uploadButton.disabled = false;
+        progressContainer.style.display = 'none';
+        statusMessage.textContent = 'A network error occurred. Please try again.';
+        statusMessage.className = 'upload-status-message error';
+    };
+
+    // Configure and send the request
+    xhr.open('POST', `${BASE_URL}/api/upload-video`);
+    xhr.setRequestHeader('X-CSRFToken', csrfToken);
+    xhr.send(formData);
+});
 
         async function toggleVideoLike(videoId) {
             if (!currentUser) return alert("You must be logged in to like videos.");
