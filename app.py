@@ -100,10 +100,15 @@ class User(db.Model):
 
     def get_display_name(self):
         return self.email.split('@')[0]
-
+        
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
-    # ...
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Video(db.Model):
     __tablename__ = 'video'
     __table_args__ = {'extend_existing': True}
