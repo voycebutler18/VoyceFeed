@@ -1008,6 +1008,7 @@ def admin_add_video():
             duration_seconds=duration_seconds,
             is_short=is_short,
             views_count=0
+            uploader_id=session['user_id']
         )
         
         db.session.add(video)
