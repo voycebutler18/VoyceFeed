@@ -428,7 +428,72 @@ def auth_check():
             'has_subscription': True
         }
     })
+# PASTE THE ENTIRE NEW BLOCK OF CODE HERE
+# --- Video Interaction API ---
 
+def get_video_data(videos, current_user_id):
+    """Helper to serialize video data and check user interactions."""
+    if not videos: return []
+    video_ids = [v.id for v in videos]
+    user_likes = {like.video_id for like in VideoLike.query.filter(VideoLike.user_id == current_user_id, VideoLike.video_id.in_(video_ids)).all()}
+    user_watchlist = {item.video_id for item in Watchlist.query.filter(Watchlist.user_id == current_user_id, Watchlist.video_id.in_(video_ids)).all()}
+    
+    video_list = []
+    for video in videos:
+        playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path)) if video.local_file_path else video.youtube_url
+        video_list.append({
+            'id': video.id, 'title': video.title, 'description': video.description,
+            'thumbnail_url': video.thumbnail_url, 'likes_count': video.likes_count,
+            'user_liked': video.id in user_likes, 'user_on_watchlist': video.id in user_watchlist,
+            'created_at': video.created_at.isoformat(), 'genre': video.genre,
+            'featured_tag': video.featured_tag, 'local_file_path': playback_url,
+            'duration_seconds': video.duration_seconds, 'is_short': video.is_short,
+            'views_count': video.views_count, 'hashtags': video.hashtags,
+            'comment_count': Comment.query.filter_by(video_id=video.id).count(),
+            'progress_seconds': getattr(video, 'progress_seconds', 0),
+            'total_duration': getattr(video, 'total_duration', video.duration_seconds)
+        })
+    return video_list
+
+@app.route('/api/videos/<int:video_id>/watchlist', methods=['POST'])
+@login_required
+def toggle_watchlist(video_id):
+    try:
+        user_id = session['user_id']
+        watchlist_item = Watchlist.query.filter_by(user_id=user_id, video_id=video_id).first()
+        
+        if watchlist_item:
+            db.session.delete(watchlist_item)
+            status = 'removed'
+        else:
+            db.session.add(Watchlist(user_id=user_id, video_id=video_id))
+            status = 'added'
+            
+        db.session.commit()
+        return jsonify({'success': True, 'status': status})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Could not update watchlist.'}), 500
+
+@app.route('/api/creator/dashboard', methods=['GET'])
+@login_required
+def get_creator_dashboard():
+    try:
+        user_id = session['user_id']
+        user_videos = Video.query.filter_by(uploader_id=user_id).order_by(desc(Video.created_at)).all()
+        
+        stats = {
+            'total_videos': len(user_videos),
+            'total_views': sum(v.views_count for v in user_videos),
+            'total_likes': sum(v.likes_count for v in user_videos),
+            'total_comments': sum(len(v.comments) for v in user_videos)
+        }
+        
+        return jsonify({'success': True, 'stats': stats, 'videos': get_video_data(user_videos, user_id)})
+    except Exception as e:
+        logger.error(f"Error fetching creator dashboard for user {user_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Could not load creator dashboard data.'}), 500
+        
 # Video Like System Routes
 @app.route('/api/videos/<int:video_id>/like', methods=['POST'])
 @login_required
