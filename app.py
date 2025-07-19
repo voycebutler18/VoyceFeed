@@ -101,11 +101,6 @@ class User(db.Model):
     def get_display_name(self):
         return self.email.split('@')[0]
 
-
-class Watchlist(db.Model):
-    # ...
-
-
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
     # ...
