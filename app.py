@@ -71,8 +71,14 @@ class User(db.Model):
     comments = db.relationship('Comment', backref='user', lazy=True, cascade='all, delete-orphan')
     comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
     video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
-    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan') # New relationship
-    # PASTE THE NEW WATCHLIST MODEL HERE
+    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan')
+    
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
+    
+    def get_display_name(self):
+        return self.email.split('@')[0]
+
 class Watchlist(db.Model):
     __tablename__ = 'watchlist'
     id = db.Column(db.Integer, primary_key=True)
@@ -86,21 +92,7 @@ class Watchlist(db.Model):
     __table_args__ = (
         db.UniqueConstraint('user_id', 'video_id', name='uq_user_video_watchlist'),
     )
-# END OF NEW MODEL
 
-# app.py
-
-class User(db.Model):
-    __tablename__ = 'user'
-    # ... other columns
-    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan')
-
-    def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
-
-    def get_display_name(self):
-        return self.email.split('@')[0]
-        
 class VideoLike(db.Model):
     __tablename__ = 'video_like'
     
@@ -108,6 +100,11 @@ class VideoLike(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'video_id'),
+        {'extend_existing': True}
+    )
 
 class Video(db.Model):
     __tablename__ = 'video'
@@ -130,23 +127,13 @@ class Video(db.Model):
     duration_seconds = db.Column(db.Integer, nullable=True)
     is_short = db.Column(db.Boolean, default=False)
     views_count = db.Column(db.Integer, default=0)
-    # ADD THIS LINE
     uploader_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     comments = db.relationship('Comment', backref='video', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('VideoLike', backref='video', lazy=True, cascade='all, delete-orphan')
     watch_history = db.relationship('WatchHistory', backref='video', lazy=True, cascade='all, delete-orphan')
-    # ADD THIS LINE
-    uploaded_videos = db.relationship('Video', backref='uploader', lazy=True, foreign_keys='Video.uploader_id')
+    uploader = db.relationship('User', backref='uploaded_videos', foreign_keys=[uploader_id])
 
-class VideoLike(db.Model):
-    __tablename__ = 'video_like'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
 class Comment(db.Model):
     __tablename__ = 'comment'
     __table_args__ = {'extend_existing': True}
@@ -427,9 +414,8 @@ def auth_check():
             'has_subscription': True
         }
     })
-# PASTE THE ENTIRE NEW BLOCK OF CODE HERE
-# --- Video Interaction API ---
 
+# --- Video Interaction API ---
 def get_video_data(videos, current_user_id):
     """Helper to serialize video data and check user interactions."""
     if not videos: return []
