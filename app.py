@@ -1676,20 +1676,21 @@ def upload_video():
         playback_url_for_frontend = url_for('uploaded_file', filename=filename_with_user_id)
 
         new_video = Video(
-            title=title,
-            description=description if description else None,
-            youtube_url=playback_url_for_frontend, # Stores public URL for local files
-            youtube_video_id=None, # Not a YouTube ID
-            thumbnail_url=thumbnail_url,
-            is_active=True,
-            genre="Uploaded",
-            featured_tag="Just Dropped", # Mark as "Just Dropped"
-            local_file_path=local_file_path_on_server, # Store the actual path on server
-            hashtags=hashtags_str if hashtags_str else None,
-            duration_seconds=duration_seconds, # Can be None
-            is_short=is_short,
-            views_count=0
-        )
+    title=title,
+    description=description if description else None,
+    youtube_url=playback_url_for_frontend, # Stores public URL for local files
+    youtube_video_id=None, # Not a YouTube ID
+    thumbnail_url=thumbnail_url,
+    is_active=True,
+    genre="Uploaded",
+    featured_tag="Just Dropped", # Mark as "Just Dropped"
+    local_file_path=local_file_path_on_server, # Store the actual path on server
+    hashtags=hashtags_str if hashtags_str else None,
+    duration_seconds=duration_seconds, # Can be None
+    is_short=is_short,
+    views_count=0,
+    uploader_id=session['user_id']  # Add this missing field
+)
         db.session.add(new_video)
         db.session.commit()
         
