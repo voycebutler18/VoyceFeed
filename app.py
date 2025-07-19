@@ -72,6 +72,24 @@ class User(db.Model):
     comment_likes = db.relationship('CommentLike', backref='user', lazy=True, cascade='all, delete-orphan')
     video_likes = db.relationship('VideoLike', backref='user', lazy=True, cascade='all, delete-orphan')
     watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan') # New relationship
+    # PASTE THE NEW WATCHLIST MODEL HERE
+class Watchlist(db.Model):
+    __tablename__ = 'watchlist'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('watchlist_items', cascade='all, delete-orphan'))
+    video = db.relationship('Video', backref=db.backref('watchlist_users', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'video_id', name='uq_user_video_watchlist'),
+    )
+# END OF NEW MODEL
+
+class VideoLike(db.Model):
+    __tablename__ = 'video_like'
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
