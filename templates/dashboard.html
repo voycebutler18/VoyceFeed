@@ -851,6 +851,20 @@
             margin-bottom: 30px;
             color: #6366f1;
         }
+
+        /* --- NEW: Single Content View Area --- */
+        #single-content-view {
+            display: none; /* Hidden by default */
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 15px;
+        }
+
+        #single-content-view .row-header {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+        }
+
     </style>
 </head>
 <body>
@@ -863,7 +877,7 @@
             <div class="sidebar-logo">Snayvu</div>
 
             <ul class="sidebar-menu">
-                <li><a href="/dashboard" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
+                <li><a href="#" class="sidebar-menu-item active" data-section="home"><span class="sidebar-icon">🏠</span> Home</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="discover"><span class="sidebar-icon">🔍</span> Discover</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="originals"><span class="sidebar-icon">🎬</span> Snayvu Originals</a></li>
                 <li><a href="#" class="sidebar-menu-item" data-section="shorts"><span class="sidebar-icon">📱</span> Shorts</a></li>
@@ -912,74 +926,63 @@
         <div class="overlay" id="sidebar-overlay"></div>
 
         <main class="main-content" id="main-content">
-            <section class="hero-banner">
-                <div class="hero-video-placeholder">
+            <div id="homepage-view">
+                <section class="hero-banner">
+                    <div class="hero-video-placeholder"></div>
+                    <div class="hero-content">
+                        <h1 class="hero-title">Experience Snayvu: Create, Watch, Repeat.</h1>
+                        <button class="hero-button">Explore Content</button>
                     </div>
-                <div class="hero-content">
-                    <h1 class="hero-title">Experience Snayvu: Create, Watch, Repeat.</h1>
-                    <button class="hero-button" onclick="loadAllHomepageRows();">Explore Content</button>
-                </div>
-            </section>
-
-            <section class="content-row" id="trending-now-section">
-                <h2 class="row-header">🔥 Trending Now</h2>
-                <div class="row-content" id="trending-now-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="snayvu-originals-section">
-                <h2 class="row-header">🎬 Snayvu Originals</h2>
-                <div class="row-content" id="snayvu-originals-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="top-creators-section">
-                <h2 class="row-header">🌟 Top Creators This Week</h2>
-                <div class="row-content" id="top-creators-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="new-this-week-section">
-                <h2 class="row-header">🆕 New This Week</h2>
-                <div class="row-content" id="new-this-week-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="emotional-picks-section">
-                <h2 class="row-header">🧠 Emotional Picks</h2>
-                <div class="row-content" id="emotional-picks-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="continue-watching-section">
-                <h2 class="row-header">🧾 Continue Watching</h2>
-                <div class="row-content" id="continue-watching-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="just-dropped-shorts-section">
-                <h2 class="row-header">⚡ Just Dropped (Shorts)</h2>
-                <div class="row-content" id="just-dropped-shorts-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section class="content-row" id="live-now-section">
-                <h2 class="row-header">🔴 Live Now</h2>
-                <div class="row-content" id="live-now-row">
-                    <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading...</div><div class="tile-meta"></div></div></div>
-                </div>
-            </section>
-
-            <section id="feature-display-area" style="display: none;">
                 </section>
 
+                <section class="content-row" data-category="Trending Now">
+                    <h2 class="row-header">🔥 Trending Now</h2>
+                    <div class="row-content"></div>
+                </section>
+
+                <section class="content-row" data-category="Snayvu Originals">
+                    <h2 class="row-header">🎬 Snayvu Originals</h2>
+                    <div class="row-content"></div>
+                </section>
+                
+                <section class="content-row" data-category="Featured Creator">
+                    <h2 class="row-header">🌟 Top Creators This Week</h2>
+                    <div class="row-content"></div>
+                </section>
+
+                <section class="content-row" data-category="New This Week">
+                    <h2 class="row-header">🆕 New This Week</h2>
+                    <div class="row-content"></div>
+                </section>
+
+                <section class="content-row" data-category="Emotional Picks">
+                    <h2 class="row-header">🧠 Emotional Picks</h2>
+                    <div class="row-content"></div>
+                </section>
+
+                <section class="content-row" data-category="Continue Watching">
+                    <h2 class="row-header">🧾 Continue Watching</h2>
+                    <div class="row-content"></div>
+                </section>
+
+                <section class="content-row" data-category="Just Dropped">
+                    <h2 class="row-header">⚡ Just Dropped (Shorts)</h2>
+                    <div class="row-content"></div>
+                </section>
+
+                <section class="content-row" data-category="Live Now">
+                    <h2 class="row-header">🔴 Live Now</h2>
+                    <div class="row-content"></div>
+                </section>
+            </div>
+
+            <div id="single-content-view">
+                <h2 class="row-header" id="single-view-header"></h2>
+                <div class="row-content" id="single-view-content-area" style="flex-wrap: wrap;"></div>
+            </div>
+
+            <div id="feature-display-area" style="display: none;">
+                </div>
         </main>
     </div>
 
@@ -1073,11 +1076,10 @@
         const BASE_URL = window.location.origin;
         let currentUser = null;
         let currentUserName = 'You'; // Default username for display
-        let currentlyPlayingVideo = null; // NEW: Track the currently playing video element
+        let currentlyPlayingVideo = null; // Track the currently playing video element
 
-        // --- NEW VIDEO PLAYER LOGIC ---
+        // --- VIDEO PLAYER LOGIC ---
 
-        // Formats time in seconds to MM:SS or HH:MM:SS
         function formatTime(timeInSeconds) {
             const result = new Date(timeInSeconds * 1000).toISOString().substr(11, 8);
             return {
@@ -1087,180 +1089,153 @@
             };
         }
         
-        // Initializes a single video player
-        // Initializes a single video player
-function initializeVideoPlayer(tile) {
-    const video = tile.querySelector('video');
-    if (!video) return; // Only apply to tiles with video elements
+        function initializeVideoPlayer(tile) {
+            const video = tile.querySelector('video');
+            if (!video) return; 
 
-    const videoId = tile.dataset.videoId; // Get the video ID from the tile
-    const playPauseBtn = tile.querySelector(".play-pause-btn");
-    const rewindBtn = tile.querySelector(".rewind-btn");
-    const volumeBtn = tile.querySelector(".volume-btn");
-    const volumeSlider = tile.querySelector(".volume-slider");
-    const progressBar = tile.querySelector(".progress-bar");
-    const currentTimeEl = tile.querySelector(".current-time");
-    const totalTimeEl = tile.querySelector(".total-time");
+            const videoId = tile.dataset.videoId;
+            const playPauseBtn = tile.querySelector(".play-pause-btn");
+            const rewindBtn = tile.querySelector(".rewind-btn");
+            const volumeBtn = tile.querySelector(".volume-btn");
+            const volumeSlider = tile.querySelector(".volume-slider");
+            const progressBar = tile.querySelector(".progress-bar");
+            const currentTimeEl = tile.querySelector(".current-time");
+            const totalTimeEl = tile.querySelector(".total-time");
 
-    // Toggle Play/Pause
-    const togglePlay = () => {
-        if (video.paused) {
-            // If another video is playing, pause it first
-            if (currentlyPlayingVideo && currentlyPlayingVideo !== video) {
-                currentlyPlayingVideo.pause();
+            const togglePlay = () => {
+                if (video.paused) {
+                    if (currentlyPlayingVideo && currentlyPlayingVideo !== video) {
+                        currentlyPlayingVideo.pause();
+                    }
+                    video.play();
+                    currentlyPlayingVideo = video;
+                } else {
+                    video.pause();
+                    currentlyPlayingVideo = null;
+                }
+            };
+            
+            playPauseBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                togglePlay();
+            });
+
+            video.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePlay();
+            });
+
+            video.addEventListener("play", () => {
+                tile.classList.add("playing");
+                playPauseBtn.innerHTML = "❚❚"; 
+                if (!tile.dataset.viewRecorded) {
+                    recordView(videoId);
+                    tile.dataset.viewRecorded = 'true';
+                }
+                if (video.muted) { 
+                    video.muted = false;
+                    volumeSlider.value = video.volume;
+                    volumeBtn.innerHTML = video.volume > 0 ? "🔊" : "🔇";
+                }
+            });
+
+            video.addEventListener("pause", () => {
+                tile.classList.remove("playing");
+                playPauseBtn.innerHTML = "▶";
+            });
+            
+            rewindBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                video.currentTime -= 10;
+            });
+
+            volumeBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                video.muted = !video.muted;
+            });
+
+            video.addEventListener("volumechange", () => {
+                volumeSlider.value = video.volume;
+                volumeBtn.innerHTML = video.muted || video.volume === 0 ? "🔇" : "🔊";
+            });
+
+            volumeSlider.addEventListener("input", (e) => {
+                e.stopPropagation();
+                video.volume = e.target.value;
+                video.muted = e.target.value === 0;
+            });
+            
+            video.addEventListener("loadedmetadata", () => {
+                const totalTime = formatTime(video.duration);
+                totalTimeEl.textContent = `${totalTime.minutes}:${totalTime.seconds}`;
+                progressBar.max = video.duration;
+            });
+
+            video.addEventListener("timeupdate", () => {
+                const currentTime = formatTime(video.currentTime);
+                currentTimeEl.textContent = `${currentTime.minutes}:${currentTime.seconds}`;
+                progressBar.value = video.currentTime;
+            });
+            
+            progressBar.addEventListener("input", (e) => {
+                e.stopPropagation();
+                video.currentTime = e.target.value;
+            });
+
+            tile.querySelector('.custom-video-controls').addEventListener('click', e => e.stopPropagation());
+        }
+
+        async function recordView(videoId) {
+            try {
+                const csrfToken = document.getElementById('csrf_token').value;
+                await fetch(`${BASE_URL}/api/videos/${videoId}/view`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+            } catch (error) {
+                console.error('Could not record view:', error);
             }
-            video.play();
-            currentlyPlayingVideo = video;
-        } else {
-            video.pause();
-            currentlyPlayingVideo = null;
         }
-    };
-    
-    playPauseBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        togglePlay();
-    });
-
-    video.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePlay();
-    });
-
-    // Play/Pause State Changes
-    video.addEventListener("play", () => {
-        tile.classList.add("playing");
-        playPauseBtn.innerHTML = "❚❚"; // Pause Icon
-        
-        // --- THIS IS THE NEW CODE THAT COUNTS THE VIEW ---
-        if (!tile.dataset.viewRecorded) {
-            recordView(videoId);
-            tile.dataset.viewRecorded = 'true'; // Set a flag so we don't count it again
-        }
-        // --- END OF NEW CODE ---
-
-        if (video.muted) { // Unmute on first manual play
-            video.muted = false;
-            volumeSlider.value = video.volume;
-            volumeBtn.innerHTML = video.volume > 0 ? "🔊" : "🔇";
-        }
-    });
-
-    video.addEventListener("pause", () => {
-        tile.classList.remove("playing");
-        playPauseBtn.innerHTML = "▶"; // Play Icon
-    });
-    
-    // Rewind
-    rewindBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        video.currentTime -= 10;
-    });
-
-    // Volume Controls
-    volumeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        video.muted = !video.muted;
-    });
-
-    video.addEventListener("volumechange", () => {
-        volumeSlider.value = video.volume;
-        if (video.muted || video.volume === 0) {
-            volumeBtn.innerHTML = "🔇";
-        } else {
-            volumeBtn.innerHTML = "🔊";
-        }
-    });
-
-    volumeSlider.addEventListener("input", (e) => {
-        e.stopPropagation();
-        video.volume = e.target.value;
-        video.muted = e.target.value === 0;
-    });
-    
-    // Time and Progress Bar Update
-    video.addEventListener("loadedmetadata", () => {
-        const totalTime = formatTime(video.duration);
-        totalTimeEl.textContent = `${totalTime.minutes}:${totalTime.seconds}`;
-        progressBar.max = video.duration;
-    });
-
-    video.addEventListener("timeupdate", () => {
-        const currentTime = formatTime(video.currentTime);
-        currentTimeEl.textContent = `${currentTime.minutes}:${currentTime.seconds}`;
-        progressBar.value = video.currentTime;
-    });
-    
-    // Seek functionality
-    progressBar.addEventListener("input", (e) => {
-        e.stopPropagation();
-        video.currentTime = e.target.value;
-    });
-
-    // Prevent clicks on controls from bubbling up to the video element
-     tile.querySelector('.custom-video-controls').addEventListener('click', e => e.stopPropagation());
-}
-
-        // --- END NEW VIDEO PLAYER LOGIC ---
-
-        // Records a view for a video
-async function recordView(videoId) {
-    try {
-        const csrfToken = document.getElementById('csrf_token').value;
-        await fetch(`${BASE_URL}/api/videos/${videoId}/view`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        });
-    } catch (error) {
-        console.error('Could not record view:', error);
-    }
-}
 
         document.addEventListener('DOMContentLoaded', function() {
             loadUserInfo();
-            loadHeroBannerContent();
-            loadAllHomepageRows();
+            loadHomepageView();
 
             document.getElementById('sidebar-toggle-btn').addEventListener('click', toggleSidebar);
             document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
+            document.querySelector('.hero-button').addEventListener('click', () => {
+                 document.querySelector('[data-section="discover"]').click();
+            });
 
-            // Intersection Observer to PAUSE videos when they scroll out of view
             const videoIntersectionObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (!entry.isIntersecting) {
                         const video = entry.target.querySelector('video');
-                        if (video && !video.paused) {
-                            video.pause();
-                        }
+                        if (video && !video.paused) video.pause();
                     }
                 });
-            }, { threshold: 0.1 }); // Pause when less than 10% is visible
+            }, { threshold: 0.1 });
 
-            // Observe all dynamically added content tiles
-            const rowContents = document.querySelectorAll('.row-content');
-            rowContents.forEach(row => {
-                const observer = new MutationObserver((mutationsList) => {
-                    for (const mutation of mutationsList) {
-                        if (mutation.type === 'childList') {
-                            mutation.addedNodes.forEach(node => {
-                                if (node.nodeType === 1 && node.classList.contains('content-tile')) {
-                                    if(node.querySelector('video')){
-                                       initializeVideoPlayer(node);
-                                       videoIntersectionObserver.observe(node);
-                                    }
+            const mutationObserver = new MutationObserver((mutationsList) => {
+                for (const mutation of mutationsList) {
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === 1 && node.classList.contains('content-tile')) {
+                                if (node.querySelector('video')) {
+                                   initializeVideoPlayer(node);
+                                   videoIntersectionObserver.observe(node);
                                 }
-                            });
-                        }
+                            }
+                        });
                     }
-                });
-                observer.observe(row, { childList: true });
+                }
+            });
+
+            document.querySelectorAll('.row-content').forEach(row => {
+                mutationObserver.observe(row, { childList: true });
             });
         });
-
-        // Function to explicitly pause a video
+        
         function pauseCurrentlyPlayingVideo() {
             if (currentlyPlayingVideo) {
                 currentlyPlayingVideo.pause();
@@ -1268,26 +1243,9 @@ async function recordView(videoId) {
             }
         }
 
-        // --- Standard functions ---
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        }
-
-        function loadAllHomepageRows() {
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'block');
-            document.getElementById('feature-display-area').style.display = 'none';
-
-            loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
-            loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-            loadContentRow('top-creators-row', 'Featured Creator', 'Top Creators');
-            loadContentRow('new-this-week-row', 'New This Week', 'New Content');
-            loadContentRow('emotional-picks-row', 'Emotional Picks', 'Emotional Picks');
-            loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-            loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
-            loadContentRow('live-now-row', 'Live Now', 'Live Streams');
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
         }
 
         async function loadUserInfo() {
@@ -1299,51 +1257,16 @@ async function recordView(videoId) {
                     document.getElementById('user-email').textContent = currentUser.email;
                     currentUserName = currentUser.email.split('@')[0];
                     updateDailyWatchStreak();
-                } else {
-                    window.location.href = `${BASE_URL}/`;
-                }
+                } else { window.location.href = `${BASE_URL}/`; }
             } catch (error) {
                 console.error('Error loading user info:', error);
                 window.location.href = `${BASE_URL}/`;
             }
         }
 
-        async function loadContentRow(elementId, tag, title) {
-            const rowContentElement = document.getElementById(elementId);
-            rowContentElement.innerHTML = `
-                <div class="content-tile placeholder"><img class="tile-thumbnail" src="https://placehold.co/180x100/1a1a1a/888?text=Loading"><div class="tile-info"><div class="tile-title">Loading ${title}...</div><div class="tile-meta"></div></div></div>
-            `;
-
-            try {
-                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
-                const data = await response.json();
-
-                if (data.success && data.videos.length > 0) {
-                    rowContentElement.innerHTML = data.videos.map(video => renderContentTile(video)).join('');
-                    // Initialization now happens via MutationObserver
-                } else {
-                    rowContentElement.innerHTML = `
-                        <div class="empty-state-small" style="padding: 20px; width: 100%; flex-shrink: 0; text-align: center;">
-                            <div class="empty-icon" style="font-size: 1.5rem; margin-bottom: 5px;">👀</div>
-                            <div style="font-size: 0.9rem;">No ${title} content yet.</div>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error(`Error loading ${title}:`, error);
-                rowContentElement.innerHTML = `
-                    <div class="error-message" style="padding: 10px; width: 100%; flex-shrink: 0;">Failed to load ${title}.</div>
-                `;
-            }
-        }
-
-
-        // Renders a single content tile with integrated player and interaction buttons
         function renderContentTile(video) {
-            let playbackSource = video.local_file_path; // local_file_path holds the direct playback URL
+            let playbackSource = video.local_file_path;
             let thumbnailUrl = video.thumbnail_url || 'https://placehold.co/320x180/1a1a1a/888?text=Snayvu';
-
-            // Use poster attribute for thumbnail
             const videoHtml = playbackSource ? `
                 <video src="${playbackSource}" preload="metadata" muted playsinline poster="${thumbnailUrl}"></video>
                 <div class="custom-video-controls">
@@ -1355,18 +1278,13 @@ async function recordView(videoId) {
                             <button class="control-btn volume-btn">🔇</button>
                             <input type="range" class="volume-slider" min="0" max="1" step="any" value="0">
                         </div>
-                        <div class="time-display">
-                            <span class="current-time">00:00</span> / <span class="total-time">00:00</span>
-                        </div>
+                        <div class="time-display"><span class="current-time">00:00</span> / <span class="total-time">00:00</span></div>
                     </div>
-                </div>
-            ` : `<img src="${thumbnailUrl}" alt="No Video Source">`;
+                </div>` : `<img src="${thumbnailUrl}" alt="No Video Source" style="width:100%; height:100%; object-fit:cover;">`;
 
             return `
                 <div class="content-tile" data-video-id="${video.id}">
-                    <div class="tile-media-container">
-                        ${videoHtml}
-                    </div>
+                    <div class="tile-media-container">${videoHtml}</div>
                     <div class="tile-info">
                         <div>
                            <div class="tile-title">${escapeHtml(video.title)}</div>
@@ -1378,29 +1296,58 @@ async function recordView(videoId) {
                         </div>
                         <div class="tile-actions">
                             <button class="tile-action-btn ${video.user_liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleVideoLike(${video.id});">
-                                ❤️ <span id="likes-count-${video.id}">${video.likes_count || 0}</span> Likes
+                                ❤️ <span id="likes-count-${video.id}">${video.likes_count || 0}</span>
                             </button>
                             <button class="tile-action-btn" onclick="event.stopPropagation(); viewVideoComments(${video.id});">
-                                💬 <span id="comments-count-${video.id}">${video.comment_count || 0}</span> Comments
+                                💬 <span id="comments-count-${video.id}">${video.comment_count || 0}</span>
                             </button>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }
 
-        // Load content for the Hero Banner (unchanged)
-        async function loadHeroBannerContent() {
-            const heroBanner = document.querySelector('.hero-banner');
-            heroBanner.querySelector('.hero-video-placeholder').innerHTML = '';
-            heroBanner.querySelector('.hero-title').textContent = 'Experience Snayvu: Create, Watch, Repeat.';
-            heroBanner.querySelector('.hero-button').onclick = () => loadAllHomepageRows();
+        async function loadContentRow(rowElement, tag, title) {
+            rowElement.innerHTML = `<div class="content-tile placeholder"><div class="tile-info"><div class="tile-title">Loading ${title}...</div></div></div>`;
+            try {
+                const response = await fetch(`${BASE_URL}/api/videos/categorized?tag=${encodeURIComponent(tag)}`);
+                const data = await response.json();
+                if (data.success && data.videos.length > 0) {
+                    rowElement.innerHTML = data.videos.map(video => renderContentTile(video)).join('');
+                } else {
+                    rowElement.innerHTML = `<div class="empty-state-small" style="width: 100%;"><div class="empty-icon">👀</div><div>No ${title} content yet.</div></div>`;
+                }
+            } catch (error) {
+                console.error(`Error loading ${title}:`, error);
+                rowElement.innerHTML = `<div class="error-message" style="width: 100%;">Failed to load ${title}.</div>`;
+            }
         }
 
-        // --- Sidebar Navigation Logic ---
-        function displayFeatureMessage(icon, title, message) {
-            pauseCurrentlyPlayingVideo(); // Pause video before showing message
-            document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+        // --- NEW/REVISED: View Switching Logic ---
+
+        function showHomepageView() {
+            pauseCurrentlyPlayingVideo();
+            document.getElementById('homepage-view').style.display = 'block';
+            document.getElementById('single-content-view').style.display = 'none';
+            document.getElementById('feature-display-area').style.display = 'none';
+            window.scrollTo(0, 0);
+        }
+
+        function showSingleCategoryView(title, tag) {
+            pauseCurrentlyPlayingVideo();
+            document.getElementById('homepage-view').style.display = 'none';
+            document.getElementById('single-content-view').style.display = 'block';
+            document.getElementById('feature-display-area').style.display = 'none';
+            
+            document.getElementById('single-view-header').textContent = title;
+            const contentArea = document.getElementById('single-view-content-area');
+            loadContentRow(contentArea, tag, title); // Re-use loadContentRow for the single view
+            window.scrollTo(0, 0);
+        }
+        
+        function showFeatureComingSoonView(icon, title, message) {
+            pauseCurrentlyPlayingVideo();
+            document.getElementById('homepage-view').style.display = 'none';
+            document.getElementById('single-content-view').style.display = 'none';
             const featureDisplayArea = document.getElementById('feature-display-area');
             featureDisplayArea.innerHTML = `
                 <div class="feature-content-area">
@@ -1408,12 +1355,21 @@ async function recordView(videoId) {
                     <h2>${title}</h2>
                     <p>${message}</p>
                     <p>Stay tuned for updates as we build out these exciting features!</p>
-                </div>
-            `;
+                </div>`;
             featureDisplayArea.style.display = 'block';
             window.scrollTo(0, 0);
         }
 
+        function loadHomepageView() {
+            showHomepageView();
+            document.querySelectorAll('#homepage-view .content-row').forEach(row => {
+                const category = row.dataset.category;
+                const contentDiv = row.querySelector('.row-content');
+                loadContentRow(contentDiv, category, category);
+            });
+        }
+
+        // --- REVISED: Sidebar Navigation Logic ---
         document.querySelectorAll('.sidebar-menu-item').forEach(item => {
             item.addEventListener('click', function(event) {
                 if (this.dataset.section) { event.preventDefault(); }
@@ -1424,74 +1380,54 @@ async function recordView(videoId) {
                 if (document.getElementById('sidebar').classList.contains('active')) { toggleSidebar(); }
 
                 const section = this.dataset.section;
-                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
-                document.getElementById('feature-display-area').style.display = 'none';
-                
-                pauseCurrentlyPlayingVideo(); // Pause video when navigating
+                const sectionTitle = this.innerText.trim();
 
-                if (section === 'home') {
-                    loadAllHomepageRows();
-                } else if (section === 'discover') {
-                    displayFeatureMessage('🔍', 'Discover', 'Explore trending content, tags, and top creators from around the world.');
-                    document.getElementById('trending-now-section').style.display = 'block';
-                    loadContentRow('trending-now-row', 'Trending Now', 'Trending Content');
-                } else if (section === 'originals') {
-                    document.getElementById('snayvu-originals-section').style.display = 'block';
-                    loadContentRow('snayvu-originals-row', 'Snayvu Originals', 'Snayvu Originals');
-                } else if (section === 'shorts') {
-                    document.getElementById('just-dropped-shorts-section').style.display = 'block';
-                    loadContentRow('just-dropped-shorts-row', 'Shorts', 'Shorts');
-                } else if (section === 'channels') {
-                    document.getElementById('top-creators-section').style.display = 'block';
-                    loadContentRow('top-creators-row', 'Featured Creator', 'Channels');
-                } else if (section === 'live') {
-                    document.getElementById('live-now-section').style.display = 'block';
-                    loadContentRow('live-now-row', 'Live', 'Live Now');
-                } else if (section === 'mood-feed') {
-                    document.getElementById('emotional-picks-section').style.display = 'block';
-                    loadContentRow('emotional-picks-row', 'Emotional Picks', 'For You (Mood Feed)');
-                } else if (section === 'continue-watching') {
-                    document.getElementById('continue-watching-section').style.display = 'block';
-                    loadContentRow('continue-watching-row', 'Continue Watching', 'Continue Watching');
-                } else if (section === 'watchlist' || section === 'my-circle' || section === 'my-reactions' || section === 'creator-dashboard') {
-                    // Simplified handling for feature message sections
-                    const messages = {
-                        watchlist: ['⭐', 'Watchlist', 'Save your favorite videos and series to watch later.'],
-                        'my-circle': ['🧍', 'My Circle', 'Share private content and engage exclusively with your closest connections.'],
-                        'my-reactions': ['💬', 'My Reactions', 'View and manage all your facial reaction clips.'],
-                        'creator-dashboard': ['📈', 'Creator Dashboard', 'Access analytics and manage your content.']
-                    };
-                    displayFeatureMessage(...messages[section]);
+                const categoryMap = {
+                    'home': () => loadHomepageView(),
+                    'discover': () => showSingleCategoryView('🔍 Discover', 'Discover'),
+                    'originals': () => showSingleCategoryView('🎬 Snayvu Originals', 'Snayvu Originals'),
+                    'shorts': () => showSingleCategoryView('📱 Shorts', 'Shorts'),
+                    'channels': () => showSingleCategoryView('📺 Channels', 'Channels'),
+                    'live': () => showSingleCategoryView('📡 Live Now', 'Live Now'),
+                    'mood-feed': () => showSingleCategoryView('🧠 For You (Mood Feed)', 'For You (Mood Feed)'),
+                    'continue-watching': () => showSingleCategoryView('🧾 Continue Watching', 'Continue Watching'),
+                    'watchlist': () => showFeatureComingSoonView('⭐', 'Watchlist', 'Save your favorite videos and series to watch later.'),
+                    'my-circle': () => showFeatureComingSoonView('🧍', 'My Circle', 'Share private content and engage exclusively with your closest connections.'),
+                    'my-reactions': () => showFeatureComingSoonView('💬', 'My Reactions', 'View and manage all your facial reaction clips.'),
+                    'creator-dashboard': () => showFeatureComingSoonView('📈', 'Creator Dashboard', 'Access analytics and manage your content.')
+                };
+                
+                if (categoryMap[section]) {
+                    categoryMap[section]();
                 }
             });
         });
 
-        // Handle Logout Click
         async function handleLogoutClick() {
             const csrfToken = document.getElementById('csrf_token').value;
             try {
-                const response = await fetch(`${BASE_URL}/api/auth/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-                });
+                const response = await fetch(`${BASE_URL}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
                 const data = await response.json();
                 if (data.success && data.redirect) { window.location.href = data.redirect; }
-                else { console.error('Logout failed:', data.message || 'Unknown error'); window.location.href = `${BASE_URL}/`; }
-            } catch (error) { console.error('Error during logout:', error); window.location.href = `${BASE_URL}/`; }
+                else { window.location.href = `${BASE_URL}/`; }
+            } catch (error) { window.location.href = `${BASE_URL}/`; }
         }
 
-        // General Helper Functions
-        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
         
-        // --- Upload Modal JS ---
         function showUploadModal() {
             document.getElementById('upload-modal').style.display = 'flex';
             document.getElementById('upload-form').reset();
             document.getElementById('upload-status').textContent = '';
         }
         function closeUploadModal() { document.getElementById('upload-modal').style.display = 'none'; }
-        // (Upload form submission logic remains the same as previous correct versions)
-         document.getElementById('upload-form').addEventListener('submit', async function(event) {
+        
+        document.getElementById('upload-form').addEventListener('submit', async function(event) {
             event.preventDefault();
             const formData = new FormData(this);
             const uploadButton = document.getElementById('upload-submit-btn');
@@ -1512,7 +1448,9 @@ async function recordView(videoId) {
                 if (response.ok && result.success) {
                     statusMessage.textContent = result.message || 'Upload successful!';
                     statusMessage.className = 'upload-status-message success';
-                    loadContentRow('just-dropped-shorts-row', 'Just Dropped', 'Latest Shorts');
+                    // Refresh relevant rows after upload
+                    loadContentRow(document.querySelector('[data-category="Just Dropped"] .row-content'), 'Just Dropped', 'Latest Shorts');
+                    loadContentRow(document.querySelector('[data-category="New This Week"] .row-content'), 'New This Week', 'New This Week');
                     setTimeout(closeUploadModal, 2000);
                 } else {
                     throw new Error(result.message || 'Upload failed.');
@@ -1525,194 +1463,111 @@ async function recordView(videoId) {
             }
         });
 
-        // --- LIKE & COMMENT FUNCTIONS ---
+        async function toggleVideoLike(videoId) {
+            if (!currentUser) return alert("You must be logged in to like videos.");
+            const csrfToken = document.getElementById('csrf_token').value;
+            const likeButtons = document.querySelectorAll(`.content-tile[data-video-id="${videoId}"] .tile-action-btn[onclick*="toggleVideoLike"]`);
+            const likesCountSpans = document.querySelectorAll(`#likes-count-${videoId}`);
 
-/**
- * Toggles the "like" status for a video.
- * It sends a request to the server and updates the like button and count on success.
- * @param {number} videoId The ID of the video to like/unlike.
- */
-async function toggleVideoLike(videoId) {
-    if (!currentUser) {
-        alert("You must be logged in to like videos.");
-        return;
-    }
-    const csrfToken = document.getElementById('csrf_token').value;
-    const likeButton = document.querySelector(`.content-tile[data-video-id="${videoId}"] .tile-action-btn`);
-    const likesCountSpan = document.getElementById(`likes-count-${videoId}`);
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update like status.');
+            try {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    likesCountSpans.forEach(span => span.textContent = data.likes_count);
+                    likeButtons.forEach(btn => btn.classList.toggle('liked', data.liked));
+                } else { throw new Error(data.message); }
+            } catch (error) { console.error('Error toggling video like:', error); }
         }
 
-        const data = await response.json();
-        if (data.success) {
-            // Update UI with the new data from the server
-            likesCountSpan.textContent = data.likes_count;
-            if (data.liked) {
-                likeButton.classList.add('liked');
-            } else {
-                likeButton.classList.remove('liked');
-            }
-        } else {
-            throw new Error(data.message || 'An error occurred.');
-        }
-    } catch (error) {
-        console.error('Error toggling video like:', error);
-        alert('Could not update like. Please try again.');
-    }
-}
+        async function viewVideoComments(videoId) {
+            pauseCurrentlyPlayingVideo();
+            const modal = document.getElementById('comments-modal');
+            const contentDiv = document.getElementById('comments-content');
+            modal.style.display = 'flex';
+            contentDiv.innerHTML = '<div class="loading-small">Loading comments...</div>';
 
-/**
- * Opens a modal to display comments for a specific video and allows adding a new one.
- * @param {number} videoId The ID of the video whose comments are to be viewed.
- */
-async function viewVideoComments(videoId) {
-    pauseCurrentlyPlayingVideo(); // Pause any playing video when opening the modal
-    const modal = document.getElementById('comments-modal');
-    const contentDiv = document.getElementById('comments-content');
-    modal.style.display = 'flex';
-    contentDiv.innerHTML = '<div class="loading-small" style="padding: 40px; text-align: center;">Loading comments...</div>';
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
-        if (!response.ok) throw new Error('Failed to fetch comments.');
-
-        const data = await response.json();
-        if (data.success) {
-            let commentsHtml = '';
-            // Generate HTML for each comment
-            if (data.comments && data.comments.length > 0) {
-                commentsHtml = data.comments.map(comment => `
-                    <div class="comment-item">
-                        <div class="user-info">
-                            <div class="user-avatar">${escapeHtml(comment.user_name).charAt(0).toUpperCase()}</div>
-                            <div class="user-details">
-                                <div class="user-name">${escapeHtml(comment.user_name)}</div>
-                                <div class="comment-text">${escapeHtml(comment.text)}</div>
-                                <div class="comment-meta">
-                                    <span class="comment-time">${new Date(comment.timestamp).toLocaleString()}</span>
+            try {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`);
+                const data = await response.json();
+                if (data.success) {
+                    let commentsHtml = data.comments.length > 0 ? data.comments.map(c => `
+                        <div class="comment-item">
+                            <div class="user-info">
+                                <div class="user-avatar">${escapeHtml(c.author).charAt(0).toUpperCase()}</div>
+                                <div class="user-details">
+                                    <div class="user-name">${escapeHtml(c.author)}</div>
+                                    <div class="comment-text">${escapeHtml(c.text)}</div>
+                                    <div class="comment-meta"><span class="comment-time">${c.time}</span></div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                commentsHtml = '<div class="empty-state-small" style="text-align:center; padding: 20px;"><div class="empty-icon">🤫</div>No comments yet. Be the first!</div>';
+                        </div>`).join('') : '<div class="empty-state-small">🤫 No comments yet.</div>';
+
+                    const formHtml = `
+                        <div class="add-comment-form" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                            <form onsubmit="event.preventDefault(); addComment(${videoId}, this);">
+                                <textarea name="comment_text" placeholder="Add a comment..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: white; min-height: 60px; margin-bottom: 10px;"></textarea>
+                                <button type="submit" style="width: 100%; padding: 10px; background: linear-gradient(45deg, #6366f1, #a855f7); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Post</button>
+                            </form>
+                        </div>`;
+                    contentDiv.innerHTML = commentsHtml + formHtml;
+                } else { throw new Error(data.message); }
+            } catch (error) { contentDiv.innerHTML = `<div class="empty-state-small">${error.message}</div>`; }
+        }
+
+        async function addComment(videoId, formElement) {
+            const textarea = formElement.querySelector('textarea');
+            const commentText = textarea.value.trim();
+            if (!commentText) return;
+
+            const csrfToken = document.getElementById('csrf_token').value;
+            const submitButton = formElement.querySelector('button');
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ text: commentText })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    document.querySelectorAll(`#comments-count-${videoId}`).forEach(span => {
+                        span.textContent = parseInt(span.textContent) + 1;
+                    });
+                    viewVideoComments(videoId); // Refresh the list
+                } else { throw new Error(data.message); }
+            } catch (error) {
+                alert(`Could not add comment: ${error.message}`);
+                submitButton.disabled = false;
             }
-
-            // HTML for the "Add Comment" form
-            const formHtml = `
-                <div class="add-comment-form" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                    <form onsubmit="event.preventDefault(); addComment(${videoId}, this);">
-                        <textarea name="comment_text" placeholder="Add a comment..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; min-height: 60px; resize: vertical; margin-bottom: 10px;"></textarea>
-                        <button type="submit" style="width: 100%; padding: 10px; background: linear-gradient(45deg, #6366f1, #a855f7); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: 600; cursor: pointer;">Post Comment</button>
-                    </form>
-                </div>
-            `;
-
-            contentDiv.innerHTML = commentsHtml + formHtml;
-        } else {
-            throw new Error(data.message || 'Could not load comments.');
         }
-    } catch (error) {
-        console.error('Error fetching comments:', error);
-        contentDiv.innerHTML = `<div class="empty-state-small" style="text-align:center; padding: 20px;">${error.message}</div>`;
-    }
-}
 
-/**
- * Submits a new comment for a video.
- * @param {number} videoId The ID of the video to comment on.
- * @param {HTMLFormElement} formElement The form element that was submitted.
- */
-async function addComment(videoId, formElement) {
-    const textarea = formElement.querySelector('textarea[name="comment_text"]');
-    const commentText = textarea.value.trim();
-    if (!commentText) return;
-
-    const csrfToken = document.getElementById('csrf_token').value;
-    const submitButton = formElement.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Posting...';
-
-    try {
-        const response = await fetch(`${BASE_URL}/api/videos/${videoId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ text: commentText })
-        });
-
-        if (!response.ok) throw new Error('Failed to post comment.');
-
-        const data = await response.json();
-        if (data.success) {
-            // Update the comment count on the video tile without a full page reload
-            const commentsCountSpan = document.getElementById(`comments-count-${videoId}`);
-            commentsCountSpan.textContent = parseInt(commentsCountSpan.textContent) + 1;
-            
-            // Refresh the comments list to show the new comment
-            viewVideoComments(videoId);
-        } else {
-            throw new Error(data.message || 'Server returned an error.');
-        }
-    } catch (error) {
-        console.error('Error adding comment:', error);
-        alert(`Could not add comment: ${error.message}`);
-        submitButton.disabled = false;
-        submitButton.textContent = 'Post Comment';
-    }
-}
-
-// Closes the Likes modal
-function closeLikesModal() {
-    document.getElementById('likes-modal').style.display = 'none';
-}
-
-// Closes the Comments modal
-function closeCommentsModal() {
-    document.getElementById('comments-modal').style.display = 'none';
-}
-        // Feedback modal (unchanged)
+        function closeLikesModal() { document.getElementById('likes-modal').style.display = 'none'; }
+        function closeCommentsModal() { document.getElementById('comments-modal').style.display = 'none'; }
+        
         function showFeedbackModal() { document.getElementById('feedback-modal').style.display = 'flex'; }
         function closeFeedbackModal() { document.getElementById('feedback-modal').style.display = 'none'; }
         async function submitFeedback() {
-             // (Identical to previous correct version)
             const feedbackText = document.getElementById('feedback-text').value.trim();
-            const feedbackMessageDiv = document.getElementById('feedback-message');
-            const csrfToken = document.getElementById('csrf_token').value;
-            if (!feedbackText) { return; }
+            const msgDiv = document.getElementById('feedback-message');
+            if (!feedbackText) return;
             try {
-                const response = await fetch(`${BASE_URL}/api/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ feedback: feedbackText }) });
-                if (response.ok) { feedbackMessageDiv.textContent = 'Thank you!'; feedbackMessageDiv.className = 'feedback-success-message'; feedbackMessageDiv.style.display = 'block'; setTimeout(() => closeFeedbackModal(), 1500); }
-                else { throw new Error('Failed to send feedback.'); }
-            } catch (error) { feedbackMessageDiv.textContent = 'Error. Please try again.'; feedbackMessageDiv.className = 'feedback-error-message'; feedbackMessageDiv.style.display = 'block'; }
+                const response = await fetch(`${BASE_URL}/api/feedback`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.getElementById('csrf_token').value }, body: JSON.stringify({ feedback: feedbackText }) });
+                if (response.ok) { msgDiv.textContent = 'Thank you!'; msgDiv.className = 'feedback-success-message'; msgDiv.style.display = 'block'; setTimeout(closeFeedbackModal, 1500); }
+                else { throw new Error('Failed to send.'); }
+            } catch (error) { msgDiv.textContent = 'Error. Please try again.'; msgDiv.className = 'feedback-error-message'; msgDiv.style.display = 'block'; }
         }
 
-        // Watch streak (unchanged)
         async function updateDailyWatchStreak() {
-             // (Identical to previous correct version)
-            const streakCountElement = document.getElementById('streak-count');
-            const csrfToken = document.getElementById('csrf_token').value;
-             try {
-                const response = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken } });
+            try {
+                const response = await fetch(`${BASE_URL}/api/user/watch-streak`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.getElementById('csrf_token').value } });
                 const data = await response.json();
-                if (data.success) { streakCountElement.textContent = data.streak; }
+                if (data.success) { document.getElementById('streak-count').textContent = data.streak; }
             } catch (error) { console.error('Error updating watch streak:', error); }
         }
-
     </script>
 </body>
 </html>
