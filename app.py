@@ -88,15 +88,27 @@ class Watchlist(db.Model):
     )
 # END OF NEW MODEL
 
-class VideoLike(db.Model):
-    __tablename__ = 'video_like'
+# app.py
+
+class User(db.Model):
+    __tablename__ = 'user'
+    # ... other columns
+    watch_history = db.relationship('WatchHistory', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def check_password(self, password):
-    return bcrypt.check_password_hash(self.password_hash, password)
-    
+        return bcrypt.check_password_hash(self.password_hash, password)
+
     def get_display_name(self):
         return self.email.split('@')[0]
 
+
+class Watchlist(db.Model):
+    # ...
+
+
+class VideoLike(db.Model):
+    __tablename__ = 'video_like'
+    # ...
 class Video(db.Model):
     __tablename__ = 'video'
     __table_args__ = {'extend_existing': True}
