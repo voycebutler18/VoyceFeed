@@ -1632,15 +1632,12 @@ def update_watch_history(video_id):
 # This route is specifically for user uploads via dashboard, not admin panel.
 # Admin panel uses admin_add_video, which is now unified.
 # If users can upload from dashboard without being admin, this route is appropriate for them.
+# In app.py, REPLACE the existing upload_video function with this one.
+
 @app.route('/api/upload-video', methods=['POST'])
 @login_required
 @limiter.limit("5 per hour")
 def upload_video():
-    # This route is for general users to upload via a dashboard modal.
-    # The admin_add_video now handles file uploads from the admin page.
-    # To avoid confusion, you might consider removing this if all uploads are via admin.
-    # However, if non-admin users can upload, this route is appropriate for them.
-    
     if 'video_file' not in request.files:
         return jsonify({'success': False, 'message': 'No video file part'}), 400
     
@@ -1648,7 +1645,7 @@ def upload_video():
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip()
     hashtags_str = request.form.get('hashtags', '').strip()
-    duration_str = request.form.get('duration_seconds', '').strip() # Changed from '0' to '' to handle optional empty field
+    duration_str = request.form.get('duration_seconds', '').strip()
     is_short_input = request.form.get('is_short', 'false').lower() == 'true'
 
     if video_file.filename == '':
@@ -1662,35 +1659,33 @@ def upload_video():
         return jsonify({'success': False, 'message': 'Unsupported file type'}), 400
 
     try:
-        duration_seconds = int(duration_str) if duration_str.isdigit() else None # Parse to int or None
-        is_short = is_short_input or (duration_seconds is not None and duration_seconds < 60) # Auto-set is_short if duration provided
+        duration_seconds = int(duration_str) if duration_str.isdigit() else None
+        is_short = is_short_input or (duration_seconds is not None and duration_seconds < 60)
 
         filename = secure_filename(video_file.filename)
         filename_with_user_id = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
         local_file_path_on_server = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user_id)
         video_file.save(local_file_path_on_server)
 
-        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Generic thumbnail for now
-
-        # Use the /uploads/ endpoint for playback URL (stored in youtube_url for consistency in frontend)
+        thumbnail_url = url_for('static', filename='default_thumbnail.jpg')
         playback_url_for_frontend = url_for('uploaded_file', filename=filename_with_user_id)
 
         new_video = Video(
-    title=title,
-    description=description if description else None,
-    youtube_url=playback_url_for_frontend, # Stores public URL for local files
-    youtube_video_id=None, # Not a YouTube ID
-    thumbnail_url=thumbnail_url,
-    is_active=True,
-    genre="Uploaded",
-    featured_tag="Just Dropped", # Mark as "Just Dropped"
-    local_file_path=local_file_path_on_server, # Store the actual path on server
-    hashtags=hashtags_str if hashtags_str else None,
-    duration_seconds=duration_seconds, # Can be None
-    is_short=is_short,
-    views_count=0,
-    uploader_id=session['user_id']  # Add this missing field
-)
+            title=title,
+            description=description if description else None,
+            youtube_url=playback_url_for_frontend,
+            youtube_video_id=None,
+            thumbnail_url=thumbnail_url,
+            is_active=True,
+            genre="Uploaded",
+            featured_tag="Just Dropped",
+            local_file_path=local_file_path_on_server,
+            hashtags=hashtags_str if hashtags_str else None,
+            duration_seconds=duration_seconds,
+            is_short=is_short,
+            views_count=0,
+            uploader_id=session['user_id'] # THIS LINE WAS MISSING
+        )
         db.session.add(new_video)
         db.session.commit()
         
@@ -1701,7 +1696,7 @@ def upload_video():
                 'id': new_video.id,
                 'title': new_video.title,
                 'description': new_video.description,
-                'local_file_path': playback_url_for_frontend, # Frontend will use this for playback
+                'local_file_path': playback_url_for_frontend,
                 'thumbnail_url': new_video.thumbnail_url,
                 'duration_seconds': new_video.duration_seconds,
                 'is_short': new_video.is_short
@@ -1712,7 +1707,6 @@ def upload_video():
         db.session.rollback()
         logger.error(f"Error during video upload: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to upload video. Please try again.'}), 500
-
 
 # Error handlers
 @app.errorhandler(404)
