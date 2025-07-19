@@ -1,4 +1,3 @@
-
 # FILE LOCATION: /app.py (root of your GitHub repo)
 # Complete Flask application for subscription-based storytelling website
 
@@ -6,7 +5,6 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta, date
-import ffmpeg
 import os
 import re
 from functools import wraps
@@ -236,7 +234,7 @@ def extract_youtube_video_id(url):
 
 def get_youtube_thumbnail(video_id):
     """Get YouTube thumbnail URL"""
-    return f"http://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Standard YouTube thumbnail URL
+    return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg" # Standard YouTube thumbnail URL
 
 def login_required(f):
     """Decorator to require login"""
@@ -392,30 +390,6 @@ def logout():
     flash('You have been logged out successfully.', 'info')
     return jsonify({'success': True, 'message': 'Logged out successfully', 'redirect': url_for('index')})
 
-# START anD PASTE THE NEW CODE HERE
-@app.route('/api/videos/<int:video_id>/view', methods=['POST'])
-@login_required
-def record_video_view(video_id):
-    """Records a single view for a video when a user starts playing it."""
-    video = Video.query.get(video_id)
-    if not video:
-        # Even if the video isn't found, we return a success to not bother the user
-        return jsonify({'success': True, 'message': 'Video not found, but acknowledged.'}), 200
-    
-    try:
-        # Increment the view count safely
-        if video.views_count is None:
-            video.views_count = 0
-        video.views_count += 1
-        
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'View recorded'})
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error recording view for video {video_id}: {e}")
-        return jsonify({'success': False, 'message': 'Server error while recording view'}), 500
-# END THE NEW CODE HERE
-
 @app.route('/api/auth/check')
 @login_required
 def auth_check():
@@ -467,6 +441,27 @@ def toggle_video_like(video_id):
         db.session.rollback()
         logger.error(f"Error toggling video like: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Failed to update like'}), 500
+
+# --- NEW: VIEW COUNT ENDPOINT ---
+@app.route('/api/videos/<int:video_id>/view', methods=['POST'])
+@login_required
+def record_view(video_id):
+    """Records a view for a video. This is a simple incrementer."""
+    try:
+        video = Video.query.get(video_id)
+        if not video:
+            return jsonify({'success': False, 'message': 'Video not found'}), 404
+
+        # Using a more robust method to increment to avoid race conditions
+        Video.query.filter_by(id=video_id).update({'views_count': Video.views_count + 1})
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'View recorded'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error recording view for video {video_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Failed to record view'}), 500
+
 
 @app.route('/dashboard')
 @login_required
@@ -714,7 +709,51 @@ def admin_stats():
     except Exception as e:
         logger.error(f"Error fetching admin stats: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/admin/videos', methods=['GET'])
+@admin_required
+def admin_get_videos():
+    """Get all videos for admin"""
+    try:
+        videos = Video.query.order_by(Video.created_at.desc()).all()
         
+        video_list = []
+        for video in videos:
+            comment_count = Comment.query.filter_by(video_id=video.id).count()
+            
+            # Determine source URL for admin view
+            source_url_for_admin = None
+            if video.local_file_path:
+                source_url_for_admin = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
+            elif video.youtube_url: # This now holds the YouTube URL (for YouTube videos)
+                source_url_for_admin = video.youtube_url
+
+            video_list.append({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'youtube_url': video.youtube_url, # Original YouTube URL (if applicable)
+                'youtube_video_id': video.youtube_video_id, # YouTube ID (if applicable)
+                'thumbnail_url': video.thumbnail_url,
+                'is_active': video.is_active,
+                'likes_count': video.likes_count,
+                'created_at': video.created_at.isoformat(),
+                'genre': video.genre,
+                'featured_tag': video.featured_tag,
+                'local_file_path': source_url_for_admin, # This is the source URL for admin view/playback
+                'duration_seconds': video.duration_seconds,
+                'is_short': video.is_short,
+                'views_count': video.views_count,
+                'hashtags': video.hashtags,
+                'comment_count': comment_count
+            })
+        
+        return jsonify({'success': True, 'videos': video_list})
+        
+    except Exception as e:
+        logger.error(f"Error fetching admin videos: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/admin/videos/<int:video_id>/likes', methods=['GET'])
 @admin_required
 def admin_get_video_likes(video_id):
@@ -746,48 +785,39 @@ def admin_get_video_likes(video_id):
         logger.error(f"Error fetching video likes for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/admin/videos', methods=['GET'])
+@app.route('/api/admin/videos/<int:video_id>/comments', methods=['GET'])
 @admin_required
-def admin_get_videos():
-    """Get all videos for admin"""
+def admin_get_video_comments(video_id):
+    """Get all comments for a specific video (admin only)"""
     try:
-        videos = Video.query.order_by(Video.created_at.desc()).all()
+        video = Video.query.get_or_404(video_id)
         
-        video_list = []
-        for video in videos:
-            comment_count = Comment.query.filter_by(video_id=video.id).count()
+        comments = Comment.query.filter_by(parent_id=None, video_id=video_id).order_by(Comment.created_at.desc()).all()
+        
+        comment_list = []
+        for comment in comments:
+            replies_count = Comment.query.filter_by(parent_id=comment.id).count()
             
-            # Determine source URL for admin view
-            source_url_for_admin = None
-            if video.local_file_path:
-                source_url_for_admin = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
-            elif video.youtube_url:
-                source_url_for_admin = video.youtube_url
-
-            video_list.append({
-                'id': video.id,
-                'title': video.title,
-                'description': video.description,
-                'youtube_url': video.youtube_url,
-                'youtube_video_id': video.youtube_video_id,
-                'thumbnail_url': video.thumbnail_url,
-                'is_active': video.is_active,
-                'likes_count': video.likes_count,
-                'created_at': video.created_at.isoformat(),
-                'genre': video.genre,
-                'featured_tag': video.featured_tag,
-                'local_file_path': source_url_for_admin,
-                'duration_seconds': video.duration_seconds,
-                'is_short': video.is_short,
-                'views_count': video.views_count,
-                'hashtags': video.hashtags,
-                'comment_count': comment_count
+            comment_list.append({
+                'id': comment.id,
+                'user_name': comment.user.get_display_name(),
+                'user_email': comment.user.email,
+                'text': comment.text,
+                'likes_count': comment.likes_count,
+                'replies_count': replies_count,
+                'created_at': comment.created_at.isoformat(),
+                'is_reply': comment.parent_id is not None
             })
         
-        return jsonify({'success': True, 'videos': video_list})
+        return jsonify({
+            'success': True,
+            'comments': comment_list,
+            'video_title': video.title,
+            'total_comments': len(comment_list)
+        })
         
     except Exception as e:
-        logger.error(f"Error fetching admin videos: {e}", exc_info=True)
+        logger.error(f"Error fetching video comments for admin: {e}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/admin/videos', methods=['POST'])
@@ -795,87 +825,83 @@ def admin_get_videos():
 def admin_add_video():
     """Add new video (admin only)"""
     try:
+        # Determine if form data is JSON (from edit modal) or multipart (from add video form)
+        # Using request.form for all data to handle both types uniformly via FormData
         data = request.form
         video_source_type = data.get('video_source_type')
-        
-        # Debug log to see what we're receiving
-        logger.info(f"Received video_source_type: {video_source_type}")
-        logger.info(f"Form data keys: {list(data.keys())}")
-        
-        if not video_source_type:
-            return jsonify({'success': False, 'message': 'video_source_type is required'}), 400
 
         title = data.get('title', '').strip()
+        description = data.get('description', '').strip()
+        genre = data.get('genre', '').strip()
+        featured_tag = data.get('featured_tag', '').strip()
+        hashtags = data.get('hashtags', '').strip()
+        is_short = data.get('is_short', 'false').lower() == 'true'
+        duration_seconds_str = data.get('duration_seconds') # String, could be empty
         
-        if not title:
-            return jsonify({'success': False, 'message': 'Title is required'}), 400
+        # Convert duration_seconds to int if provided, otherwise None
+        duration_seconds = None
+        if duration_seconds_str:
+            try:
+                duration_seconds = int(duration_seconds_str)
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Invalid duration format (must be a number)'}), 400
+
+        video_id = None
+        youtube_url = None
+        local_file_path = None
+        thumbnail_url = url_for('static', filename='default_thumbnail.jpg') # Default thumbnail
 
         if video_source_type == 'youtube_url':
             youtube_url_input = data.get('youtube_url', '').strip()
-            if not youtube_url_input:
-                return jsonify({'success': False, 'message': 'YouTube URL is required'}), 400
+            if not title or not youtube_url_input:
+                return jsonify({'success': False, 'message': 'Title and YouTube URL are required'}), 400
             
             video_id = extract_youtube_video_id(youtube_url_input)
             if not video_id:
                 return jsonify({'success': False, 'message': 'Invalid YouTube URL'}), 400
             
-            new_video = Video(
-                title=title,
-                description=data.get('description', '').strip(),
-                youtube_url=youtube_url_input,
-                youtube_video_id=video_id,
-                thumbnail_url=get_youtube_thumbnail(video_id),
-                genre=data.get('genre', '').strip(),
-                featured_tag=data.get('featured_tag', '').strip(),
-                hashtags=data.get('hashtags', '').strip(),
-                duration_seconds=int(data.get('duration_seconds')) if data.get('duration_seconds') else None,
-                is_short=data.get('is_short', 'false').lower() == 'true',
-                views_count=0
-            )
+            # Check for existing YouTube video
+            if Video.query.filter_by(youtube_video_id=video_id).first():
+                return jsonify({'success': False, 'message': 'This YouTube video has already been added'}), 400
             
+            thumbnail_url = get_youtube_thumbnail(video_id)
+            youtube_url = youtube_url_input # Store original YouTube URL
+
         elif video_source_type == 'file_upload':
             if 'video_file' not in request.files:
-                return jsonify({'success': False, 'message': 'No video file provided'}), 400
+                return jsonify({'success': False, 'message': 'No video file part for upload'}), 400
             
             video_file = request.files['video_file']
             if video_file.filename == '':
-                return jsonify({'success': False, 'message': 'No file selected'}), 400
-
-            filename = secure_filename(video_file.filename)
-            unique_filename = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
-            local_file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            video_file.save(local_file_path)
-
-            new_video = Video(
-                title=title,
-                description=data.get('description', '').strip(),
-                youtube_url=url_for('uploaded_file', filename=unique_filename),
-                local_file_path=local_file_path,
-                thumbnail_url=url_for('static', filename='default_thumbnail.jpg'),
-                genre=data.get('genre', '').strip(),
-                featured_tag=data.get('featured_tag', '').strip(),
-                hashtags=data.get('hashtags', '').strip(),
-                duration_seconds=int(data.get('duration_seconds')) if data.get('duration_seconds') else None,
-                is_short=data.get('is_short', 'false').lower() == 'true',
-                views_count=0
-            )
+                return jsonify({'success': False, 'message': 'No selected video file'}), 400
             
-        else:
-            return jsonify({'success': False, 'message': f'Invalid video source type: {video_source_type}'}), 400
+            if not title:
+                return jsonify({'success': False, 'message': 'Title is required for uploaded video'}), 400
 
-        db.session.add(new_video)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Video added successfully',
-            'video': {'id': new_video.id, 'title': new_video.title}
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error adding video: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': f'Failed to add video: {str(e)}'}), 500
+            allowed_extensions = {'mp4', 'mov', 'avi', 'mkv', 'webm'}
+            if '.' not in video_file.filename or video_file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+                return jsonify({'success': False, 'message': 'Unsupported file type for upload'}), 400
+            
+            filename = secure_filename(video_file.filename)
+            filename_with_user_id = f"{session['user_id']}_{datetime.utcnow().timestamp()}_{filename}"
+            local_file_path_on_server = os.path.join(app.config['UPLOAD_FOLDER'], filename_with_user_id)
+            video_file.save(local_file_path_on_server)
+
+            # For local uploads, the 'youtube_url' field in the DB will store the public URL
+            youtube_url = url_for('uploaded_file', filename=filename_with_user_id)
+            youtube_video_id_placeholder = f"local_{filename_with_user_id.split('.')[0]}"
+            video_id = youtube_video_id_placeholder # Use this as video_id for local files
+
+            # Check for existing local file video (by server path)
+            if Video.query.filter_by(local_file_path=local_file_path_on_server).first():
+                 # Clean up the uploaded file if it's a duplicate based on path
+                os.remove(local_file_path_on_server)
+                return jsonify({'success': False, 'message': 'This video file has already been uploaded'}), 400
+            
+            local_file_path = local_file_path_on_server # Store the actual path for DB
+
+        else:
+            return jsonify({'success': False, 'message': 'Invalid video source type'}), 400
 
         # Now create the Video object
         video = Video(
@@ -1299,77 +1325,77 @@ def get_categorized_videos():
             return jsonify({'success': False, 'message': 'Tag parameter is required'}), 400
 
         query = Video.query.filter_by(is_active=True)
-
-        # Dynamic Content Categorization Logic
-        if tag == 'Trending Now':
-            # Simple trending: most views in the last 7 days.
-            # You might want to combine with likes_count if views_count is too low.
+        
+        # --- UPDATED LOGIC TO HANDLE ALL SIDEBAR LINKS ---
+        if tag == 'Trending Now' or tag == 'Discover': # Discover will show trending content
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
-            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.views_count.desc(), Video.likes_count.desc()).limit(10).all()
+            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.views_count.desc(), Video.likes_count.desc()).limit(15).all()
+        
         elif tag == 'Snayvu Originals':
-            # Admin-posted videos explicitly tagged as Originals
-            videos = query.filter_by(featured_tag='Snayvu Originals').order_by(Video.created_at.desc()).limit(10).all()
-        elif tag == 'Shorts':
-            # Videos explicitly marked as shorts (or detected as such)
-            videos = query.filter_by(is_short=True).order_by(Video.created_at.desc()).limit(10).all()
+            videos = query.filter_by(featured_tag='Snayvu Originals').order_by(Video.created_at.desc()).limit(15).all()
+        
+        elif tag == 'Shorts' or tag == 'Just Dropped': # Both link to the same logic
+            videos = query.filter_by(is_short=True).order_by(Video.created_at.desc()).limit(15).all()
+        
         elif tag == 'New This Week':
-            # Videos created in the last 7 days
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
-            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.created_at.desc()).limit(10).all()
-        elif tag == 'Emotional Picks':
-            # Videos explicitly tagged as Emotional Picks
-            videos = query.filter_by(featured_tag='Emotional Picks').order_by(Video.created_at.desc()).limit(10).all()
+            videos = query.filter(Video.created_at >= seven_days_ago).order_by(Video.created_at.desc()).limit(15).all()
+        
+        elif tag == 'Emotional Picks' or tag == 'For You (Mood Feed)': # Both link to the same logic
+            videos = query.filter_by(featured_tag='Emotional Picks').order_by(Video.created_at.desc()).limit(15).all()
+        
         elif tag == 'Live Now':
-            # Placeholder for live streams - would need actual live stream integration
-            videos = query.filter_by(featured_tag='Live').order_by(Video.created_at.desc()).limit(5).all() # Fetch few conceptual live videos
-        elif tag == 'Featured Creator':
-            # Videos explicitly tagged by admin to showcase creators
-            videos = query.filter_by(featured_tag='Featured Creator').order_by(Video.created_at.desc()).limit(10).all()
+            videos = query.filter_by(featured_tag='Live').order_by(Video.created_at.desc()).limit(10).all()
+        
+        elif tag == 'Channels' or tag == 'Featured Creator': # Both link to the same logic
+            videos = query.filter_by(featured_tag='Featured Creator').order_by(Video.created_at.desc()).limit(15).all()
+        
         elif tag == 'Continue Watching':
-            # Fetch videos from user's watch history that are not completed
             watch_history_entries = WatchHistory.query.filter_by(
                 user_id=current_user_id,
                 completed=False
             ).order_by(desc(WatchHistory.watched_at)).limit(10).all()
             
             video_ids = [entry.video_id for entry in watch_history_entries]
-            # Fetch the actual video objects based on history order
-            videos_from_history = Video.query.filter(Video.id.in_(video_ids)).order_by(
-                db.case(
-                    {id_: index for index, id_ in enumerate(video_ids)},
-                    value=Video.id
-                )
-            ).all()
-            
-            # Attach progress and total duration for frontend
-            video_map_with_progress = {}
-            for entry in watch_history_entries:
-                video = next((v for v in videos_from_history if v.id == entry.video_id), None)
-                if video:
-                    video.progress_seconds = entry.progress_seconds
-                    video.total_duration = video.duration_seconds # Assuming duration_seconds is set for all videos
-                    video_map_with_progress[video.id] = video
-            videos = [video_map_with_progress[id_] for id_ in video_ids if id_ in video_map_with_progress] # Maintain order
+            if not video_ids:
+                videos = []
+            else:
+                # Fetch the actual video objects based on history order
+                videos_from_history = Video.query.filter(Video.id.in_(video_ids)).order_by(
+                    db.case(
+                        {id_: index for index, id_ in enumerate(video_ids)},
+                        value=Video.id
+                    )
+                ).all()
+                
+                # Attach progress and total duration for frontend
+                video_map_with_progress = {}
+                for entry in watch_history_entries:
+                    video = next((v for v in videos_from_history if v.id == entry.video_id), None)
+                    if video:
+                        video.progress_seconds = entry.progress_seconds
+                        video.total_duration = video.duration_seconds # Assuming duration_seconds is set for all videos
+                        video_map_with_progress[video.id] = video
+                videos = [video_map_with_progress[id_] for id_ in video_ids if id_ in video_map_with_progress] # Maintain order
 
         else:
-            # Default to fetching by the provided featured_tag
+            # Default to fetching by any other provided featured_tag or return empty
             videos = query.filter_by(featured_tag=tag).order_by(Video.created_at.desc()).limit(10).all()
 
         video_list = []
         for video in videos:
-            # Determine correct URL for playback
             video_playback_url = ''
             if video.local_file_path:
                 video_playback_url = url_for('uploaded_file', filename=os.path.basename(video.local_file_path))
-            elif video.youtube_url: # This holds the public YouTube URL
+            elif video.youtube_url:
                 video_playback_url = video.youtube_url
 
             video_list.append({
                 'id': video.id,
                 'title': video.title,
                 'description': video.description,
-                'youtube_url': video.youtube_url, # Original YouTube URL
-                'youtube_video_id': video.youtube_video_id, # YouTube ID
+                'youtube_url': video.youtube_url,
+                'youtube_video_id': video.youtube_video_id,
                 'thumbnail_url': video.thumbnail_url,
                 'likes_count': video.likes_count,
                 'user_liked': VideoLike.query.filter_by(user_id=current_user_id, video_id=video.id).first() is not None,
@@ -1377,20 +1403,21 @@ def get_categorized_videos():
                 'genre': video.genre,
                 'featured_tag': video.featured_tag,
                 'can_watch': True,
-                'local_file_path': video_playback_url, # This field is the primary playback URL for both types
+                'local_file_path': video_playback_url,
                 'duration_seconds': video.duration_seconds,
                 'is_short': video.is_short,
                 'views_count': video.views_count,
                 'hashtags': video.hashtags,
                 'comment_count': Comment.query.filter_by(video_id=video.id).count(),
-                'progress_seconds': getattr(video, 'progress_seconds', 0), # For continue watching
-                'total_duration': getattr(video, 'total_duration', video.duration_seconds) # For continue watching
+                'progress_seconds': getattr(video, 'progress_seconds', 0),
+                'total_duration': getattr(video, 'total_duration', video.duration_seconds)
             })
         
         return jsonify({'success': True, 'videos': video_list})
     except Exception as e:
         logger.error(f"Error fetching categorized videos for tag '{tag}': {e}", exc_info=True)
         return jsonify({'success': False, 'message': f'Failed to load {tag} videos'}), 500
+
 
 @app.route('/api/feedback', methods=['POST'])
 @login_required
