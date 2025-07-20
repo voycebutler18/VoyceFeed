@@ -3,297 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EchoMe AI - Dashboard</title>
+    <title>AI Social Media Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'Inter', sans-serif;
-            background-color: #020617; /* slate-950 */
+            background-color: #0f172a; /* slate-900 */
         }
         .glass-pane {
-            background: rgba(15, 23, 42, 0.5); /* slate-900 with 60% opacity */
+            background: rgba(30, 41, 59, 0.5);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(51, 65, 85, 0.5);
         }
-        .status-dot {
-            width: 10px;
-            height: 10px;
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            display: inline-block;
+            border-top-color: #3b82f6; /* blue-500 */
+            width: 40px;
+            height: 40px;
+            animation: spin 1s ease-in-out infinite;
         }
-        .status-offline { background-color: #f87171; }
-        .status-running { background-color: #4ade80; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 50% { opacity: .5; } }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="text-slate-300">
 
-    <div class="flex h-screen bg-slate-950">
-        <!-- Sidebar Navigation -->
-        <aside class="w-64 flex-shrink-0 bg-slate-900 p-4 flex flex-col">
-            <div class="flex items-center mb-10">
-                <svg class="w-10 h-10 text-blue-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
-                <h1 class="text-2xl font-bold text-white">EchoMe AI</h1>
-            </div>
-            <nav class="flex-grow">
-                <a href="#" class="flex items-center p-3 rounded-lg bg-slate-800 text-white font-semibold">
-                    <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 8.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
-                    Dashboard
-                </a>
-            </nav>
-            <div class="mt-auto glass-pane p-4 rounded-lg">
-                <div id="login-section">
-                    <h2 class="text-lg font-semibold text-white">Login to Facebook</h2>
-                    <form id="fb-login-form" class="space-y-4 mt-4">
-                        <input type="text" id="fb-email" placeholder="Email or Phone" class="w-full px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-blue-500 focus:outline-none">
-                        <input type="password" id="fb-password" placeholder="Password" class="w-full px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-blue-500 focus:outline-none">
-                        <button type="submit" id="loginButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg disabled:bg-slate-600 disabled:cursor-not-allowed">
-                          Log In
-                        </button>
-                    </form>
-                    <p id="login-status" class="text-sm text-slate-400 mt-2 h-4"></p>
-                </div>
-                <div id="control-section" class="hidden">
-                    <h2 class="text-lg font-semibold text-white">System Control</h2>
-                    <p class="text-sm text-slate-400 mt-2 mb-4">Start the assistant to begin the automation process.</p>
-                    <button id="startButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:bg-slate-600 disabled:cursor-not-allowed">
-                        Start AI Assistant
-                    </button>
-                </div>
-            </div>
-        </aside>
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl sm:text-5xl font-black text-white">AI Profile Analyzer</h1>
+            <p class="text-slate-400 mt-2">Get a strategic plan from GPT-4 to make your profile go viral.</p>
+        </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 p-6 overflow-y-auto">
-            <header class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-white">Dashboard</h1>
-                <div id="status-indicator" class="flex items-center glass-pane py-2 px-4 rounded-full">
-                    <span class="status-dot status-offline"></span>
-                    <span id="status-text" class="text-slate-300 font-medium">Offline</span>
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Section -->
+            <div class="glass-pane p-6 rounded-2xl">
+                <h2 class="text-2xl font-bold text-white mb-4">1. Input Your Profile</h2>
+                
+                <div class="mb-4">
+                    <label for="profile-url" class="block text-sm font-medium text-slate-300 mb-2">Paste your Facebook Profile URL here:</label>
+                    <input type="text" id="profile-url" class="w-full p-3 bg-slate-900/50 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none" placeholder="https://www.facebook.com/your.profile">
                 </div>
-            </header>
 
-            <!-- Key Metrics -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">Posts Analyzed</h3><p id="posts-analyzed" class="text-4xl font-bold text-white mt-2">0</p></div>
-                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">AI Actions</h3><p id="ai-actions" class="text-4xl font-bold text-white mt-2">0</p></div>
-                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">Comments Made</h3><p id="comments-made" class="text-4xl font-bold text-white mt-2">0</p></div>
-                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">Uptime</h3><p id="uptime" class="text-4xl font-bold text-white mt-2">0m</p></div>
+                <div class="mb-6">
+                    <label for="openai-key" class="block text-sm font-medium text-slate-300 mb-2">Your OpenAI API Key:</label>
+                    <input type="password" id="openai-key" class="w-full p-3 bg-slate-900/50 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none" placeholder="sk-...">
+                </div>
+
+                <button id="analyze-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center disabled:bg-slate-600">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                    Analyze My Profile
+                </button>
             </div>
 
-            <!-- Main Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Live Activity Log -->
-                <div class="lg:col-span-2 glass-pane p-6 rounded-2xl">
-                    <h2 class="text-xl font-semibold text-white mb-4">Live Activity Log</h2>
-                    <div id="status-log" class="font-mono text-sm bg-slate-900/50 p-4 rounded-lg h-96 overflow-y-auto">
-                        <p class="text-slate-500">Please log in to start the assistant.</p>
+            <!-- Output Section -->
+            <div class="glass-pane p-6 rounded-2xl">
+                <h2 class="text-2xl font-bold text-white mb-4">2. AI Strategic Plan</h2>
+                <div id="analysis-output" class="space-y-6">
+                    <!-- Loading Spinner -->
+                    <div id="loading-spinner" class="hidden flex-col items-center justify-center h-full text-center py-10">
+                        <div class="spinner"></div>
+                        <p class="mt-4 text-slate-400">AI is generating your growth strategy...</p>
                     </div>
-                </div>
-
-                <!-- AI Suggestions & Chart -->
-                <div class="lg:col-span-1 space-y-6">
-                    <div class="glass-pane p-6 rounded-2xl">
-                        <h2 class="text-xl font-semibold text-white mb-4">Latest AI Suggestion</h2>
-                        <div id="ai-suggestions-log" class="space-y-4">
-                            <p class="text-slate-500 text-center pt-8">AI-generated content will appear here.</p>
-                        </div>
+                    <!-- Placeholder -->
+                    <div id="placeholder-text" class="text-center py-10">
+                        <p class="text-slate-500">Your strategic analysis will appear here.</p>
                     </div>
-                    <div class="glass-pane p-6 rounded-2xl">
-                        <h2 class="text-xl font-semibold text-white mb-4">Activity Chart</h2>
-                        <canvas id="activityChart"></canvas>
+                    <!-- Results -->
+                    <div id="results" class="hidden prose prose-invert prose-slate max-w-none">
+                        <!-- AI content will be injected here -->
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <script>
-        const startButton = document.getElementById('startButton');
-        const loginButton = document.getElementById('loginButton');
-        const loginStatus = document.getElementById('login-status');
-        const loginSection = document.getElementById('login-section');
-        const controlSection = document.getElementById('control-section');
+        // We will use a library to parse markdown safely
+        const markdownScript = document.createElement('script');
+        markdownScript.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
+        document.head.appendChild(markdownScript);
 
-        const statusLogDiv = document.getElementById('status-log');
-        const aiSuggestionsDiv = document.getElementById('ai-suggestions-log');
-        const statusIndicator = document.getElementById('status-indicator').querySelector('.status-dot');
-        const statusText = document.getElementById('status-text');
-        
-        const postsAnalyzedEl = document.getElementById('posts-analyzed');
-        const aiActionsEl = document.getElementById('ai-actions');
-        const commentsMadeEl = document.getElementById('comments-made');
-        const uptimeEl = document.getElementById('uptime');
+        const analyzeButton = document.getElementById('analyze-button');
+        const profileUrlInput = document.getElementById('profile-url');
+        const openAiKeyInput = document.getElementById('openai-key');
+        const analysisOutput = document.getElementById('analysis-output');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const placeholderText = document.getElementById('placeholder-text');
+        const resultsDiv = document.getElementById('results');
 
-        let statusInterval, uptimeInterval;
-        let startTime;
-        let metrics = { posts: 0, actions: 0, comments: 0 };
-        let activityChart;
+        analyzeButton.addEventListener('click', async () => {
+            const profileUrl = profileUrlInput.value.trim();
+            const apiKey = openAiKeyInput.value.trim();
 
-        function initializeChart() {
-            const ctx = document.getElementById('activityChart').getContext('2d');
-            if (activityChart) {
-                activityChart.destroy();
+            if (!profileUrl || !apiKey) {
+                alert('Please provide both your profile URL and your OpenAI API key.');
+                return;
             }
-            activityChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'AI Actions',
-                        data: [],
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(71, 85, 105, 0.5)' } },
-                        y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(71, 85, 105, 0.5)' } }
-                    }
-                }
-            });
-        }
 
-        function updateUptime() {
-            if (!startTime) return;
-            const diffSeconds = Math.floor((new Date() - startTime) / 1000);
-            const minutes = Math.floor(diffSeconds / 60);
-            uptimeEl.textContent = `${minutes}m`;
-        }
+            // Show loading state
+            placeholderText.classList.add('hidden');
+            resultsDiv.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+            analyzeButton.disabled = true;
 
-        function renderLogs(logs) {
-            if (logs.length === 0) return;
-            statusLogDiv.innerHTML = '';
-            logs.forEach(log => {
-                const p = document.createElement('p');
-                let levelColor = 'text-slate-400';
-                if (log.includes('[SUCCESS]')) levelColor = 'text-green-400';
-                if (log.includes('[ERROR]') || log.includes('[CRITICAL]')) levelColor = 'text-red-400';
-                if (log.includes('[AI_ACTION]')) levelColor = 'text-sky-400';
-                
-                p.className = levelColor;
-                p.textContent = log;
-                statusLogDiv.appendChild(p);
+            const prompt = `
+                As an expert social media strategist, create a comprehensive growth plan for a personal Facebook profile. The user's profile URL is: ${profileUrl}.
 
-                if (log.includes("Analyzed post")) metrics.posts++;
-                if (log.includes("[AI_ACTION]")) {
-                    metrics.actions++;
-                    if (aiSuggestionsDiv.querySelector('p')) aiSuggestionsDiv.innerHTML = '';
-                    const suggestionCard = document.createElement('div');
-                    suggestionCard.className = 'bg-slate-900/50 p-4 rounded-lg animate-pulse';
-                    suggestionCard.innerHTML = `<p class="text-sky-300">${log.split('[AI_ACTION]')[1].trim()}</p>`;
-                    aiSuggestionsDiv.innerHTML = '';
-                    aiSuggestionsDiv.appendChild(suggestionCard);
+                Even though you cannot see the page's live content, provide a detailed, actionable strategy based on established principles for viral growth. The user wants to know what they're doing wrong and how to improve.
 
-                    const now = new Date();
-                    activityChart.data.labels.push(now.toLocaleTimeString());
-                    activityChart.data.datasets[0].data.push(metrics.actions);
-                    if(activityChart.data.labels.length > 10) {
-                        activityChart.data.labels.shift();
-                        activityChart.data.datasets[0].data.shift();
-                    }
-                    activityChart.update();
-                }
-                if (log.includes("Comment successfully posted")) metrics.comments++;
-            });
-            postsAnalyzedEl.textContent = metrics.posts;
-            aiActionsEl.textContent = metrics.actions;
-            commentsMadeEl.textContent = metrics.comments;
-            statusLogDiv.scrollTop = statusLogDiv.scrollHeight;
-        }
+                Structure your response in markdown format with the following sections:
 
-        async function fetchStatus() {
+                ###  प्रोफाइल पिक्चर और बैनर
+                एक बेहतरीन प्रोफ़ाइल पिक्चर और कवर फ़ोटो के लिए क्या ज़रूरी है, इस पर सलाह दें।
+
+                ### बायो ऑप्टिमाइज़ेशन
+                एक आकर्षक बायो बनाने के लिए सुझाव दें जो लोगों को फॉलो करने के लिए प्रोत्साहित करे।
+
+                ### कंटेंट रणनीति
+                3-5 प्रमुख "कंटेंट पिलर्स" (विषय) सुझाएं जिन पर उपयोगकर्ता को ध्यान केंद्रित करना चाहिए। प्रत्येक पिलर के लिए पोस्ट के 2-3 उदाहरण दें।
+
+                ### वायरल होने की रणनीति
+                 जुड़ाव बढ़ाने के लिए 3 विशिष्ट, कार्रवाई योग्य रणनीतियाँ प्रदान करें (उदाहरण के लिए, आकर्षक प्रश्न पूछना, पोल का उपयोग करना, ट्रेंडिंग ऑडियो का उपयोग करना)।
+
+                ### पोस्टिंग शेड्यूल
+                अधिकतम पहुंच के लिए पोस्ट करने के लिए सबसे अच्छे दिन और समय की सिफारिश करें।
+            `;
+
             try {
-                const response = await fetch('/get-status');
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o',
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || 'Failed to get a response from OpenAI.');
+                }
+
                 const data = await response.json();
-                if (data.log.length > 0 && statusText.textContent === 'Offline') {
-                    statusIndicator.className = 'status-dot status-running';
-                    statusText.textContent = 'Running';
-                }
-                renderLogs(data.log);
+                const analysisText = data.choices[0].message.content;
+
+                // Use the 'marked' library to convert markdown to HTML
+                resultsDiv.innerHTML = marked.parse(analysisText);
+                resultsDiv.classList.remove('hidden');
+
             } catch (error) {
-                console.error("Failed to fetch status:", error);
-                statusIndicator.className = 'status-dot status-offline';
-                statusText.textContent = 'Error';
-                clearInterval(statusInterval);
-                clearInterval(uptimeInterval);
-            }
-        }
-
-        document.getElementById('fb-login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('fb-email').value;
-            const password = document.getElementById('fb-password').value;
-            loginStatus.textContent = 'Logging in...';
-            loginButton.disabled = true;
-
-            const response = await fetch('/fb-login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await response.json();
-            loginStatus.textContent = data.message || data.error;
-            
-            if (response.ok) {
-                loginStatus.classList.remove('text-red-400');
-                loginStatus.classList.add('text-green-400');
-                loginSection.classList.add('hidden');
-                controlSection.classList.remove('hidden');
-            } else {
-                loginStatus.classList.remove('text-green-400');
-                loginStatus.classList.add('text-red-400');
-            }
-            loginButton.disabled = false;
-        });
-
-        startButton.addEventListener('click', async () => {
-            statusLogDiv.innerHTML = '<p class="text-slate-500">Sending start command to server...</p>';
-            startButton.disabled = true;
-            
-            if (statusInterval) clearInterval(statusInterval);
-if (uptimeInterval) clearInterval(uptimeInterval);
-
-            metrics = { posts: 0, actions: 0, comments: 0 };
-            postsAnalyzedEl.textContent = '0';
-            aiActionsEl.textContent = '0';
-            commentsMadeEl.textContent = '0';
-            uptimeEl.textContent = '0m';
-            aiSuggestionsDiv.innerHTML = '<p class="text-slate-500 text-center pt-16">AI-generated content will appear here.</p>';
-            initializeChart();
-
-            try {
-                const response = await fetch('/start-bot', { method: 'POST' });
-                if (response.ok) {
-                    startTime = new Date();
-                    statusInterval = setInterval(fetchStatus, 2000);
-                    uptimeInterval = setInterval(updateUptime, 1000);
-                } else {
-                    const data = await response.json();
-                    statusLogDiv.innerHTML = `<p class="text-red-400">${data.error || 'An unknown error occurred.'}</p>`;
-                    startButton.disabled = false;
-                }
-            } catch (error) {
-                statusLogDiv.innerHTML = '<p class="text-red-400">Failed to connect to the server. Is it running?</p>';
-                startButton.disabled = false;
+                resultsDiv.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                resultsDiv.classList.remove('hidden');
+            } finally {
+                // Hide loading state
+                loadingSpinner.classList.add('hidden');
+                analyzeButton.disabled = false;
             }
         });
-        
-        initializeChart();
     </script>
-
 </body>
 </html>
