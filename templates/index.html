@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMarkt - AI Property Persona Marketer</title>
+    <title>AuraMarkt - AI-Powered Real Estate Marketing</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,530 +14,157 @@
             background-color: #0a0a0a;
             color: #e2e8f0; /* slate-200 */
         }
-        .glass-pane {
+        .gradient-text {
+            background: linear-gradient(to right, #c084fc, #a78bfa, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .feature-card {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            border-top-color: #a78bfa; /* violet-400 */
-            width: 48px;
-            height: 48px;
-            animation: spin 1s ease-in-out infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .persona-card {
             transition: all 0.3s ease;
-            border: 2px solid transparent;
         }
-        .persona-card.selected {
-            border-color: #a78bfa; /* violet-400 */
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .pricing-card.popular {
+            border-color: #a78bfa;
             transform: scale(1.05);
-            background: rgba(167, 139, 250, 0.1);
-        }
-        .tab {
-            transition: all 0.3s ease;
-        }
-        .tab.active {
-            background-color: #a78bfa;
-            color: #1e293b;
         }
     </style>
 </head>
 <body>
 
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Header -->
-        <header class="text-center mb-12">
-            <h1 class="text-5xl sm:text-6xl font-black text-white">AuraMarkt</h1>
-            <p class="text-slate-400 mt-2 text-lg">The World's First AI Property Persona Marketer</p>
-            
-            <!-- Trial Info Banner -->
-            <div id="trialBanner" class="hidden mt-4 bg-violet-600/20 border border-violet-500/30 rounded-lg p-3 max-w-lg mx-auto">
-                <div class="flex justify-between items-center">
-                    <p class="text-violet-300 text-sm">
-                        <span class="font-semibold">Trial Active:</span> 
-                        <span id="trialDaysLeft"></span> days left
-                    </p>
-                    <button id="cancelBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel Subscription</button>
-                </div>
-            </div>
-            
-            <!-- Owner Badge -->
-            <div id="ownerBadge" class="hidden mt-4 bg-gold-600/20 border border-yellow-500/30 rounded-lg p-3 max-w-lg mx-auto">
-                <p class="text-yellow-300 text-sm">
-                    <span class="font-semibold">👑 Owner Account:</span> 
-                    Unlimited access forever
-                </p>
-            </div>
-        </header>
-
-        <!-- Main Application -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Left Panel: Upload & Persona Selection -->
-            <div class="lg:col-span-1 flex flex-col gap-8">
-                <!-- Step 1: Upload Photos -->
-                <div class="glass-pane p-6 rounded-2xl">
-                    <h2 class="text-xl font-bold text-white mb-4 flex items-center"><span class="bg-violet-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span> Upload Property Photos</h2>
-                    <div id="image-uploader" class="mt-4 border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-violet-400 transition-colors">
-                        <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-                        <svg class="mx-auto h-12 w-12 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-                        <p class="mt-2 text-slate-400">Drag & drop or click to upload</p>
-                        <p class="text-xs text-slate-500">Up to 10 images (JPG, PNG)</p>
-                    </div>
-                    <div id="preview-grid" class="mt-4 grid grid-cols-3 gap-2"></div>
-                </div>
-
-                <!-- Step 2: Select Buyer Persona -->
-                <div class="glass-pane p-6 rounded-2xl">
-                    <h2 class="text-xl font-bold text-white mb-4 flex items-center"><span class="bg-violet-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span> Select Buyer Persona</h2>
-                    <div id="persona-selector" class="grid grid-cols-2 gap-4 mt-4">
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="First-Time Homebuyers">
-                            <p class="text-3xl">👨‍👩‍👧</p><p class="font-semibold mt-1">First-Time Buyers</p>
-                        </div>
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Luxury Seeker">
-                            <p class="text-3xl">💎</p><p class="font-semibold mt-1">Luxury Seeker</p>
-                        </div>
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Growing Family">
-                            <p class="text-3xl">🏡</p><p class="font-semibold mt-1">Growing Family</p>
-                        </div>
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Downsizing Retirees">
-                            <p class="text-3xl">🌅</p><p class="font-semibold mt-1">Downsizing Retirees</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <button id="generate-button" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-6 rounded-lg transition-colors flex items-center justify-center disabled:bg-slate-600 disabled:cursor-not-allowed">
-                    Generate Marketing Kit
-                </button>
-            </div>
-
-            <!-- Right Panel: Output -->
-            <div class="lg:col-span-2 glass-pane p-6 rounded-2xl">
-                <h2 class="text-2xl font-bold text-white mb-4">Your AI-Generated Marketing Kit</h2>
-                <div id="output-container">
-                    <!-- Loading Spinner -->
-                    <div id="loading-spinner" class="hidden flex-col items-center justify-center h-full text-center py-20">
-                        <div class="spinner"></div>
-                        <p class="mt-4 text-slate-400">AI is analyzing photos and building your kit...</p>
-                    </div>
-                    <!-- Placeholder -->
-                    <div id="placeholder-text" class="text-center py-20">
-                        <p class="text-slate-500">Your complete marketing kit will appear here.</p>
-                    </div>
-                    <!-- Results -->
-                    <div id="results-container" class="hidden">
-                        <div id="tabs" class="flex space-x-2 border-b border-slate-700 mb-4">
-                            <button class="tab active py-2 px-4 rounded-t-lg font-semibold" data-tab="listing">Listing Description</button>
-                            <button class="tab py-2 px-4 rounded-t-lg font-semibold" data-tab="social">Social Media Posts</button>
-                            <button class="tab py-2 px-4 rounded-t-lg font-semibold" data-tab="video">Video Script</button>
-                            <button class="tab py-2 px-4 rounded-t-lg font-semibold" data-tab="points">Selling Points</button>
-                        </div>
-                        <div id="tab-content" class="prose prose-invert max-w-none prose-headings:text-violet-400">
-                            <!-- AI content will be injected here -->
-                        </div>
-                    </div>
-                </div>
+    <!-- Header & Navigation -->
+    <header class="sticky top-0 z-50 bg-black/50 backdrop-blur-lg">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-white">AuraMarkt</h1>
+            <nav class="hidden md:flex space-x-8 items-center">
+                <a href="#features" class="text-slate-300 hover:text-white transition-colors">Features</a>
+                <a href="#pricing" class="text-slate-300 hover:text-white transition-colors">Pricing</a>
+                <a href="#contact" class="text-slate-300 hover:text-white transition-colors">Contact</a>
+            </nav>
+            <div class="flex items-center space-x-4">
+                <a href="/app" class="text-slate-300 hover:text-white transition-colors">Log In</a>
+                <a href="/app" class="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">
+                    Sign Up
+                </a>
             </div>
         </div>
-    </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="text-center py-24 md:py-32 px-6">
+            <h2 class="text-5xl md:text-7xl font-black text-white leading-tight">
+                Stop Selling Houses. <br> Start Selling <span class="gradient-text">Lifestyles.</span>
+            </h2>
+            <p class="mt-6 max-w-3xl mx-auto text-lg text-slate-400">
+                AuraMarkt is the world's first AI Property Persona Marketer. We analyze your property photos and instantly generate a complete marketing kit tailored to the perfect buyer, helping you sell faster and for a higher price.
+            </p>
+            <div class="mt-10">
+                <a href="#pricing" class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-10 rounded-lg text-lg transform transition-transform hover:scale-105">
+                    Start Your 3-Day Trial
+                </a>
+            </div>
+        </section>
+
+        <!-- "How It Works" Section -->
+        <section id="features" class="py-20 px-6">
+            <div class="text-center mb-16">
+                <h3 class="text-4xl font-bold text-white">From Photos to Profit in 3 Simple Steps</h3>
+                <p class="text-slate-400 mt-2">Our revolutionary AI does the heavy lifting, so you can focus on closing.</p>
+            </div>
+            <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+                <div>
+                    <h4 class="text-6xl font-black gradient-text mb-4">1</h4>
+                    <h5 class="text-2xl font-bold text-white mb-2">Upload Your Photos</h5>
+                    <p class="text-slate-400">Simply upload your property photos. Our AI sees what makes your listing unique, from the granite countertops to the backyard deck.</p>
+                </div>
+                <div>
+                    <h4 class="text-6xl font-black gradient-text mb-4">2</h4>
+                    <h5 class="text-2xl font-bold text-white mb-2">Select the Buyer Persona</h5>
+                    <p class="text-slate-400">Choose your target audience. Are you selling to a growing family, a luxury seeker, or a first-time buyer? Tell our AI who to talk to.</p>
+                </div>
+                <div>
+                    <h4 class="text-6xl font-black gradient-text mb-4">3</h4>
+                    <h5 class="text-2xl font-bold text-white mb-2">Generate Your Kit</h5>
+                    <p class="text-slate-400">In seconds, receive a complete marketing kit with listing descriptions, social media posts, and video scripts written in the perfect tone to attract your ideal buyer.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="py-20 px-6 bg-black/20">
+            <div class="text-center mb-16">
+                <h3 class="text-4xl font-bold text-white">Find the Perfect Plan</h3>
+                <p class="text-slate-400 mt-2">Simple, transparent pricing to supercharge your real estate business.</p>
+            </div>
+            <div class="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
+                <!-- Solo Agent Plan -->
+                <div class="feature-card p-8 rounded-2xl flex flex-col">
+                    <h4 class="text-2xl font-bold text-white">Solo Agent</h4>
+                    <p class="text-slate-400 mt-2">For the individual agent ready to dominate their market.</p>
+                    <p class="text-5xl font-black text-white my-6">$49<span class="text-lg font-medium text-slate-400">/month</span></p>
+                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Up to 10 Marketing Kits / Month</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Access to All Buyer Personas</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Standard Email Support</li>
+                    </ul>
+                    <a href="#" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('solo')">Choose Plan</a>
+                </div>
+                <!-- Pro Agent Plan -->
+                <div class="feature-card pricing-card popular p-8 rounded-2xl flex flex-col relative">
+                    <p class="absolute top-0 -translate-y-1/2 bg-violet-500 text-white font-semibold py-1 px-4 rounded-full text-sm">Most Popular</p>
+                    <h4 class="text-2xl font-bold text-white">Pro Agent</h4>
+                    <p class="text-slate-400 mt-2">For top performers and small teams who demand the best.</p>
+                    <p class="text-5xl font-black text-white my-6">$99<span class="text-lg font-medium text-slate-400">/month</span></p>
+                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg><strong>Unlimited</strong> Marketing Kits</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Access to All Buyer Personas</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>AI Market Trend Insights</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
+                    </ul>
+                    <a href="#" class="w-full text-center bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('pro')">Choose Plan</a>
+                </div>
+                <!-- Brokerage Plan -->
+                <div class="feature-card p-8 rounded-2xl flex flex-col">
+                    <h4 class="text-2xl font-bold text-white">Brokerage</h4>
+                    <p class="text-slate-400 mt-2">Equip your entire office with the ultimate marketing advantage.</p>
+                    <p class="text-5xl font-black text-white my-6">$299<span class="text-lg font-medium text-slate-400">/month</span></p>
+                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Everything in Pro</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Up to 5 User Accounts</li>
+                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Centralized Billing & Analytics</li>
+                    </ul>
+                    <a href="#" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('brokerage')">Choose Plan</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer id="contact" class="text-center py-16 px-6">
+            <p class="text-slate-500">&copy; 2025 AuraMarkt. All rights reserved.</p>
+        </footer>
+    </main>
 
     <script>
-        // --- DOM Elements ---
-        const uploader = document.getElementById('image-uploader');
-        const fileInput = document.getElementById('file-input');
-        const previewGrid = document.getElementById('preview-grid');
-        const personaSelector = document.getElementById('persona-selector');
-        const generateButton = document.getElementById('generate-button');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const placeholderText = document.getElementById('placeholder-text');
-        const resultsContainer = document.getElementById('results-container');
-        const tabs = document.getElementById('tabs');
-        const tabContent = document.getElementById('tab-content');
-
-        let uploadedFiles = [];
-        let uploadedFilenames = [];
-        let selectedPersona = '';
-        let generatedContent = {};
-
-        // --- File Uploader Logic ---
-        uploader.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-        uploader.addEventListener('dragover', (e) => { 
-            e.preventDefault(); 
-            uploader.classList.add('border-violet-400'); 
-        });
-        uploader.addEventListener('dragleave', () => uploader.classList.remove('border-violet-400'));
-        uploader.addEventListener('drop', (e) => { 
-            e.preventDefault(); 
-            uploader.classList.remove('border-violet-400'); 
-            handleFiles(e.dataTransfer.files); 
-        });
-
-        async function handleFiles(files) {
-            const fileArray = Array.from(files).slice(0, 10); // Limit to 10 files
-            
-            if (fileArray.length === 0) return;
-
-            // Show preview immediately
-            previewGrid.innerHTML = '';
-            fileArray.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'w-full h-20 object-cover rounded-md';
-                    previewGrid.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
-
-            // Upload files to server
-            try {
-                const formData = new FormData();
-                fileArray.forEach(file => {
-                    formData.append('files', file);
-                });
-
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    uploadedFiles = result.files;
-                    uploadedFilenames = result.files.map(f => f.filename);
-                    console.log('Files uploaded successfully:', result.message);
-                } else {
-                    alert('Upload failed: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Upload failed. Please try again.');
-            }
-        }
-
-        // --- Persona Selector Logic ---
-        personaSelector.addEventListener('click', (e) => {
-            const card = e.target.closest('.persona-card');
-            if (!card) return;
-            
-            document.querySelectorAll('.persona-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedPersona = card.dataset.persona;
-        });
-
-        // --- Tab Logic ---
-        tabs.addEventListener('click', (e) => {
-            if (e.target.tagName !== 'BUTTON') return;
-            
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            e.target.classList.add('active');
-            
-            const tabName = e.target.dataset.tab;
-            if (generatedContent[tabName]) {
-                tabContent.innerHTML = generatedContent[tabName];
-            }
-        });
-
-        // --- Generate Button Logic ---
-        generateButton.addEventListener('click', async () => {
-            if (uploadedFilenames.length === 0) {
-                alert('Please upload at least one property photo.');
-                return;
-            }
-            if (!selectedPersona) {
-                alert('Please select a buyer persona.');
-                return;
-            }
-
-            // Show loading state
-            placeholderText.classList.add('hidden');
-            resultsContainer.classList.add('hidden');
-            loadingSpinner.classList.remove('hidden');
-            generateButton.disabled = true;
-
-            try {
-                // Call Flask API to generate marketing kit
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        persona: selectedPersona,
-                        file_paths: uploadedFilenames
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    generatedContent = result.content;
-                    
-                    // Hide loading and show results
-                    loadingSpinner.classList.add('hidden');
-                    resultsContainer.classList.remove('hidden');
-                    
-                    // Select first tab and show content
-                    document.querySelector('.tab[data-tab="listing"]').click();
-                    tabContent.innerHTML = generatedContent.listing;
-                    
-                    console.log('Marketing kit generated successfully!');
-                } else {
-                    throw new Error(result.error || 'Generation failed');
-                }
-            } catch (error) {
-                console.error('Generation error:', error);
-                alert('Failed to generate marketing kit: ' + error.message);
-                
-                // Hide loading and show placeholder
-                loadingSpinner.classList.add('hidden');
-                placeholderText.classList.remove('hidden');
-            } finally {
-                generateButton.disabled = false;
-            }
-        });
-
-        // --- Initialize ---
-        function initializeApp() {
-            // Check if user is logged in
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            const isOwner = localStorage.getItem('isOwner');
-            const userEmail = localStorage.getItem('userEmail');
-            
-            if (isLoggedIn) {
-                if (isOwner && userEmail === 'peterbutler41@gmail.com') {
-                    // Show owner badge
-                    showOwnerBadge();
-                } else {
-                    // Show trial info for regular users
-                    const trialStartDate = localStorage.getItem('trialStartDate');
-                    const userPlan = localStorage.getItem('userPlan');
-                    if (trialStartDate) {
-                        showTrialInfo(trialStartDate, userPlan);
-                    }
-                }
-            }
-        }
-        
-        function showOwnerBadge() {
-            const ownerBadge = document.getElementById('ownerBadge');
-            ownerBadge.classList.remove('hidden');
-        }
-        
-        function showTrialInfo(startDate, plan) {
-            const start = new Date(startDate);
-            const now = new Date();
-            const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-            const daysLeft = Math.max(0, 3 - daysElapsed);
-            const hoursLeft = Math.max(0, 72 - Math.floor((now - start) / (1000 * 60 * 60)));
-            
-            const trialBanner = document.getElementById('trialBanner');
-            const trialDaysLeft = document.getElementById('trialDaysLeft');
-            
-            if (daysLeft > 1) {
-                // More than 1 day left - show normal trial banner
-                trialBanner.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <p class="text-violet-300 text-sm">
-                            <span class="font-semibold">Trial Active:</span> 
-                            ${daysLeft} days, ${hoursLeft % 24} hours left
-                        </p>
-                        <button id="cancelBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel</button>
-                    </div>
-                `;
-                trialBanner.classList.remove('hidden');
-                
-                // Add cancel functionality
-                document.getElementById('cancelBtn').addEventListener('click', function() {
-                    if (confirm('Are you sure you want to cancel your subscription? You will lose access after your trial ends.')) {
-                        cancelSubscription();
-                    }
-                });
-                
-            } else if (daysLeft === 1 || (daysLeft === 0 && hoursLeft > 0)) {
-                // Last day of trial - show upgrade or cancel options
-                trialBanner.innerHTML = `
-                    <div class="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-4">
-                        <div class="text-center mb-3">
-                            <p class="text-yellow-300 text-sm font-semibold">
-                                ⚠️ Trial expires in ${hoursLeft} hours!
-                            </p>
-                            <p class="text-yellow-200 text-xs mt-1">
-                                Choose to continue with your ${plan} plan or cancel to avoid charges
-                            </p>
-                        </div>
-                        <div class="flex gap-2 justify-center">
-                            <button id="continueBtn" class="bg-violet-600 hover:bg-violet-700 text-white text-xs px-4 py-2 rounded transition-colors">
-                                Continue Subscription (${getPlanPrice(plan)}/month)
-                            </button>
-                            <button id="cancelLastDayBtn" class="bg-red-600 hover:bg-red-700 text-white text-xs px-4 py-2 rounded transition-colors">
-                                Cancel Now
-                            </button>
-                        </div>
-                    </div>
-                `;
-                trialBanner.classList.remove('hidden');
-                
-                // Add continue functionality
-                document.getElementById('continueBtn').addEventListener('click', function() {
-                    if (confirm('Continue with your subscription? You will be charged starting tomorrow.')) {
-                        confirmSubscription();
-                    }
-                });
-                
-                // Add cancel functionality
-                document.getElementById('cancelLastDayBtn').addEventListener('click', function() {
-                    if (confirm('Cancel your subscription? You will lose access when your trial ends.')) {
-                        cancelSubscription();
-                    }
-                });
-                
-            } else {
-                // Trial has ended - show active subscription
-                trialBanner.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <p class="text-green-300 text-sm">
-                            <span class="font-semibold">Subscription Active:</span> 
-                            ${plan} plan (${getPlanPrice(plan)}/month)
-                        </p>
-                        <button id="cancelActiveBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel Subscription</button>
-                    </div>
-                `;
-                trialBanner.classList.remove('hidden');
-                
-                // Add cancel functionality for active subscription
-                document.getElementById('cancelActiveBtn').addEventListener('click', function() {
-                    if (confirm('Are you sure you want to cancel your subscription? You will lose access at the end of your billing period.')) {
-                        cancelSubscription();
-                    }
-                });
-            }
-        }
-        
-        function getPlanPrice(plan) {
-            const prices = {
-                'solo': '49',
-                'pro': '99', 
-                'brokerage': '299'
+        function redirectToStripe(plan) {
+            // Stripe payment links with 3-day trial
+            const stripeLinks = {
+                'solo': 'https://buy.stripe.com/28E14obSScvF7YZfSP1Nu01',
+                'pro': 'https://buy.stripe.com/eVq6oIcWWgLV1AB9ur1Nu02', 
+                'brokerage': 'https://buy.stripe.com/00w6oIbSS67hgvvgWT1Nu03'
             };
-            return prices[plan] || '49';
+            
+            // Store the selected plan in localStorage for after payment redirect
+            localStorage.setItem('selectedPlan', plan);
+            
+            // Redirect to Stripe checkout
+            window.location.href = stripeLinks[plan];
         }
-        
-        function confirmSubscription() {
-            // Mark subscription as confirmed
-            localStorage.setItem('subscriptionConfirmed', 'true');
-            
-            // Update UI to show active subscription
-            const trialBanner = document.getElementById('trialBanner');
-            const userPlan = localStorage.getItem('userPlan');
-            
-            trialBanner.innerHTML = `
-                <div class="bg-green-600/20 border border-green-500/30 rounded-lg p-3">
-                    <p class="text-green-300 text-sm text-center">
-                        <span class="font-semibold">✅ Subscription Confirmed!</span> 
-                        Your ${userPlan} plan is now active
-                    </p>
-                </div>
-            `;
-            
-            // Auto-hide after 3 seconds and show normal active subscription banner
-            setTimeout(() => {
-                trialBanner.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <p class="text-green-300 text-sm">
-                            <span class="font-semibold">Subscription Active:</span> 
-                            ${userPlan} plan (${getPlanPrice(userPlan)}/month)
-                        </p>
-                        <button id="cancelActiveBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel Subscription</button>
-                    </div>
-                `;
-                
-                // Re-add cancel functionality
-                document.getElementById('cancelActiveBtn').addEventListener('click', function() {
-                    if (confirm('Are you sure you want to cancel your subscription? You will lose access at the end of your billing period.')) {
-                        cancelSubscription();
-                    }
-                });
-            }, 3000);
-        }
-        
-        function cancelSubscription() {
-            // Call backend to cancel via Stripe API
-            const userEmail = localStorage.getItem('userEmail');
-            
-            fetch('/cancel-subscription', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_email: userEmail
-                })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    alert('Subscription cancelled successfully. You will retain access until the end of your trial period.');
-                    
-                    // Update local storage to reflect cancellation
-                    localStorage.setItem('subscriptionCancelled', 'true');
-                    
-                    // Calculate remaining time
-                    const trialStartDate = localStorage.getItem('trialStartDate');
-                    const start = new Date(trialStartDate);
-                    const now = new Date();
-                    const hoursLeft = Math.max(0, 72 - Math.floor((now - start) / (1000 * 60 * 60)));
-                    const daysLeft = Math.floor(hoursLeft / 24);
-                    
-                    // Update UI
-                    const trialBanner = document.getElementById('trialBanner');
-                    trialBanner.innerHTML = `
-                        <div class="bg-red-600/20 border border-red-500/30 rounded-lg p-3">
-                            <p class="text-red-300 text-sm text-center">
-                                <span class="font-semibold">❌ Subscription Cancelled</span><br>
-                                <span class="text-xs">Access ends in ${daysLeft} days, ${hoursLeft % 24} hours</span>
-                            </p>
-                        </div>
-                    `;
-                } else {
-                    alert('Failed to cancel subscription: ' + result.error);
-                }
-            })
-            .catch(error => {
-                console.error('Cancellation error:', error);
-                alert('Failed to cancel subscription. Please try again.');
-            });
-        }
-        
-        // Update trial info every hour
-        function startTrialTimer() {
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            const trialStartDate = localStorage.getItem('trialStartDate');
-            const userPlan = localStorage.getItem('userPlan');
-            const isOwner = localStorage.getItem('isOwner');
-            
-            if (isLoggedIn && trialStartDate && !isOwner) {
-                // Update immediately
-                showTrialInfo(trialStartDate, userPlan);
-                
-                // Update every hour
-                setInterval(() => {
-                    showTrialInfo(trialStartDate, userPlan);
-                }, 60 * 60 * 1000); // 1 hour in milliseconds
-            }
-        }
-        
-        // Initialize app on load
-        initializeApp();
-        startTrialTimer();
-        console.log('AuraMarkt app loaded successfully!');
     </script>
+
 </body>
 </html>
