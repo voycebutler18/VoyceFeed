@@ -6,10 +6,8 @@ import json
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
-from openai import OpenAI
 from PIL import Image
 import io
-import asyncio
 
 app = Flask(__name__)
 CORS(app)
@@ -21,9 +19,6 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# OpenAI client (set API key in your environment variables)
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -81,90 +76,7 @@ def get_persona_context(persona):
     }
     return personas.get(persona, personas["First-Time Homebuyers"])
 
-def analyze_property_with_ai(image_paths, persona):
-    """Use OpenAI's vision model to analyze property images and generate marketing content"""
-    
-    try:
-        # Prepare images for API
-        image_messages = []
-        for path in image_paths[:3]:  # Limit to 3 images for API efficiency
-            base64_image = encode_image_to_base64(path)
-            image_messages.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{base64_image}",
-                    "detail": "high"
-                }
-            })
-        
-        persona_context = get_persona_context(persona)
-        
-        # Create comprehensive prompt
-        prompt = f"""
-        You are an expert real estate marketing specialist analyzing property photos to create compelling marketing materials.
-        
-        TARGET BUYER PERSONA: {persona}
-        - Description: {persona_context['description']}
-        - Priorities: {persona_context['priorities']}
-        - Tone: {persona_context['tone']}
-        - Pain Points: {persona_context['pain_points']}
-        
-        Analyze these property images and create a complete marketing kit. Focus on features that would appeal specifically to {persona}.
-        
-        Return a JSON response with exactly these keys:
-        
-        1. "listing": A compelling property description (200-300 words) that highlights features appealing to {persona}
-        2. "social": 3 different social media posts for Facebook/Instagram (each 50-100 words) with relevant hashtags
-        3. "video": A 30-60 second video script with scene descriptions and voiceover text
-        4. "points": 5-7 key selling points formatted as bullet points, each with a bold title and explanation
-        5. "analysis": Your analysis of the property's key features visible in the images
-        
-        Make the content emotional, specific, and targeted to {persona}. Use the property's actual visible features.
-        """
-        
-        # Call OpenAI API with new client
-        response = client.chat.completions.create(
-            model="gpt-4-vision-preview",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        *image_messages
-                    ]
-                }
-            ],
-            max_tokens=2000,
-            temperature=0.7
-        )
-        
-        # Parse response
-        content = response.choices[0].message.content
-        
-        # Try to extract JSON from response
-        try:
-            # Look for JSON in the response
-            start_idx = content.find('{')
-            end_idx = content.rfind('}') + 1
-            if start_idx != -1 and end_idx != 0:
-                json_content = content[start_idx:end_idx]
-                return json.loads(json_content)
-        except:
-            pass
-        
-        # Fallback: create structured response manually
-        return {
-            "listing": f"Beautiful property perfect for {persona.lower()}. " + content[:300],
-            "social": f"🏡 New listing alert! Perfect for {persona.lower()}. #RealEstate #NewListing #DreamHome",
-            "video": "30-second tour showcasing the best features of this amazing property.",
-            "points": f"• Perfect for {persona}\n• Move-in ready\n• Great location\n• Modern updates\n• Excellent value",
-            "analysis": "Property analysis based on uploaded images."
-        }
-        
-    except Exception as e:
-        print(f"AI Analysis Error: {str(e)}")
-        # Return fallback content
-        return generate_fallback_content(persona)
+# Removed AI function - using fallback content only
 
 def generate_fallback_content(persona):
     """Generate fallback content when AI fails"""
@@ -313,13 +225,8 @@ def generate_marketing_kit():
         if not valid_paths:
             return jsonify({'error': 'No valid image files found'}), 400
         
-        # Generate content using AI (or fallback)
-        try:
-            # Use AI analysis with the updated function
-            content = analyze_property_with_ai(valid_paths, persona)
-        except Exception as ai_error:
-            print(f"AI Generation Error: {str(ai_error)}")
-            content = generate_fallback_content(persona)
+        # Generate content using fallback (no AI for now)
+        content = generate_fallback_content(persona)
         
         # Store generation record
         generation_record = {
