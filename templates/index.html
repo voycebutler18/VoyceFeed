@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Social Media Analyzer</title>
+    <title>AI Profile Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,129 +11,124 @@
     <style>
         body { 
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* slate-900 */
+            background-color: #0B1120;
         }
         .glass-pane {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(51, 65, 85, 0.5);
+            background: rgba(21, 30, 48, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
         }
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            border: 4px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
-            border-top-color: #3b82f6; /* blue-500 */
-            width: 40px;
-            height: 40px;
+            border-top-color: #60a5fa; /* blue-400 */
+            width: 48px;
+            height: 48px;
             animation: spin 1s ease-in-out infinite;
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="text-slate-300">
 
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Header -->
-        <header class="text-center mb-10">
-            <h1 class="text-4xl sm:text-5xl font-black text-white">AI Profile Analyzer</h1>
-            <p class="text-slate-400 mt-2">Get a strategic plan from GPT-4 to make your profile go viral.</p>
-        </header>
+    <div class="flex flex-col lg:flex-row h-screen">
 
-        <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Input Section -->
-            <div class="glass-pane p-6 rounded-2xl">
-                <h2 class="text-2xl font-bold text-white mb-4">1. Input Your Profile</h2>
-                
-                <div class="mb-4">
-                    <label for="profile-url" class="block text-sm font-medium text-slate-300 mb-2">Paste your Facebook Profile URL here:</label>
-                    <input type="text" id="profile-url" class="w-full p-3 bg-slate-900/50 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none" placeholder="https://www.facebook.com/your.profile">
-                </div>
-
-                <div class="mb-6">
-                    <label for="openai-key" class="block text-sm font-medium text-slate-300 mb-2">Your OpenAI API Key:</label>
-                    <input type="password" id="openai-key" class="w-full p-3 bg-slate-900/50 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none" placeholder="sk-...">
-                </div>
-
-                <button id="analyze-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center disabled:bg-slate-600">
-                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-                    Analyze My Profile
-                </button>
+        <!-- Left Panel: Input & Controls -->
+        <aside class="w-full lg:w-1/4 bg-slate-900 p-6 flex flex-col border-r border-slate-800">
+            <div class="flex items-center mb-8">
+                <svg class="w-10 h-10 text-blue-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
+                <h1 class="text-2xl font-bold text-white">AI Analyzer</h1>
             </div>
+            <div class="flex-grow">
+                <label for="profile-url" class="block text-sm font-medium text-slate-300 mb-2">Facebook Profile URL</label>
+                <input type="text" id="profile-url" class="w-full p-3 bg-slate-800 rounded-lg border border-slate-700 focus:border-blue-500 focus:outline-none" placeholder="https://facebook.com/your.profile">
+            </div>
+            <button id="analyze-button" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center disabled:bg-slate-600">
+                Analyze Profile
+            </button>
+        </aside>
 
-            <!-- Output Section -->
-            <div class="glass-pane p-6 rounded-2xl">
-                <h2 class="text-2xl font-bold text-white mb-4">2. AI Strategic Plan</h2>
-                <div id="analysis-output" class="space-y-6">
-                    <!-- Loading Spinner -->
-                    <div id="loading-spinner" class="hidden flex-col items-center justify-center h-full text-center py-10">
-                        <div class="spinner"></div>
-                        <p class="mt-4 text-slate-400">AI is generating your growth strategy...</p>
-                    </div>
-                    <!-- Placeholder -->
-                    <div id="placeholder-text" class="text-center py-10">
-                        <p class="text-slate-500">Your strategic analysis will appear here.</p>
-                    </div>
-                    <!-- Results -->
-                    <div id="results" class="hidden prose prose-invert prose-slate max-w-none">
-                        <!-- AI content will be injected here -->
-                    </div>
+        <!-- Center Panel: Main Analysis -->
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-3xl font-bold text-white mb-6">AI Strategic Plan</h2>
+            <div id="analysis-output" class="h-full">
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="hidden flex-col items-center justify-center h-full text-center py-10">
+                    <div class="spinner"></div>
+                    <p class="mt-4 text-slate-400">AI is generating your growth strategy...</p>
+                </div>
+                <!-- Placeholder -->
+                <div id="placeholder-text" class="flex items-center justify-center h-full text-center">
+                    <p class="text-slate-500">Enter a profile URL and click "Analyze" to see your strategic plan.</p>
+                </div>
+                <!-- Results -->
+                <div id="results" class="hidden prose prose-invert prose-slate max-w-none prose-h3:text-sky-400 prose-strong:text-white">
+                    <!-- AI content will be injected here -->
                 </div>
             </div>
-        </div>
+        </main>
+
+        <!-- Right Panel: Key Takeaways -->
+        <aside class="w-full lg:w-1/4 bg-slate-900/50 p-6 border-l border-slate-800 overflow-y-auto">
+            <h2 class="text-2xl font-bold text-white mb-6">Key Takeaways</h2>
+            <div id="takeaways-output" class="space-y-4">
+                <p class="text-slate-500">A summary of the most critical actions will appear here after analysis.</p>
+            </div>
+        </aside>
+
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        // We will use a library to parse markdown safely
-        const markdownScript = document.createElement('script');
-        markdownScript.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
-        document.head.appendChild(markdownScript);
+        const apiKey = "{{ openai_api_key }}";
 
         const analyzeButton = document.getElementById('analyze-button');
         const profileUrlInput = document.getElementById('profile-url');
-        const openAiKeyInput = document.getElementById('openai-key');
+        
         const analysisOutput = document.getElementById('analysis-output');
         const loadingSpinner = document.getElementById('loading-spinner');
         const placeholderText = document.getElementById('placeholder-text');
         const resultsDiv = document.getElementById('results');
+        const takeawaysDiv = document.getElementById('takeaways-output');
 
         analyzeButton.addEventListener('click', async () => {
             const profileUrl = profileUrlInput.value.trim();
-            const apiKey = openAiKeyInput.value.trim();
 
-            if (!profileUrl || !apiKey) {
-                alert('Please provide both your profile URL and your OpenAI API key.');
+            if (!profileUrl) {
+                alert('Please provide your profile URL.');
+                return;
+            }
+            if (!apiKey) {
+                alert('OpenAI API Key not found. Make sure it is set in your Render environment variables.');
                 return;
             }
 
-            // Show loading state
+            // Reset UI and show loading state
             placeholderText.classList.add('hidden');
             resultsDiv.classList.add('hidden');
+            takeawaysDiv.innerHTML = '<p class="text-slate-500">Generating takeaways...</p>';
             loadingSpinner.classList.remove('hidden');
             analyzeButton.disabled = true;
+            analyzeButton.textContent = 'Analyzing...';
 
             const prompt = `
-                As an expert social media strategist, create a comprehensive growth plan for a personal Facebook profile. The user's profile URL is: ${profileUrl}.
+                As an expert social media strategist, create a comprehensive growth plan for a personal Facebook profile: ${profileUrl}.
+                Although you cannot see the page's live content, provide a detailed, actionable strategy based on established principles for viral growth.
 
-                Even though you cannot see the page's live content, provide a detailed, actionable strategy based on established principles for viral growth. The user wants to know what they're doing wrong and how to improve.
+                First, provide the full analysis structured in markdown with the following sections:
+                ### Profile Picture & Banner
+                ### Bio Optimization
+                ### Content Strategy
+                ### Virality Tactics
+                ### Posting Schedule
 
-                Structure your response in markdown format with the following sections:
-
-                ###  प्रोफाइल पिक्चर और बैनर
-                एक बेहतरीन प्रोफ़ाइल पिक्चर और कवर फ़ोटो के लिए क्या ज़रूरी है, इस पर सलाह दें।
-
-                ### बायो ऑप्टिमाइज़ेशन
-                एक आकर्षक बायो बनाने के लिए सुझाव दें जो लोगों को फॉलो करने के लिए प्रोत्साहित करे।
-
-                ### कंटेंट रणनीति
-                3-5 प्रमुख "कंटेंट पिलर्स" (विषय) सुझाएं जिन पर उपयोगकर्ता को ध्यान केंद्रित करना चाहिए। प्रत्येक पिलर के लिए पोस्ट के 2-3 उदाहरण दें।
-
-                ### वायरल होने की रणनीति
-                 जुड़ाव बढ़ाने के लिए 3 विशिष्ट, कार्रवाई योग्य रणनीतियाँ प्रदान करें (उदाहरण के लिए, आकर्षक प्रश्न पूछना, पोल का उपयोग करना, ट्रेंडिंग ऑडियो का उपयोग करना)।
-
-                ### पोस्टिंग शेड्यूल
-                अधिकतम पहुंच के लिए पोस्ट करने के लिए सबसे अच्छे दिन और समय की सिफारिश करें।
+                After the full analysis, add a separator "---" and then provide a "Key Takeaways" summary. This summary should be a concise, bulleted list of the top 5 most important actions the user should take immediately. Start this section with the heading "### Key Takeaways".
             `;
 
             try {
@@ -156,10 +151,17 @@
                 }
 
                 const data = await response.json();
-                const analysisText = data.choices[0].message.content;
+                const fullResponseText = data.choices[0].message.content;
+
+                // Split the response into the main analysis and the key takeaways
+                const parts = fullResponseText.split('---');
+                const mainAnalysis = parts[0];
+                const keyTakeaways = parts.length > 1 ? parts[1] : '<p>No key takeaways were generated.</p>';
 
                 // Use the 'marked' library to convert markdown to HTML
-                resultsDiv.innerHTML = marked.parse(analysisText);
+                resultsDiv.innerHTML = marked.parse(mainAnalysis);
+                takeawaysDiv.innerHTML = marked.parse(keyTakeaways);
+                
                 resultsDiv.classList.remove('hidden');
 
             } catch (error) {
@@ -169,6 +171,7 @@
                 // Hide loading state
                 loadingSpinner.classList.add('hidden');
                 analyzeButton.disabled = false;
+                analyzeButton.textContent = 'Analyze Profile';
             }
         });
     </script>
