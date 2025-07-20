@@ -24,6 +24,8 @@ aiohttp==3.8.5
 # UUID support
 uuid
 
+python-3.9.18
+
 # Base64 and IO support (built-in modules)
 
 # Optional: For enhanced logging
