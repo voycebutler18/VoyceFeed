@@ -1,123 +1,145 @@
 # bot.py
-# This is the main automation script. It reads the session file created by
-# the login form and performs the continuous AI tasks.
+# This bot logs in, scrapes specific content from your profile, and sends it to OpenAI for analysis.
 
 import os
 import asyncio
-import random
 import json
 import openai
 from playwright.async_api import async_playwright
 from datetime import datetime
 
 # --- CONFIGURATION ---
-FACEBOOK_PROFILE_URL = 'https://www.facebook.com/voyce.butler' # <-- IMPORTANT: CHANGE THIS
+FACEBOOK_PROFILE_URL = 'https://www.facebook.com/your.facebook.profile.name' # <-- IMPORTANT: CHANGE THIS
 STATUS_LOG_FILE = 'status.log'
-SESSION_FILE = 'session.json' # The bot will read the session from this file
+SESSION_FILE = 'session.json'
 
 # --- API KEY FROM ENVIRONMENT ---
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-
-# Initialize the OpenAI client
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 
 def log_status(message, level="INFO"):
-    """Writes a status message to the log file with a timestamp and level."""
+    """Writes a status message to the log file."""
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     full_message = f"[{timestamp}] [{level}] {message}\n"
-    print(full_message, end='') # Also print to server console
+    print(full_message, end='')
     with open(STATUS_LOG_FILE, 'a', encoding='utf-8') as f:
         f.write(full_message)
 
-async def get_ai_response(prompt):
-    """Gets a response from the OpenAI API."""
+async def get_specific_analysis(scraped_data):
+    """Sends scraped data to OpenAI and gets a specific analysis."""
     if not OPENAI_API_KEY:
-        log_status("OpenAI API key is not set. Returning a placeholder.", level="WARNING")
-        return "AI is offline. Placeholder response."
+        return "CRITICAL: OpenAI API key not found. Cannot perform analysis."
 
-    log_status("Sending prompt to OpenAI...")
+    log_status("Sending your specific profile data to AI for analysis...")
+    
+    # Construct a detailed prompt with the real data
+    prompt = f"""
+    As an expert social media strategist, analyze the following scraped data from a user's personal Facebook profile.
+
+    **Scraped Bio Text:**
+    "{scraped_data['bio']}"
+
+    **Scraped Text from Last 5 Posts:**
+    1. "{scraped_data['posts'][0]}"
+    2. "{scraped_data['posts'][1]}"
+    3. "{scraped_data['posts'][2]}"
+    4. "{scraped_data['posts'][3]}"
+    5. "{scraped_data['posts'][4]}"
+
+    Based ONLY on this specific information, provide a direct, non-generic analysis.
+
+    ### Bio Analysis:
+    Critique the bio. Is it effective? What specific words or phrases should be changed to be more engaging? Provide a rewritten example.
+
+    ### Post Content Analysis:
+    What is the user's primary content theme based on these posts? Are the posts engaging? Point out the weakest post and explain why. Point out the strongest post and explain why.
+
+    ### Specific Viral Strategy:
+    Based on their strongest post, give them 3 concrete, specific ideas for new posts that follow that successful theme.
+    """
+
     try:
         client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
         response = await client.chat.completions.create(
             model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a helpful social media assistant. Your responses should be concise and ready to be used as a comment or post idea."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=100
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
         )
-        ai_response = response.choices[0].message.content.strip()
-        log_status("Received response from OpenAI.", level="SUCCESS")
-        return ai_response
+        analysis = response.choices[0].message.content.strip()
+        log_status("Specific analysis received from AI.", level="SUCCESS")
+        return analysis
     except Exception as e:
         log_status(f"Error calling OpenAI API: {e}", level="ERROR")
-        return "There was an error contacting the AI."
+        return "Error: Could not get analysis from AI."
+
 
 async def run_bot():
     """Main function to run the automation bot."""
-    log_status("AI Assistant process started.")
+    log_status("AI Analyzer process started.")
     
     if not os.path.exists(SESSION_FILE):
-        log_status("CRITICAL: session.json not found. Please log in through the web dashboard first.", level="CRITICAL")
+        log_status("CRITICAL: session.json not found. Please log in first.", level="CRITICAL")
         return
 
-        async with async_playwright() as p:
+    async with async_playwright() as p:
         log_status("Launching browser...")
-        chrome_path = os.environ.get("CHROME_EXECUTABLE_PATH")
-
-        if not chrome_path:
-            log_status("CRITICAL: CHROME_EXECUTABLE_PATH not set.", level="CRITICAL")
-            return
-
-        browser = await p.chromium.launch(
-            executable_path=chrome_path,
-            headless=True,
-            args=["--no-sandbox"]
-        )
-        
-        log_status(f"Loading session from {SESSION_FILE}...")
-        with open(SESSION_FILE, 'r') as f:
-            storage_state = json.load(f)
-        
-        context = await browser.new_context(storage_state=storage_state)
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
+        context = await browser.new_context(storage_state=SESSION_FILE)
         page = await context.new_page()
         
-        log_status("Session loaded. Navigating to Facebook to verify login.")
-        await page.goto('https://www.facebook.com', wait_until="load")
+        log_status("Login successful. Navigating to your profile...")
+        await page.goto(FACEBOOK_PROFILE_URL, wait_until="networkidle")
+        log_status("Profile page loaded.")
+
+        # --- SCRAPING LOGIC ---
+        log_status("Scraping profile data...")
         
-        log_status("Login successful.", level="SUCCESS")
+        # Scrape Bio (Note: Facebook's structure changes; this selector may need updates)
+        bio_text = "No bio found."
+        try:
+            bio_element = page.locator('div[data-pagelet="ProfileTimeline"] ul > li:first-child span').first
+            bio_text = await bio_element.inner_text(timeout=5000)
+            log_status("Successfully scraped bio.", level="SUCCESS")
+        except Exception:
+            log_status("Could not find a bio with the specific selector. Using default.", level="WARNING")
 
-        # --- CONTINUOUS ACTION LOOP ---
-        log_status("Starting main activity loop...")
-        while True:
-            try:
-                # --- Task: Analyze a recent post (simulated) ---
-                log_status("Analyzing a recent post for engagement...")
-                await asyncio.sleep(random.uniform(5, 10))
-                post_text = "Just finished a major project. Feeling accomplished! #work #success"
-                likes = random.randint(10, 100)
-                comments = random.randint(1, 5)
-                log_status(f"Analyzed post '{post_text[:30]}...': {likes} likes, {comments} comments.")
+        # Scrape Posts
+        post_texts = []
+        try:
+            # This selector targets divs that are likely to be individual posts in the timeline.
+            post_locators = page.locator('div[data-pagelet*="ProfileTimeline"] div[role="article"]')
+            count = await post_locators.count()
+            log_status(f"Found {count} potential post elements.")
+            
+            for i in range(min(5, count)):
+                post_text_content = await post_locators.nth(i).inner_text()
+                # Clean up the text to get the main content, avoiding "Like, Comment, Share" etc.
+                cleaned_post = post_text_content.split('\n')[0]
+                post_texts.append(cleaned_post)
+            
+            # Ensure we have 5 posts for the prompt, even if fewer were found
+            while len(post_texts) < 5:
+                post_texts.append("(No post found)")
 
-                # --- Task: Get a real AI action ---
-                prompt = f"My latest Facebook post says: '{post_text}'. It has {likes} likes and {comments} comments. Suggest a creative comment I could add to spark more conversation."
-                
-                ai_decision = await get_ai_response(prompt)
-                log_status(f"AI suggests: '{ai_decision}'", level="AI_ACTION")
-                
-                # TODO: Add Playwright logic here to actually post the comment.
-                
-                log_status("Cycle complete. Waiting before next check...")
-                await asyncio.sleep(60) # Wait 60 seconds before next cycle
+            log_status("Successfully scraped recent posts.", level="SUCCESS")
+        except Exception as e:
+            log_status(f"Could not scrape posts: {e}", level="ERROR")
+            post_texts = ["(Error scraping posts)"] * 5
 
-            except Exception as e:
-                log_status(f"An error occurred in the main loop: {e}", level="ERROR")
-                await asyncio.sleep(60)
+
+        # --- ANALYSIS ---
+        scraped_data = {"bio": bio_text, "posts": post_texts}
+        specific_analysis = await get_specific_analysis(scraped_data)
+
+        log_status("--- SPECIFIC AI ANALYSIS ---", level="AI_ANALYSIS")
+        log_status(specific_analysis, level="AI_ANALYSIS")
+        log_status("--- END OF ANALYSIS ---", level="AI_ANALYSIS")
+        
+        log_status("Analysis complete. Bot has finished its task.")
+        await browser.close()
 
 if __name__ == '__main__':
-    if not OPENAI_API_KEY:
-        log_status("CRITICAL: OPENAI_API_KEY environment variable is not set.", level="CRITICAL")
-    
+    if os.path.exists(STATUS_LOG_FILE):
+        os.remove(STATUS_LOG_FILE)
     asyncio.run(run_bot())
