@@ -15,7 +15,7 @@ CORS(app)
 # Configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-not-for-production')
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024 # Increased max content length to 20MB for more images
 
 # Create upload directory
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -107,14 +107,14 @@ def analyze_property_with_ai(image_paths, persona):
         
         # Prepare images for API
         image_messages = []
-        for path in image_paths[:2]:  # Limit to 2 images
+        for path in image_paths: # Send all valid paths from the upload (up to 20 from frontend)
             base64_image = encode_image_to_base64(path)
             if base64_image:
                 image_messages.append({
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/jpeg;base64,{base64_image}",
-                        "detail": "low"
+                        "detail": "low" # Using 'low' detail to conserve tokens and speed up response
                     }
                 })
         
@@ -138,7 +138,7 @@ Create a compelling 250-word property description that highlights features visib
         }
         
         payload = {
-            "model": "gpt-4o", # Changed from "gpt-4-vision-preview" to "gpt-4o"
+            "model": "gpt-4o", # Using the latest GPT-4o model for vision
             "messages": [
                 {
                     "role": "user",
@@ -148,14 +148,14 @@ Create a compelling 250-word property description that highlights features visib
                     ]
                 }
             ],
-            "max_tokens": 800
+            "max_tokens": 800 # Max tokens for the AI's text response
         }
         
         response = requests.post(
             "https://api.openai.com/v1/chat/completions",
             headers=headers,
             json=payload,
-            timeout=30
+            timeout=60 # Increased timeout for potentially more images
         )
         
         if response.status_code == 200:
@@ -172,7 +172,6 @@ Create a compelling 250-word property description that highlights features visib
             }
         else:
             print(f"OpenAI API Error: {response.status_code}")
-            # Added more error details for debugging
             print(f"OpenAI API Error details: {response.text}") 
             return generate_fallback_content(persona)
             
@@ -184,10 +183,9 @@ Create a compelling 250-word property description that highlights features visib
 def homepage():
     return render_template('homepage.html')
 
-# Corrected route to serve the loginpage.html (matching your file name)
 @app.route('/login_page')
 def login_page_route():
-    return render_template('loginpage.html') # Changed from 'login_page.html' to 'loginpage.html'
+    return render_template('loginpage.html')
 
 @app.route('/try-free')
 def try_free():
@@ -394,14 +392,9 @@ def try_free():
         });
     </script>
 </body>
-</html>''' # Added missing triple quotes here
+</html>'''
     
     return html_content
-
-# Removed the old @app.route('/login') to avoid confusion and potential conflicts
-# @app.route('/login')
-# def login_page_old():
-#     return render_template_string('''...''')
 
 @app.route('/success')
 def payment_success():
@@ -412,6 +405,52 @@ def payment_success():
 <p class="mb-6">Your 3-day trial has started!</p>
 <a href="/login" class="bg-violet-600 text-white py-3 px-6 rounded-lg">Create Account</a></div>
 </body></html>''')
+
+@app.route('/login')
+def login_page():
+    return render_template_string('''<!DOCTYPE html>
+<html><head><title>Login</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-black text-white min-h-screen flex items-center justify-center">
+<div class="max-w-md w-full bg-gray-900 rounded-lg p-8">
+<h1 class="text-3xl font-bold text-center mb-8">Welcome to AuraMarkt!</h1>
+<form id="loginForm" class="space-y-6">
+<div><label class="block text-sm font-medium mb-2">Email</label>
+<input type="email" id="email" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white"></div>
+<div><label class="block text-sm font-medium mb-2">Password</label>
+<input type="password" id="password" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white"></div>
+<button type="submit" class="w-full bg-violet-600 text-white font-bold py-3 px-4 rounded-md">Sign In</button>
+</form></div>
+<script>
+document.getElementById("loginForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const email = document.getElementById("email").value.toLowerCase();
+    const password = document.getElementById("password").value;
+    if (email === "peterbutler41@gmail.com" && password === "Bruton20!") {
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("userPlan", "owner");
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("isOwner", "true");
+        window.location.href = "/app";
+        return;
+    }
+    if (email && password.length >= 6) {
+        const selectedPlan = localStorage.getItem("selectedPlan");
+        if (selectedPlan) {
+            localStorage.setItem("userEmail", email);
+            localStorage.setItem("userPlan", selectedPlan);
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("trialStartDate", new Date().toISOString());
+            localStorage.removeItem("selectedPlan");
+        } else {
+            localStorage.setItem("userEmail", email);
+            localStorage.setItem("isLoggedIn", "true");
+        }
+        window.location.href = "/app";
+    } else {
+        alert("Please enter valid credentials.");
+    }
+});
+</script></body></html>''')
 
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
@@ -520,6 +559,44 @@ def app_interface():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# New routes for the feature pages
+@app.route('/brand_lab')
+def brand_lab_page():
+    return render_template('brand_lab.html')
+
+@app.route('/social_calendar')
+def social_calendar_page():
+    return render_template('social_calendar.html')
+
+@app.route('/marketing_vault')
+def marketing_vault_page():
+    return render_template('marketing_vault.html')
+
+@app.route('/lead_management')
+def lead_management_page():
+    return render_template('lead_management.html')
+
+@app.route('/open_house_tools')
+def open_house_tools_page():
+    return render_template('open_house_tools.html')
+
+@app.route('/performance_insights')
+def performance_insights_page():
+    return render_template('performance_insights.html')
+
+@app.route('/team_features')
+def team_features_page():
+    return render_template('team_features.html')
+
+@app.route('/profile_settings')
+def profile_settings_page():
+    return render_template('profile_settings.html')
+
+@app.route('/billing_integrations')
+def billing_integrations_page():
+    return render_template('billing_integrations.html')
+
 
 @app.route('/health')
 def health_check():
