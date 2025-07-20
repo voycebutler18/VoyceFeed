@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 SESSION_FILE = 'session.json'
 # Your personal Facebook profile URL.
 # IMPORTANT: Replace 'your.facebook.profile.name' with your actual profile name or ID.
-FACEBOOK_PROFILE_URL = 'https://www.facebook.com/your.facebook.profile.name' 
+FACEBOOK_PROFILE_URL = 'https://www.facebook.com/voyce.butler' 
 # Set your OpenAI API key in an environment variable
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
