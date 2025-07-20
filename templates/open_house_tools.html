@@ -14,10 +14,106 @@
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     <div class="glass-pane p-8 max-w-2xl w-full text-center">
         <h1 class="text-4xl font-bold text-white mb-4">6. Open House Tools</h1>
-        <p class="text-slate-300 mb-6">Generate custom-branded flyers, QR code sign templates, and social stories for your open houses with one click.</p>
-        <button onclick="window.history.back()" class="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+        <p class="text-slate-300 mb-6">Instantly generate custom-branded flyers, QR code sign templates, and social stories for your open houses.</p>
+
+        <form id="openHouseForm" class="space-y-6 text-left">
+            <div>
+                <label for="propertyAddress" class="block text-sm font-medium text-slate-300 mb-2">Property Address</label>
+                <input
+                    type="text"
+                    id="propertyAddress"
+                    name="propertyAddress"
+                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="e.g., 123 Main St, Anytown, USA"
+                    required
+                >
+            </div>
+            <div>
+                <label for="openHouseDate" class="block text-sm font-medium text-slate-300 mb-2">Date</label>
+                <input
+                    type="date"
+                    id="openHouseDate"
+                    name="openHouseDate"
+                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    required
+                >
+            </div>
+            <div>
+                <label for="openHouseTime" class="block text-sm font-medium text-slate-300 mb-2">Time</label>
+                <input
+                    type="time"
+                    id="openHouseTime"
+                    name="openHouseTime"
+                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    required
+                >
+            </div>
+            
+            <button
+                type="submit"
+                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+                Generate Open House Kit
+            </button>
+        </form>
+
+        <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
+
+        <button onclick="window.history.back()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
             Go Back to Dashboard
         </button>
     </div>
+
+    <script>
+        document.getElementById('openHouseForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const propertyAddress = document.getElementById('propertyAddress').value;
+            const openHouseDate = document.getElementById('openHouseDate').value;
+            const openHouseTime = document.getElementById('openHouseTime').value;
+            const responseMessageDiv = document.getElementById('response-message');
+
+            if (!propertyAddress || !openHouseDate || !openHouseTime) {
+                showMessageBox("Please fill in all details for the Open House Kit.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/generate_open_house_kit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        address: propertyAddress,
+                        date: openHouseDate,
+                        time: openHouseTime
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    responseMessageDiv.textContent = result.message;
+                    responseMessageDiv.classList.remove('hidden');
+                    // In a real app, this would trigger backend generation of files (PDF, QR, etc.)
+                } else {
+                    showMessageBox("Failed to generate Open House Kit: " + (result.error || "Unknown error"));
+                }
+            } catch (error) {
+                showMessageBox("An error occurred: " + error.message);
+            }
+        });
+
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                    <p class="text-white text-lg mb-4">${message}</p>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+    </script>
 </body>
 </html>
