@@ -640,6 +640,34 @@ def add_nurture_lead():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/get_social_posts', methods=['GET'])
+def get_social_posts():
+    try:
+        # In a real application, you would fetch posts from your database here.
+        # For now, we return mock data so the page works.
+        mock_posts = [
+            {'content': 'Check out this stunning new listing! Perfect for first-time homebuyers.', 'date': '2025-08-01'},
+            {'content': 'Open house this Saturday at 2 PM. Don\'t miss out!', 'date': '2025-08-05'},
+            {'content': 'Just sold! We can help you find your dream home too. Contact us!', 'date': '2025-08-10'}
+        ]
+        return jsonify(mock_posts)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/get_leads', methods=['GET'])
+def get_leads():
+    try:
+        # In a real application, you would fetch leads from your database here.
+        # For now, we return mock data.
+        mock_leads = [
+            {'name': 'John Doe', 'contact': 'john.d@example.com', 'type': 'Growing Family'},
+            {'name': 'Jane Smith', 'contact': '555-123-4567', 'type': 'Luxury Seeker'},
+            {'name': 'Sam Wilson', 'contact': 'sam.w@example.com', 'type': 'Downsizing Retirees'}
+        ]
+        return jsonify(mock_leads)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # API for generating open house kit
 @app.route('/api/generate_open_house_kit', methods=['POST'])
 def generate_open_house_kit():
