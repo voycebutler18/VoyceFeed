@@ -14,10 +14,93 @@
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     <div class="glass-pane p-8 max-w-2xl w-full text-center">
         <h1 class="text-4xl font-bold text-white mb-4">10. Team Mode (Optional Upgrade)</h1>
-        <p class="text-slate-300 mb-6">For brokerages to manage multiple agents, share brand templates, and track marketing kit generation across your team.</p>
-        <button onclick="window.history.back()" class="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+        <p class="text-slate-300 mb-6">Manage multiple agents, share brand templates, and track marketing kit generation across your team.</p>
+
+        <form id="addTeamMemberForm" class="space-y-6 text-left">
+            <div>
+                <label for="memberName" class="block text-sm font-medium text-slate-300 mb-2">Team Member Name</label>
+                <input
+                    type="text"
+                    id="memberName"
+                    name="memberName"
+                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="e.g., John Doe"
+                    required
+                >
+            </div>
+            <div>
+                <label for="memberEmail" class="block text-sm font-medium text-slate-300 mb-2">Team Member Email</label>
+                <input
+                    type="email"
+                    id="memberEmail"
+                    name="memberEmail"
+                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    placeholder="e.g., john.doe@example.com"
+                    required
+                >
+            </div>
+            
+            <button
+                type="submit"
+                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+                Add Team Member
+            </button>
+        </form>
+
+        <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
+
+        <button onclick="window.history.back()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
             Go Back to Dashboard
         </button>
     </div>
+
+    <script>
+        document.getElementById('addTeamMemberForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const memberName = document.getElementById('memberName').value;
+            const memberEmail = document.getElementById('memberEmail').value;
+            const responseMessageDiv = document.getElementById('response-message');
+
+            if (!memberName || !memberEmail) {
+                showMessageBox("Please enter both name and email for the team member.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/add_team_member', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: memberName, email: memberEmail })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    responseMessageDiv.textContent = result.message;
+                    responseMessageDiv.classList.remove('hidden');
+                    // In a real app, this would save the team member to a database
+                    // and potentially send an invitation email.
+                } else {
+                    showMessageBox("Failed to add team member: " + (result.error || "Unknown error"));
+                }
+            } catch (error) {
+                showMessageBox("An error occurred: " + error.message);
+            }
+        });
+
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                    <p class="text-white text-lg mb-4">${message}</p>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+    </script>
 </body>
 </html>
