@@ -6,8 +6,6 @@ import json
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
-from PIL import Image
-import io
 
 app = Flask(__name__)
 CORS(app)
@@ -26,25 +24,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def optimize_image(image_path, max_size=(1024, 1024), quality=85):
-    """Optimize image for API usage"""
-    with Image.open(image_path) as img:
-        # Convert to RGB if necessary
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        
-        # Resize if too large
-        img.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # Save optimized image
-        output = io.BytesIO()
-        img.save(output, format='JPEG', quality=quality, optimize=True)
-        return output.getvalue()
-
-def encode_image_to_base64(image_path):
-    """Convert image to base64 for API"""
-    optimized_image = optimize_image(image_path)
-    return base64.b64encode(optimized_image).decode('utf-8')
+# Removed image optimization functions temporarily
 
 def get_persona_context(persona):
     """Get detailed context for different buyer personas"""
