@@ -3,176 +3,276 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMarkt - AI-Powered Real Estate Marketing</title>
+    <title>AuraMarkt - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { 
+        body {
             font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
-            color: #e2e8f0; /* slate-200 */
+            background-color: #0a0a0a; /* Dark background */
+            color: #e2e8f0; /* Light text for contrast */
         }
         .gradient-text {
             background: linear-gradient(to right, #c084fc, #a78bfa, #818cf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .feature-card {
+        .glass-pane {
             background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #10b981;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .persona-card {
             transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .pricing-card.popular {
-            border-color: #a78bfa;
+        .persona-card.selected {
+            border-color: #10b981;
             transform: scale(1.05);
+            background: rgba(16, 185, 129, 0.1);
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <!-- Header & Navigation -->
+    <!-- Header -->
     <header class="sticky top-0 z-50 bg-black/50 backdrop-blur-lg">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-3xl font-bold text-white">AuraMarkt</h1>
-            <nav class="hidden md:flex space-x-8 items-center">
-                <a href="#features" class="text-slate-300 hover:text-white transition-colors">Features</a>
-                <a href="#pricing" class="text-slate-300 hover:text-white transition-colors">Pricing</a>
-                <a href="#contact" class="text-slate-300 hover:text-white transition-colors">Contact</a>
+            <nav class="flex items-center space-x-4">
+                <span id="user-display" class="text-slate-300"></span>
+                <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    Log Out
+                </button>
             </nav>
-            <div class="flex items-center space-x-4">
-                <a href="/app" class="text-slate-300 hover:text-white transition-colors">Log In</a>
-                <a href="/app" class="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors">
-                    Sign Up
-                </a>
-            </div>
         </div>
     </header>
 
-    <main>
-        <!-- Hero Section -->
-        <section class="text-center py-24 md:py-32 px-6">
-            <h2 class="text-5xl md:text-7xl font-black text-white leading-tight">
-                Stop Selling Houses. <br> Start Selling <span class="gradient-text">Lifestyles.</span>
-            </h2>
-            <p class="mt-6 max-w-3xl mx-auto text-lg text-slate-400">
-                AuraMarkt is the world's first AI Property Persona Marketer. We analyze your property photos and instantly generate a complete marketing kit tailored to the perfect buyer, helping you sell faster and for a higher price.
-            </p>
-            <div class="mt-10 space-y-4">
-                <a href="/try-free" class="block bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-lg text-lg transform transition-transform hover:scale-105 text-center">
-                    Try For Free - No Payment Required
-                </a>
-                <p class="text-sm text-slate-400 text-center">Get one free marketing kit to test our AI • No credit card needed</p>
-                <a href="#pricing" class="block bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-10 rounded-lg text-lg transform transition-transform hover:scale-105 text-center">
-                    Start Your 3-Day Trial
-                </a>
-            </div>
-        </section>
+    <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+        <h2 class="text-4xl font-black text-white mb-8">Your Dashboard</h2>
 
-        <!-- "How It Works" Section -->
-        <section id="features" class="py-20 px-6">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-white">From Photos to Profit in 3 Simple Steps</h3>
-                <p class="text-slate-400 mt-2">Our revolutionary AI does the heavy lifting, so you can focus on closing.</p>
-            </div>
-            <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                <div>
-                    <h4 class="text-6xl font-black gradient-text mb-4">1</h4>
-                    <h5 class="text-2xl font-bold text-white mb-2">Upload Your Photos</h5>
-                    <p class="text-slate-400">Simply upload your property photos. Our AI sees what makes your listing unique, from the granite countertops to the backyard deck.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Generate New Kit -->
+            <div class="lg:col-span-1 flex flex-col gap-8">
+                <div class="glass-pane p-6 rounded-2xl">
+                    <h3 class="text-xl font-bold text-white mb-4">Generate New Marketing Kit</h3>
+                    <div id="image-uploader" class="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer">
+                        <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                        <p class="text-slate-400">Click to upload images (Max 20)</p>
+                    </div>
+                    <div id="preview-grid" class="mt-4 grid grid-cols-3 gap-2"></div>
                 </div>
-                <div>
-                    <h4 class="text-6xl font-black gradient-text mb-4">2</h4>
-                    <h5 class="text-2xl font-bold text-white mb-2">Select the Buyer Persona</h5>
-                    <p class="text-slate-400">Choose your target audience. Are you selling to a growing family, a luxury seeker, or a first-time buyer? Tell our AI who to talk to.</p>
-                </div>
-                <div>
-                    <h4 class="text-6xl font-black gradient-text mb-4">3</h4>
-                    <h5 class="text-2xl font-bold text-white mb-2">Generate Your Kit</h5>
-                    <p class="text-slate-400">In seconds, receive a complete marketing kit with listing descriptions, social media posts, and video scripts written in the perfect tone to attract your ideal buyer.</p>
-                </div>
-            </div>
-        </section>
 
-        <!-- Pricing Section -->
-        <section id="pricing" class="py-20 px-6 bg-black/20">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-white">Find the Perfect Plan</h3>
-                <p class="text-slate-400 mt-2">Simple, transparent pricing to supercharge your real estate business.</p>
-                <div class="mt-4 bg-green-600/20 border border-green-500/30 rounded-lg p-4 max-w-2xl mx-auto">
-                    <p class="text-green-300 text-lg font-semibold">💰 30-Day Money-Back Guarantee</p>
-                    <p class="text-green-200 text-sm mt-1">Not satisfied? Get a full refund within 30 days, no questions asked.</p>
+                <div class="glass-pane p-6 rounded-2xl">
+                    <h3 class="text-xl font-bold text-white mb-4">Select Buyer Persona</h3>
+                    <div id="persona-selector" class="grid grid-cols-2 gap-4">
+                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="First-Time Homebuyers">
+                            <p class="text-3xl">👨‍👩‍👧</p><p class="font-semibold mt-1">First-Time Buyers</p>
+                        </div>
+                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Luxury Seeker">
+                            <p class="text-3xl">💎</p><p class="font-semibold mt-1">Luxury Seeker</p>
+                        </div>
+                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Growing Family">
+                            <p class="text-3xl">🏡</p><p class="font-semibold mt-1">Growing Family</p>
+                        </div>
+                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Downsizing Retirees">
+                            <p class="text-3xl">🌅</p><p class="font-semibold mt-1">Retirees</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
-                <!-- Solo Agent Plan -->
-                <div class="feature-card p-8 rounded-2xl flex flex-col">
-                    <h4 class="text-2xl font-bold text-white">Solo Agent</h4>
-                    <p class="text-slate-400 mt-2">For the individual agent ready to dominate their market.</p>
-                    <p class="text-5xl font-black text-white my-6">$49<span class="text-lg font-medium text-slate-400">/month</span></p>
-                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Up to 10 Marketing Kits / Month</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Access to All Buyer Personas</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Standard Email Support</li>
-                    </ul>
-                    <a href="#" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('solo')">Choose Plan</a>
-                </div>
-                <!-- Pro Agent Plan -->
-                <div class="feature-card pricing-card popular p-8 rounded-2xl flex flex-col relative">
-                    <p class="absolute top-0 -translate-y-1/2 bg-violet-500 text-white font-semibold py-1 px-4 rounded-full text-sm">Most Popular</p>
-                    <h4 class="text-2xl font-bold text-white">Pro Agent</h4>
-                    <p class="text-slate-400 mt-2">For top performers and small teams who demand the best.</p>
-                    <p class="text-5xl font-black text-white my-6">$99<span class="text-lg font-medium text-slate-400">/month</span></p>
-                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg><strong>Unlimited</strong> Marketing Kits</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Access to All Buyer Personas</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>AI Market Trend Insights</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
-                    </ul>
-                    <a href="#" class="w-full text-center bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('pro')">Choose Plan</a>
-                </div>
-                <!-- Brokerage Plan -->
-                <div class="feature-card p-8 rounded-2xl flex flex-col">
-                    <h4 class="text-2xl font-bold text-white">Brokerage</h4>
-                    <p class="text-slate-400 mt-2">Equip your entire office with the ultimate marketing advantage.</p>
-                    <p class="text-5xl font-black text-white my-6">$299<span class="text-lg font-medium text-slate-400">/month</span></p>
-                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Everything in Pro</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Up to 5 User Accounts</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Centralized Billing & Analytics</li>
-                    </ul>
-                    <a href="#" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('brokerage')">Choose Plan</a>
-                </div>
-            </div>
-        </section>
 
-        <!-- Footer -->
-        <footer id="contact" class="text-center py-16 px-6">
-            <p class="text-slate-500">&copy; 2025 AuraMarkt. All rights reserved.</p>
-        </footer>
+                <button id="generate-button" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-6 rounded-lg">
+                    Generate Marketing Kit
+                </button>
+            </div>
+
+            <!-- Right Column: Generated Kit Output & My Kits -->
+            <div class="lg:col-span-2 flex flex-col gap-8">
+                <div class="glass-pane p-6 rounded-2xl flex-grow">
+                    <h3 class="text-2xl font-bold text-white mb-4">Generated Marketing Kit</h3>
+                    <div id="output-container">
+                        <div id="loading-spinner" class="hidden flex-col items-center justify-center py-20">
+                            <div class="spinner"></div>
+                            <p class="mt-4 text-slate-400">Creating your marketing kit...</p>
+                        </div>
+                        <div id="placeholder-text" class="text-center py-20">
+                            <p class="text-slate-500">Upload photos and select a persona to generate your first kit!</p>
+                        </div>
+                        <div id="results-container" class="hidden">
+                            <div id="tab-content" class="prose prose-invert max-w-none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-pane p-6 rounded-2xl">
+                    <h3 class="text-2xl font-bold text-white mb-4">My Generated Kits</h3>
+                    <div id="my-kits-list" class="text-slate-400">
+                        <p>No kits generated yet. Your generated kits will appear here.</p>
+                        <!-- Future: List of generated kits, possibly with links to view/edit -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="text-center py-8 px-6 text-slate-500">
+        <p>&copy; 2025 AuraMarkt. All rights reserved.</p>
+    </footer>
+
     <script>
-        function redirectToStripe(plan) {
-            // Stripe payment links with 3-day trial
-            const stripeLinks = {
-                'solo': 'https://buy.stripe.com/28E14obSScvF7YZfSP1Nu01',
-                'pro': 'https://buy.stripe.com/eVq6oIcWWgLV1AB9ur1Nu02', 
-                'brokerage': 'https://buy.stripe.com/00w6oIbSS67hgvvgWT1Nu03'
-            };
-            
-            // Store the selected plan in localStorage for after payment redirect
-            localStorage.setItem('selectedPlan', plan);
-            
-            // Redirect to Stripe checkout
-            window.location.href = stripeLinks[plan];
+        const userDisplay = document.getElementById('user-display');
+        const logoutButton = document.getElementById('logout-button');
+        const uploader = document.getElementById("image-uploader");
+        const fileInput = document.getElementById("file-input");
+        const previewGrid = document.getElementById("preview-grid");
+        const personaSelector = document.getElementById("persona-selector");
+        const generateButton = document.getElementById("generate-button");
+        const loadingSpinner = document.getElementById("loading-spinner");
+        const placeholderText = document.getElementById("placeholder-text");
+        const resultsContainer = document.getElementById("results-container");
+        const tabContent = document.getElementById("tab-content");
+
+        let uploadedFiles = [];
+        let selectedPersona = "";
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userEmail = localStorage.getItem('userEmail');
+        const isOwner = localStorage.getItem('isOwner') === 'true'; // Check for owner status
+
+        // --- Authentication and UI Setup ---
+        if (!isLoggedIn) {
+            window.location.href = '/login_page'; // Redirect to login if not logged in
+        } else {
+            userDisplay.textContent = `Welcome, ${userEmail}! ${isOwner ? '(Owner)' : ''}`;
+        }
+
+        logoutButton.addEventListener('click', () => {
+            localStorage.clear(); // Clear all local storage items
+            window.location.href = '/'; // Redirect to homepage
+        });
+
+        // --- Image Upload Logic ---
+        uploader.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
+
+        function handleFiles(files) {
+            uploadedFiles = Array.from(files).slice(0, 20); // Changed max from 5 to 20
+            previewGrid.innerHTML = "";
+            if (uploadedFiles.length === 0) {
+                previewGrid.innerHTML = '<p class="text-slate-500">No images selected.</p>';
+                return;
+            }
+            uploadedFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement("img");
+                    img.src = e.target.result;
+                    img.className = "w-full h-20 object-cover rounded-md";
+                    previewGrid.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- Persona Selection Logic ---
+        personaSelector.addEventListener("click", (e) => {
+            const card = e.target.closest(".persona-card");
+            if (!card) return;
+            document.querySelectorAll(".persona-card").forEach(c => c.classList.remove("selected"));
+            card.classList.add("selected");
+            selectedPersona = card.dataset.persona;
+        });
+
+        // --- Generate Marketing Kit Logic ---
+        generateButton.addEventListener("click", async () => {
+            if (uploadedFiles.length === 0) {
+                showMessageBox("Please upload at least one photo.");
+                return;
+            }
+            if (!selectedPersona) {
+                showMessageBox("Please select a buyer persona.");
+                return;
+            }
+
+            placeholderText.classList.add("hidden");
+            resultsContainer.classList.add("hidden");
+            loadingSpinner.classList.remove("hidden");
+            generateButton.disabled = true;
+
+            try {
+                const formData = new FormData();
+                uploadedFiles.forEach(file => formData.append("files", file));
+                
+                const uploadResponse = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                
+                const uploadResult = await uploadResponse.json();
+                
+                if (uploadResult.success) {
+                    // Determine which API endpoint to call based on owner status
+                    const generateApiUrl = isOwner ? "/api/generate" : "/api/generate-free";
+                    
+                    const generateResponse = await fetch(generateApiUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            persona: selectedPersona,
+                            file_paths: uploadResult.files.map(f => f.filename)
+                        })
+                    });
+
+                    const result = await generateResponse.json();
+                    
+                    if (result.success) {
+                        loadingSpinner.classList.add("hidden");
+                        resultsContainer.classList.remove("hidden");
+                        tabContent.innerHTML = result.content.listing;
+                        // You might want to save generated kits to a backend database here
+                        // For now, it just displays the latest one.
+                    } else {
+                        throw new Error(result.error || "Generation failed");
+                    }
+                } else {
+                    throw new Error(uploadResult.error || "Upload failed");
+                }
+            } catch (error) {
+                showMessageBox("Failed to generate kit: " + error.message);
+                loadingSpinner.classList.add("hidden");
+                placeholderText.classList.remove("hidden");
+            } finally {
+                generateButton.disabled = false;
+            }
+        });
+
+        // --- Custom Message Box Function ---
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                    <p class="text-white text-lg mb-4">${message}</p>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
         }
     </script>
-
 </body>
 </html>
