@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMarkt - Dashboard</title>
+    <title>AuraMarkt - Agent Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +23,7 @@
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem; /* Consistent rounded corners */
         }
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.2);
@@ -46,6 +47,21 @@
             transform: scale(1.05);
             background: rgba(16, 185, 129, 0.1);
         }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -55,7 +71,7 @@
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-3xl font-bold text-white">AuraMarkt</h1>
             <nav class="flex items-center space-x-4">
-                <span id="user-display" class="text-slate-300"></span>
+                <span id="user-display" class="text-slate-300 text-lg font-medium"></span>
                 <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                     Log Out
                 </button>
@@ -64,70 +80,252 @@
     </header>
 
     <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
-        <h2 class="text-4xl font-black text-white mb-8">Your Dashboard</h2>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column: Generate New Kit -->
-            <div class="lg:col-span-1 flex flex-col gap-8">
-                <div class="glass-pane p-6 rounded-2xl">
-                    <h3 class="text-xl font-bold text-white mb-4">Generate New Marketing Kit</h3>
-                    <div id="image-uploader" class="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer">
-                        <input type="file" id="file-input" multiple accept="image/*" class="hidden">
-                        <p class="text-slate-400">Click to upload images (Max 20)</p>
-                    </div>
-                    <div id="preview-grid" class="mt-4 grid grid-cols-3 gap-2"></div>
+        <!-- Main Dashboard Overview -->
+        <section class="mb-10">
+            <h2 class="text-4xl font-black text-white mb-4">Welcome Back, <span id="welcome-name" class="gradient-text">Agent!</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                <div class="glass-pane p-4">
+                    <p class="text-3xl font-bold text-violet-400">🖼️ <span id="listings-uploaded">0</span></p>
+                    <p class="text-slate-400 text-sm">Listings uploaded this week</p>
                 </div>
-
-                <div class="glass-pane p-6 rounded-2xl">
-                    <h3 class="text-xl font-bold text-white mb-4">Select Buyer Persona</h3>
-                    <div id="persona-selector" class="grid grid-cols-2 gap-4">
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="First-Time Homebuyers">
-                            <p class="text-3xl">👨‍👩‍👧</p><p class="font-semibold mt-1">First-Time Buyers</p>
-                        </div>
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Luxury Seeker">
-                            <p class="text-3xl">💎</p><p class="font-semibold mt-1">Luxury Seeker</p>
-                        </div>
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Growing Family">
-                            <p class="text-3xl">🏡</p><p class="font-semibold mt-1">Growing Family</p>
-                        </div>
-                        <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Downsizing Retirees">
-                            <p class="text-3xl">🌅</p><p class="font-semibold mt-1">Retirees</p>
-                        </div>
-                    </div>
+                <div class="glass-pane p-4">
+                    <p class="text-3xl font-bold text-green-400">📊 <span id="best-post">N/A</span></p>
+                    <p class="text-slate-400 text-sm">Best performing post</p>
                 </div>
-
-                <button id="generate-button" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-6 rounded-lg">
-                    Generate Marketing Kit
+                <div class="glass-pane p-4">
+                    <p class="text-3xl font-bold text-blue-400">🧠 <span id="ai-suggestions">0</span></p>
+                    <p class="text-slate-400 text-sm">AI Suggestions Pending</p>
+                </div>
+                <div class="glass-pane p-4">
+                    <p class="text-3xl font-bold text-yellow-400">💬 <span id="leads-generated">0</span></p>
+                    <p class="text-slate-400 text-sm">Leads generated</p>
+                </div>
+            </div>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Quick Buttons - now functional -->
+                <button onclick="document.getElementById('upload-listing-section').scrollIntoView({ behavior: 'smooth' });" class="glass-pane py-3 px-4 text-white font-semibold hover:bg-white/10 transition-colors">
+                    ➕ Upload Listing
                 </button>
+                <a href="/brand_lab" class="glass-pane py-3 px-4 text-white font-semibold hover:bg-white/10 transition-colors flex items-center justify-center">
+                    🧠 AI Brand Lab
+                </a>
+                <a href="/social_calendar" class="glass-pane py-3 px-4 text-white font-semibold hover:bg-white/10 transition-colors flex items-center justify-center">
+                    📅 Social Calendar
+                </a>
+                <a href="/marketing_vault" class="glass-pane py-3 px-4 text-white font-semibold hover:bg-white/10 transition-colors flex items-center justify-center">
+                    📥 Marketing Vault
+                </a>
             </div>
+        </section>
 
-            <!-- Right Column: Generated Kit Output & My Kits -->
-            <div class="lg:col-span-2 flex flex-col gap-8">
-                <div class="glass-pane p-6 rounded-2xl flex-grow">
-                    <h3 class="text-2xl font-bold text-white mb-4">Generated Marketing Kit</h3>
-                    <div id="output-container">
-                        <div id="loading-spinner" class="hidden flex-col items-center justify-center py-20">
-                            <div class="spinner"></div>
-                            <p class="mt-4 text-slate-400">Creating your marketing kit...</p>
+        <!-- Core Tools Section -->
+        <section id="upload-listing-section" class="mb-10">
+            <h3 class="text-3xl font-bold text-white mb-6">🔧 CORE TOOLS</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 1. Upload a Listing -->
+                <div class="lg:col-span-1 flex flex-col gap-8">
+                    <div class="glass-pane p-6">
+                        <h4 class="text-xl font-bold text-white mb-4">1. Upload a Listing</h4>
+                        <div id="image-uploader" class="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer">
+                            <input type="file" id="file-input" multiple accept="image/*" class="hidden">
+                            <p class="text-slate-400">Click to upload images (Max 20)</p>
                         </div>
-                        <div id="placeholder-text" class="text-center py-20">
-                            <p class="text-slate-500">Upload photos and select a persona to generate your first kit!</p>
+                        <div id="preview-grid" class="mt-4 grid grid-cols-3 gap-2"></div>
+                        
+                        <div class="mt-6">
+                            <label for="mls-link" class="block text-sm font-medium text-slate-300 mb-2">MLS Number or Property Link (Optional)</label>
+                            <input type="text" id="mls-link" placeholder="e.g., MLS# 1234567 or property URL" class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500">
                         </div>
-                        <div id="results-container" class="hidden">
-                            <div id="tab-content" class="prose prose-invert max-w-none"></div>
+
+                        <div class="mt-6">
+                            <h5 class="text-sm font-medium text-slate-300 mb-2">Choose Target Buyer Persona</h5>
+                            <div id="persona-selector" class="grid grid-cols-2 gap-4">
+                                <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="First-Time Homebuyers">
+                                    <p class="text-3xl">👨‍👩‍👧</p><p class="font-semibold mt-1">First-Time Buyers</p>
+                                </div>
+                                <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Luxury Seeker">
+                                    <p class="text-3xl">💎</p><p class="font-semibold mt-1">Luxury Seeker</p>
+                                </div>
+                                <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Growing Family">
+                                    <p class="text-3xl">🏡</p><p class="font-semibold mt-1">Growing Family</p>
+                                </div>
+                                <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Downsizing Retirees">
+                                    <p class="text-3xl">🌅</p><p class="font-semibold mt-1">Retirees</p>
+                                </div>
+                            </div>
                         </div>
+                        <button id="generate-button" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-4 px-6 rounded-lg mt-6">
+                            🚀 Generate Marketing Kit
+                        </button>
                     </div>
                 </div>
 
-                <div class="glass-pane p-6 rounded-2xl">
-                    <h3 class="text-2xl font-bold text-white mb-4">My Generated Kits</h3>
-                    <div id="my-kits-list" class="text-slate-400">
-                        <p>No kits generated yet. Your generated kits will appear here.</p>
-                        <!-- Future: List of generated kits, possibly with links to view/edit -->
+                <!-- 2. Instant Marketing Kit Generation Output -->
+                <div class="lg:col-span-2 flex flex-col gap-8">
+                    <div class="glass-pane p-6 flex-grow">
+                        <h4 class="text-xl font-bold text-white mb-4">2. Instant Marketing Kit Generation</h4>
+                        <div id="output-container">
+                            <div id="loading-spinner" class="hidden flex-col items-center justify-center py-20">
+                                <div class="spinner"></div>
+                                <p class="mt-4 text-slate-400">Creating your marketing kit...</p>
+                            </div>
+                            <div id="placeholder-text" class="text-center py-20">
+                                <p class="text-slate-500">Upload photos and select a persona to generate your first kit!</p>
+                            </div>
+                            <div id="results-container" class="hidden">
+                                <div id="tab-content" class="prose prose-invert max-w-none"></div>
+                                <div class="mt-8 flex justify-center space-x-4">
+                                    <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                                        🖨️ Download/Print All (PDF)
+                                    </button>
+                                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                                        📥 Download All (PNG)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Automated Workflows Section -->
+        <section class="mb-10">
+            <h3 class="text-3xl font-bold text-white mb-6">🧠 AUTOMATED WORKFLOWS</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">4. Smart Social Scheduler</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Content calendar with drag-and-drop posts</li>
+                        <li>• AI-generated post suggestions based on past engagement</li>
+                        <li>• Button: “Auto-Post This Week for Me”</li>
+                    </ul>
+                    <a href="/social_calendar" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Go to Social Calendar
+                    </a>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">5. Auto-Nurture Leads</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Input buyer/seller contact or integrate CRM</li>
+                        <li>• Choose “Lead Type” and AuraMarkt writes: Email messages, Facebook DMs, Texts</li>
+                        <li>• Button: “Send & Track Replies”</li>
+                    </ul>
+                    <a href="/lead_management" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Manage Leads
+                    </a>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">6. Open House Tools</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Instantly generate custom-branded flyers</li>
+                        <li>• QR code sign templates</li>
+                        <li>• Social stories announcing the open house</li>
+                        <li>• Button: “Download & Print All”</li>
+                    </ul>
+                    <a href="/open_house_tools" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Create Open House Kit
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Differentiators Section -->
+        <section class="mb-10">
+            <h3 class="text-3xl font-bold text-white mb-6">🌟 DIFFERENTIATORS</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">7. AI Brand Lab</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• See slogan, brand tone, font, voice profile</li>
+                        <li>• Button: “Regenerate Brand Style” (like rebranding in 10 seconds)</li>
+                        <li>• Add team members to match the same branding</li>
+                    </ul>
+                    <a href="/brand_lab" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Go to Brand Lab
+                    </a>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">8. Marketing Vault</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Stores all past: Listings, Flyers, Videos, Captions, Replies</li>
+                        <li>• Reuse or update old listings with 1 click</li>
+                    </ul>
+                    <a href="/marketing_vault" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        View Marketing Vault
+                    </a>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">9. Performance Insights</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• “Which listings got the most engagement?”</li>
+                        <li>• “What buyer personas clicked the most?”</li>
+                        <li>• Smart insights like: “Properties with modern kitchens = 3x comments”</li>
+                    </ul>
+                    <a href="/performance_insights" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        View Insights
+                    </a>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">10. Team Mode (Optional Upgrade)</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Brokerages can manage multiple agents</li>
+                        <li>• Share brand templates</li>
+                        <li>• Track who generated what marketing kit</li>
+                    </ul>
+                    <a href="/team_features" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Explore Team Features
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings and Profile -->
+        <section class="mb-10">
+            <h3 class="text-3xl font-bold text-white mb-6">🔒 Settings and Profile</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">Profile</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Photo, email, MLS ID, license number</li>
+                        <li>• Branding (colors, tone, slogan, logo upload)</li>
+                    </ul>
+                    <a href="/profile_settings" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Edit Profile
+                    </a>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">Billing & Integrations</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Plan, invoices</li>
+                        <li>• Integrations (Zapier, Meta Ads, Gmail, Calendly)</li>
+                    </ul>
+                    <a href="/billing_integrations" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg inline-block">
+                        Manage Billing & Integrations
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Optional Extras (Premium Tier) -->
+        <section class="mb-10">
+            <h3 class="text-3xl font-bold text-white mb-6">✨ Optional Extras (Premium Tier)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">🌍 AI-Powered Property Website</h4>
+                    <p class="text-slate-300">Generate a dedicated, AI-powered website for each listing.</p>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">🛒 Add-on Marketplace</h4>
+                    <p class="text-slate-300">Order custom video editing, drone footage, staging mockups.</p>
+                </div>
+                <div class="glass-pane p-6">
+                    <h4 class="text-xl font-bold text-white mb-3">🔔 Notifications</h4>
+                    <p class="text-slate-300">Get smart alerts like “Your next 3 listings need marketing kits.”</p>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- Footer -->
@@ -137,6 +335,7 @@
 
     <script>
         const userDisplay = document.getElementById('user-display');
+        const welcomeName = document.getElementById('welcome-name');
         const logoutButton = document.getElementById('logout-button');
         const uploader = document.getElementById("image-uploader");
         const fileInput = document.getElementById("file-input");
@@ -159,6 +358,9 @@
             window.location.href = '/login_page'; // Redirect to login if not logged in
         } else {
             userDisplay.textContent = `Welcome, ${userEmail}! ${isOwner ? '(Owner)' : ''}`;
+            if (userEmail) {
+                welcomeName.textContent = userEmail.split('@')[0]; // Display part before @
+            }
         }
 
         logoutButton.addEventListener('click', () => {
@@ -166,12 +368,12 @@
             window.location.href = '/'; // Redirect to homepage
         });
 
-        // --- Image Upload Logic ---
+        // --- Image Upload Logic (for "Upload a Listing" section) ---
         uploader.addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
 
         function handleFiles(files) {
-            uploadedFiles = Array.from(files).slice(0, 20); // Changed max from 5 to 20
+            uploadedFiles = Array.from(files).slice(0, 20); // Max 20 images
             previewGrid.innerHTML = "";
             if (uploadedFiles.length === 0) {
                 previewGrid.innerHTML = '<p class="text-slate-500">No images selected.</p>';
@@ -189,7 +391,7 @@
             });
         }
 
-        // --- Persona Selection Logic ---
+        // --- Persona Selection Logic (for "Upload a Listing" section) ---
         personaSelector.addEventListener("click", (e) => {
             const card = e.target.closest(".persona-card");
             if (!card) return;
@@ -198,7 +400,7 @@
             selectedPersona = card.dataset.persona;
         });
 
-        // --- Generate Marketing Kit Logic ---
+        // --- Generate Marketing Kit Logic (for "Upload a Listing" section) ---
         generateButton.addEventListener("click", async () => {
             if (uploadedFiles.length === 0) {
                 showMessageBox("Please upload at least one photo.");
@@ -216,7 +418,8 @@
 
             try {
                 const formData = new FormData();
-                uploadedFiles.forEach(file => formData.append("files", file));
+                // Ensure only up to 20 files are sent to the backend
+                uploadedFiles.slice(0, 20).forEach(file => formData.append("files", file));
                 
                 const uploadResponse = await fetch("/api/upload", {
                     method: "POST",
@@ -243,9 +446,8 @@
                     if (result.success) {
                         loadingSpinner.classList.add("hidden");
                         resultsContainer.classList.remove("hidden");
-                        tabContent.innerHTML = result.content.listing;
-                        // You might want to save generated kits to a backend database here
-                        // For now, it just displays the latest one.
+                        tabContent.innerHTML = result.content.listing; // Display the generated listing
+                        // In a real app, you'd save this kit to the 'My Generated Kits' section
                     } else {
                         throw new Error(result.error || "Generation failed");
                     }
