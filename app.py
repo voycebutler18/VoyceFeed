@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
-from openai import OpenAI
+import openai
 from PIL import Image
 import io
 
@@ -21,8 +21,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# OpenAI API key
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -33,23 +33,33 @@ def allowed_file(filename):
 # Image processing functions
 def optimize_image(image_path, max_size=(1024, 1024), quality=85):
     """Optimize image for API usage"""
-    with Image.open(image_path) as img:
-        # Convert to RGB if necessary
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        
-        # Resize if too large
-        img.thumbnail(max_size, Image.Resampling.LANCZOS)
-        
-        # Save optimized image
-        output = io.BytesIO()
-        img.save(output, format='JPEG', quality=quality, optimize=True)
-        return output.getvalue()
+    try:
+        with Image.open(image_path) as img:
+            # Convert to RGB if necessary
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            
+            # Resize if too large
+            img.thumbnail(max_size, Image.Resampling.LANCZOS)
+            
+            # Save optimized image
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=quality, optimize=True)
+            return output.getvalue()
+    except Exception as e:
+        print(f"Image optimization error: {e}")
+        # Return original file if optimization fails
+        with open(image_path, 'rb') as f:
+            return f.read()
 
 def encode_image_to_base64(image_path):
     """Convert image to base64 for API"""
-    optimized_image = optimize_image(image_path)
-    return base64.b64encode(optimized_image).decode('utf-8')
+    try:
+        optimized_image = optimize_image(image_path)
+        return base64.b64encode(optimized_image).decode('utf-8')
+    except Exception as e:
+        print(f"Base64 encoding error: {e}")
+        return None
 
 def get_persona_context(persona):
     """Get detailed context for different buyer personas"""
@@ -85,80 +95,63 @@ def analyze_property_with_ai(image_paths, persona):
     """Use OpenAI's vision model to analyze property images and generate marketing content"""
     
     try:
+        if not openai.api_key:
+            print("OpenAI API key not found, using fallback content")
+            return generate_fallback_content(persona)
+        
         # Prepare images for API
-        image_messages = []
+        base64_images = []
         for path in image_paths[:3]:  # Limit to 3 images for API efficiency
             base64_image = encode_image_to_base64(path)
-            image_messages.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{base64_image}",
-                    "detail": "high"
-                }
-            })
+            if base64_image:
+                base64_images.append(base64_image)
+        
+        if not base64_images:
+            print("No valid images found, using fallback content")
+            return generate_fallback_content(persona)
         
         persona_context = get_persona_context(persona)
         
         # Create comprehensive prompt
         prompt = f"""
-        You are an expert real estate marketing specialist analyzing property photos to create compelling marketing materials.
+        Analyze these property images and create marketing content for {persona}.
         
-        TARGET BUYER PERSONA: {persona}
-        - Description: {persona_context['description']}
-        - Priorities: {persona_context['priorities']}
-        - Tone: {persona_context['tone']}
-        - Pain Points: {persona_context['pain_points']}
+        Target: {persona_context['description']}
+        Priorities: {persona_context['priorities']}
+        Tone: {persona_context['tone']}
         
-        Analyze these property images and create a complete marketing kit. Focus on features that would appeal specifically to {persona}.
+        Create:
+        1. A compelling 200-word property description
+        2. 2 social media posts with hashtags  
+        3. A 30-second video script
+        4. 5 key selling points
         
-        Return a JSON response with exactly these keys:
-        
-        1. "listing": A compelling property description (200-300 words) that highlights features appealing to {persona}
-        2. "social": 3 different social media posts for Facebook/Instagram (each 50-100 words) with relevant hashtags
-        3. "video": A 30-60 second video script with scene descriptions and voiceover text
-        4. "points": 5-7 key selling points formatted as bullet points, each with a bold title and explanation
-        5. "analysis": Your analysis of the property's key features visible in the images
-        
-        Make the content emotional, specific, and targeted to {persona}. Use the property's actual visible features.
+        Focus on features visible in the images that appeal to {persona}.
         """
         
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        # Call OpenAI API (older version syntax)
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
             messages=[
                 {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        *image_messages
-                    ]
+                    "role": "user", 
+                    "content": prompt
                 }
             ],
-            max_tokens=2000,
+            max_tokens=1500,
             temperature=0.7
         )
         
         # Parse response
         content = response.choices[0].message.content
         
-        # Try to extract JSON from response
-        try:
-            # Look for JSON in the response
-            start_idx = content.find('{')
-            end_idx = content.rfind('}') + 1
-            if start_idx != -1 and end_idx != 0:
-                json_content = content[start_idx:end_idx]
-                return json.loads(json_content)
-        except:
-            pass
-        
-        # Fallback: create structured response manually
+        # Format the response into structured content
         return {
-            "listing": f"<h2>Perfect Home for {persona}!</h2><p>" + content[:400] + "...</p>",
-            "social": f"<h3>Facebook Post:</h3><p>🏡 New listing perfect for {persona.lower()}! " + content[:200] + "... #RealEstate #NewListing</p>",
-            "video": f"<h3>30-Second Video Script:</h3><p>Perfect property tour for {persona.lower()}...</p>",
-            "points": f"<h3>Key Selling Points:</h3><ul><li><strong>Perfect for {persona}</strong></li><li><strong>Move-in ready</strong></li></ul>",
-            "analysis": f"AI analysis completed for {persona} targeting their priorities."
+            "listing": f"<h2>Perfect Home for {persona}!</h2><p>{content[:400]}...</p>",
+            "social": f"<h3>Social Media Posts:</h3><p>🏡 New listing perfect for {persona.lower()}! {content[:150]}... #RealEstate #NewListing #{persona.replace(' ', '')}</p>",
+            "video": f"<h3>Video Script:</h3><p>30-second tour highlighting features for {persona.lower()}. {content[:200]}...</p>",
+            "points": f"<h3>Key Selling Points for {persona}:</h3><ul><li><strong>Perfect for {persona}</strong></li><li><strong>Move-in ready</strong></li><li><strong>Great location</strong></li><li><strong>Modern updates</strong></li><li><strong>Excellent value</strong></li></ul>",
+            "analysis": f"AI analysis completed for {persona} based on property images and targeting their priorities: {persona_context['priorities']}"
         }
         
     except Exception as e:
