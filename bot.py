@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 from datetime import datetime
 
 # --- CONFIGURATION ---
-FACEBOOK_PROFILE_URL = 'https://www.facebook.com/your.facebook.profile.name' # <-- IMPORTANT: CHANGE THIS
+FACEBOOK_PROFILE_URL = 'https://www.facebook.com/voyce.butler' # <-- IMPORTANT: CHANGE THIS
 STATUS_LOG_FILE = 'status.log'
 SESSION_FILE = 'session.json' # The bot will read the session from this file
 
