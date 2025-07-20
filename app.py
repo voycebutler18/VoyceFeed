@@ -6,23 +6,24 @@ import json
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
-import openai
+from openai import OpenAI
 from PIL import Image
 import io
+import asyncio
 
 app = Flask(__name__)
 CORS(app)
 
 # Configuration
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# OpenAI API key (set this in your environment variables)
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# OpenAI client (set API key in your environment variables)
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -80,13 +81,13 @@ def get_persona_context(persona):
     }
     return personas.get(persona, personas["First-Time Homebuyers"])
 
-async def analyze_property_with_ai(image_paths, persona):
+def analyze_property_with_ai(image_paths, persona):
     """Use OpenAI's vision model to analyze property images and generate marketing content"""
     
     try:
         # Prepare images for API
         image_messages = []
-        for path in image_paths[:5]:  # Limit to 5 images for API efficiency
+        for path in image_paths[:3]:  # Limit to 3 images for API efficiency
             base64_image = encode_image_to_base64(path)
             image_messages.append({
                 "type": "image_url",
@@ -121,8 +122,8 @@ async def analyze_property_with_ai(image_paths, persona):
         Make the content emotional, specific, and targeted to {persona}. Use the property's actual visible features.
         """
         
-        # Call OpenAI API
-        response = await openai.ChatCompletion.acreate(
+        # Call OpenAI API with new client
+        response = client.chat.completions.create(
             model="gpt-4-vision-preview",
             messages=[
                 {
@@ -314,11 +315,10 @@ def generate_marketing_kit():
         
         # Generate content using AI (or fallback)
         try:
-            # For demo purposes, we'll use fallback content
-            # In production, uncomment the line below to use actual AI
-            # content = await analyze_property_with_ai(valid_paths, persona)
-            content = generate_fallback_content(persona)
-        except:
+            # Use AI analysis with the updated function
+            content = analyze_property_with_ai(valid_paths, persona)
+        except Exception as ai_error:
+            print(f"AI Generation Error: {str(ai_error)}")
             content = generate_fallback_content(persona)
         
         # Store generation record
