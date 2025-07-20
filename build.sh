@@ -1,14 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# This script runs on the Render build server.
 
-# Install Python dependencies
+# Exit on error
+set -o errexit
+
+# 1. Install Python dependencies
+echo "Installing Python dependencies..."
 pip install -r requirements.txt
 
-# Install Playwright and its dependencies
+# 2. Install Playwright browsers
+echo "Installing Playwright browsers..."
 playwright install
 
-# Download standalone Chromium manually
-mkdir -p /opt/render/chrome
-curl -Lo /opt/render/chrome/chrome-linux.zip https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1181205/chrome-linux.zip
-unzip /opt/render/chrome/chrome-linux.zip -d /opt/render/chrome/
-mv /opt/render/chrome/chrome-linux /opt/render/chrome/chrome-linux64
-chmod +x /opt/render/chrome/chrome-linux64/chrome
+echo "Build complete."
