@@ -1,5 +1,6 @@
 # bot.py
 # This bot logs in, scrapes specific content from your profile, and sends it to OpenAI for analysis.
+# This is a more robust version with better selectors and error handling.
 
 import os
 import asyncio
@@ -9,7 +10,7 @@ from playwright.async_api import async_playwright
 from datetime import datetime
 
 # --- CONFIGURATION ---
-FACEBOOK_PROFILE_URL = 'https://www.facebook.com/your.facebook.profile.name' # <-- IMPORTANT: CHANGE THIS
+FACEBOOK_PROFILE_URL = 'https://www.facebook.com/voyce.butler' # <-- IMPORTANT: CHANGE THIS
 STATUS_LOG_FILE = 'status.log'
 SESSION_FILE = 'session.json'
 
@@ -35,7 +36,7 @@ async def get_specific_analysis(scraped_data):
     
     # Construct a detailed prompt with the real data
     prompt = f"""
-    As an expert social media strategist, analyze the following scraped data from a user's personal Facebook profile.
+    As a world-class social media strategist, perform a direct and brutally honest analysis of the following scraped data from a user's personal Facebook profile.
 
     **Scraped Bio Text:**
     "{scraped_data['bio']}"
@@ -47,16 +48,20 @@ async def get_specific_analysis(scraped_data):
     4. "{scraped_data['posts'][3]}"
     5. "{scraped_data['posts'][4]}"
 
-    Based ONLY on this specific information, provide a direct, non-generic analysis.
+    **Your Task:**
+    Based ONLY on the specific text provided above, deliver a non-generic, actionable critique. If the scraped data for posts says it failed or is empty, you MUST state that you cannot analyze the posts and cannot provide a content strategy. Do not make up a generic strategy.
 
     ### Bio Analysis:
-    Critique the bio. Is it effective? What specific words or phrases should be changed to be more engaging? Provide a rewritten example.
+    Critique the provided bio. Is it compelling? Is it clear? What is wrong with it? Provide a rewritten, improved example. If no bio was found, state that and explain the importance of a good bio.
 
     ### Post Content Analysis:
-    What is the user's primary content theme based on these posts? Are the posts engaging? Point out the weakest post and explain why. Point out the strongest post and explain why.
+    - What is the primary theme or topic you see in these posts?
+    - Which post is the WEAKEST and why? Be specific.
+    - Which post is the STRONGEST and why? Be specific.
+    - If you could not analyze the posts because scraping failed, state that clearly here.
 
     ### Specific Viral Strategy:
-    Based on their strongest post, give them 3 concrete, specific ideas for new posts that follow that successful theme.
+    Based on their STRONGEST post, give them 3 concrete, specific, and creative ideas for new posts that expand on that successful theme. Do not give generic advice. If you could not identify a strong post, state that you cannot create a specific strategy without more data.
     """
 
     try:
@@ -92,14 +97,15 @@ async def run_bot():
         await page.goto(FACEBOOK_PROFILE_URL, wait_until="networkidle")
         log_status("Profile page loaded.")
 
-        # --- SCRAPING LOGIC ---
+        # --- NEW, MORE ROBUST SCRAPING LOGIC ---
         log_status("Scraping profile data...")
         
-        # Scrape Bio (Note: Facebook's structure changes; this selector may need updates)
-        bio_text = "No bio found."
+        # Scrape Bio
+        bio_text = "No bio found on page."
         try:
-            bio_element = page.locator('div[data-pagelet="ProfileTimeline"] ul > li:first-child span').first
-            bio_text = await bio_element.inner_text(timeout=5000)
+            # This selector looks for a common bio pattern.
+            bio_element = page.locator('div[data-pagelet="ProfileTimeline"] div.x1b0d499.x1d69dk1')
+            bio_text = await bio_element.first.inner_text(timeout=5000)
             log_status("Successfully scraped bio.", level="SUCCESS")
         except Exception:
             log_status("Could not find a bio with the specific selector. Using default.", level="WARNING")
@@ -107,25 +113,30 @@ async def run_bot():
         # Scrape Posts
         post_texts = []
         try:
-            # This selector targets divs that are likely to be individual posts in the timeline.
-            post_locators = page.locator('div[data-pagelet*="ProfileTimeline"] div[role="article"]')
+            # This selector is more general. It looks for the main feed container.
+            feed_container = page.locator('div[role="feed"]').first
+            # Then it finds all direct children that are likely to be post containers.
+            post_locators = feed_container.locator('> div')
             count = await post_locators.count()
-            log_status(f"Found {count} potential post elements.")
+            log_status(f"Found {count} potential post elements in the feed.")
             
             for i in range(min(5, count)):
-                post_text_content = await post_locators.nth(i).inner_text()
-                # Clean up the text to get the main content, avoiding "Like, Comment, Share" etc.
-                cleaned_post = post_text_content.split('\n')[0]
-                post_texts.append(cleaned_post)
+                post_element = post_locators.nth(i)
+                # This looks for a specific data attribute that often holds the post text.
+                text_div = post_element.locator('div[data-ad-preview="message"]').first
+                post_text = await text_div.inner_text(timeout=3000)
+                post_texts.append(post_text)
             
-            # Ensure we have 5 posts for the prompt, even if fewer were found
+            if not post_texts:
+                 raise Exception("No posts could be extracted with the primary selector.")
+
             while len(post_texts) < 5:
-                post_texts.append("(No post found)")
+                post_texts.append("(No more posts found)")
 
             log_status("Successfully scraped recent posts.", level="SUCCESS")
         except Exception as e:
             log_status(f"Could not scrape posts: {e}", level="ERROR")
-            post_texts = ["(Error scraping posts)"] * 5
+            post_texts = ["(Scraping Failed - Could not extract post text)"] * 5
 
 
         # --- ANALYSIS ---
