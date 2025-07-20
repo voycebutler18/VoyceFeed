@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMarkt - Smart Social Scheduler</title>
+    <title>AuraMarkt - Auto-Nurture Leads</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
@@ -11,41 +11,71 @@
         .glass-pane { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="glass-pane p-8 max-w-2xl w-full text-center">
-        <h1 class="text-4xl font-bold text-white mb-4">📅 Smart Social Scheduler</h1>
-        <p class="text-slate-300 mb-6">Schedule your social media posts and get AI-generated suggestions based on your audience's engagement patterns.</p>
+<body class="min-h-screen flex flex-col items-center p-4">
+    <div class="glass-pane p-8 max-w-4xl w-full text-center">
+        <h1 class="text-4xl font-bold text-white mb-4">❤️ Auto-Nurture Leads</h1>
+        <p class="text-slate-300 mb-6">Input lead contacts and let AuraMarkt send psychology-based follow-up messages.</p>
 
-        <form id="socialSchedulerForm" class="space-y-6 text-left">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+            <!-- Add Lead Form -->
             <div>
-                <label for="postContent" class="block text-sm font-medium text-slate-300 mb-2">Post Content</label>
-                <textarea
-                    id="postContent"
-                    name="postContent"
-                    rows="4"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Write your post content here..."
-                ></textarea>
+                <h2 class="text-2xl font-bold text-white mb-4">Add New Lead</h2>
+                <form id="leadNurturingForm" class="space-y-6">
+                    <div>
+                        <label for="leadName" class="block text-sm font-medium text-slate-300 mb-2">Lead Name</label>
+                        <input
+                            type="text"
+                            id="leadName"
+                            name="leadName"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            placeholder="e.g., Jane Doe"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label for="leadContact" class="block text-sm font-medium text-slate-300 mb-2">Lead Email/Phone</label>
+                        <input
+                            type="text"
+                            id="leadContact"
+                            name="leadContact"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            placeholder="e.g., jane@example.com or 555-123-4567"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label for="leadType" class="block text-sm font-medium text-slate-300 mb-2">Lead Type</label>
+                        <select
+                            id="leadType"
+                            name="leadType"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            required
+                        >
+                            <option value="">Select lead type</option>
+                            <option value="buyer">Buyer</option>
+                            <option value="seller">Seller</option>
+                            <option value="investor">Investor</option>
+                        </select>
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    >
+                        Add & Nurture Lead
+                    </button>
+                </form>
+                <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
             </div>
-            <div>
-                <label for="scheduleDate" class="block text-sm font-medium text-slate-300 mb-2">Schedule Date</label>
-                <input
-                    type="date"
-                    id="scheduleDate"
-                    name="scheduleDate"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                >
-            </div>
-            
-            <button
-                type="submit"
-                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-                Schedule Post
-            </button>
-        </form>
 
-        <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
+            <!-- Current Leads Display -->
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-4">Your Current Leads</h2>
+                <div id="leads-list" class="space-y-4">
+                    <p class="text-slate-500">Loading leads...</p>
+                </div>
+            </div>
+        </div>
 
         <button onclick="window.history.back()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
             Go Back to Dashboard
@@ -53,39 +83,14 @@
     </div>
 
     <script>
-        document.getElementById('socialSchedulerForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
+        const leadNurturingForm = document.getElementById('leadNurturingForm');
+        const leadNameInput = document.getElementById('leadName');
+        const leadContactInput = document.getElementById('leadContact');
+        const leadTypeInput = document.getElementById('leadType');
+        const leadsList = document.getElementById('leads-list');
+        const responseMessageDiv = document.getElementById('response-message');
 
-            const postContent = document.getElementById('postContent').value;
-            const scheduleDate = document.getElementById('scheduleDate').value;
-            const responseMessageDiv = document.getElementById('response-message');
-
-            if (!postContent || !scheduleDate) {
-                showMessageBox("Please enter post content and select a date.");
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/schedule_social_post', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: postContent, date: scheduleDate })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    responseMessageDiv.textContent = result.message;
-                    responseMessageDiv.classList.remove('hidden');
-                    // In a real app, this would save to a database and potentially interact with social media APIs
-                } else {
-                    showMessageBox("Failed to schedule post: " + (result.error || "Unknown error"));
-                }
-            } catch (error) {
-                showMessageBox("An error occurred: " + error.message);
-            }
-        });
-
+        // Function to display messages (reused from previous files)
         function showMessageBox(message) {
             const messageBox = document.createElement('div');
             messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
@@ -97,6 +102,77 @@
             `;
             document.body.appendChild(messageBox);
         }
+
+        // Function to fetch and display leads
+        async function fetchAndDisplayLeads() {
+            leadsList.innerHTML = '<p class="text-slate-500">Loading leads...</p>';
+            try {
+                const response = await fetch('/api/get_leads');
+                const result = await response.json();
+
+                if (result.success) {
+                    leadsList.innerHTML = ''; // Clear loading message
+                    if (result.data.length === 0) {
+                        leadsList.innerHTML = '<p class="text-slate-500">No leads added yet.</p>';
+                    } else {
+                        result.data.forEach(lead => {
+                            const leadDiv = document.createElement('div');
+                            leadDiv.className = 'glass-pane p-4 text-sm';
+                            leadDiv.innerHTML = `
+                                <p class="font-semibold text-white">${lead.name} (${lead.type})</p>
+                                <p class="text-slate-400">${lead.contact}</p>
+                            `;
+                            leadsList.appendChild(leadDiv);
+                        });
+                    }
+                } else {
+                    leadsList.innerHTML = `<p class="text-red-400">Error loading leads: ${result.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                leadsList.innerHTML = `<p class="text-red-400">Network error: ${error.message}</p>`;
+            }
+        }
+
+        // Handle form submission
+        leadNurturingForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const leadName = leadNameInput.value;
+            const leadContact = leadContactInput.value;
+            const leadType = leadTypeInput.value;
+            responseMessageDiv.classList.add('hidden');
+
+            if (!leadName || !leadContact || !leadType) {
+                showMessageBox("Please fill in all lead details.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/add_nurture_lead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: leadName, contact: leadContact, type: leadType })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    responseMessageDiv.textContent = result.message;
+                    responseMessageDiv.classList.remove('hidden');
+                    leadNameInput.value = ''; // Clear form
+                    leadContactInput.value = ''; // Clear form
+                    leadTypeInput.value = ''; // Clear form
+                    fetchAndDisplayLeads(); // Refresh the list
+                } else {
+                    showMessageBox("Failed to add lead: " + (result.error || "Unknown error"));
+                }
+            } catch (error) {
+                showMessageBox("An error occurred: " + error.message);
+            }
+        });
+
+        // Fetch leads when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayLeads);
     </script>
 </body>
 </html>
