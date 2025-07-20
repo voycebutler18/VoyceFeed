@@ -6,9 +6,7 @@ import json
 from datetime import datetime
 import uuid
 from werkzeug.utils import secure_filename
-import openai
-from PIL import Image
-import io
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -21,44 +19,92 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # Create upload directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# OpenAI API key
-openai.api_key = os.getenv('OPENAI_API_KEY')
-
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Image processing functions
-def optimize_image(image_path, max_size=(1024, 1024), quality=85):
-    """Optimize image for API usage"""
-    try:
-        with Image.open(image_path) as img:
-            # Convert to RGB if necessary
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-            
-            # Resize if too large
-            img.thumbnail(max_size, Image.Resampling.LANCZOS)
-            
-            # Save optimized image
-            output = io.BytesIO()
-            img.save(output, format='JPEG', quality=quality, optimize=True)
-            return output.getvalue()
-    except Exception as e:
-        print(f"Image optimization error: {e}")
-        # Return original file if optimization fails
-        with open(image_path, 'rb') as f:
-            return f.read()
-
 def encode_image_to_base64(image_path):
     """Convert image to base64 for API"""
     try:
-        optimized_image = optimize_image(image_path)
-        return base64.b64encode(optimized_image).decode('utf-8')
+        with open(image_path, 'rb') as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
         print(f"Base64 encoding error: {e}")
+        return None
+
+def call_openai_api(image_paths, persona):
+    """Call OpenAI API using requests instead of openai library"""
+    try:
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            print("OpenAI API key not found")
+            return None
+        
+        # Prepare images for API
+        image_messages = []
+        for path in image_paths[:2]:  # Limit to 2 images
+            base64_image = encode_image_to_base64(path)
+            if base64_image:
+                image_messages.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}",
+                        "detail": "low"
+                    }
+                })
+        
+        if not image_messages:
+            return None
+        
+        persona_context = get_persona_context(persona)
+        
+        prompt = f"""
+        Analyze these property images and create marketing content for {persona}.
+        
+        Target: {persona_context['description']}
+        Priorities: {persona_context['priorities']}
+        
+        Create a compelling property description that highlights features appealing to {persona}.
+        Keep it under 300 words and focus on emotional appeal.
+        """
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        payload = {
+            "model": "gpt-4-vision-preview",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        *image_messages
+                    ]
+                }
+            ],
+            "max_tokens": 1000
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            print(f"OpenAI API Error: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
         return None
 
 def get_persona_context(persona):
@@ -94,69 +140,20 @@ def get_persona_context(persona):
 def analyze_property_with_ai(image_paths, persona):
     """Use OpenAI's vision model to analyze property images and generate marketing content"""
     
-    try:
-        if not openai.api_key:
-            print("OpenAI API key not found, using fallback content")
-            return generate_fallback_content(persona)
-        
-        # Prepare images for API
-        base64_images = []
-        for path in image_paths[:3]:  # Limit to 3 images for API efficiency
-            base64_image = encode_image_to_base64(path)
-            if base64_image:
-                base64_images.append(base64_image)
-        
-        if not base64_images:
-            print("No valid images found, using fallback content")
-            return generate_fallback_content(persona)
-        
-        persona_context = get_persona_context(persona)
-        
-        # Create comprehensive prompt
-        prompt = f"""
-        Analyze these property images and create marketing content for {persona}.
-        
-        Target: {persona_context['description']}
-        Priorities: {persona_context['priorities']}
-        Tone: {persona_context['tone']}
-        
-        Create:
-        1. A compelling 200-word property description
-        2. 2 social media posts with hashtags  
-        3. A 30-second video script
-        4. 5 key selling points
-        
-        Focus on features visible in the images that appeal to {persona}.
-        """
-        
-        # Call OpenAI API (older version syntax)
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {
-                    "role": "user", 
-                    "content": prompt
-                }
-            ],
-            max_tokens=1500,
-            temperature=0.7
-        )
-        
-        # Parse response
-        content = response.choices[0].message.content
-        
-        # Format the response into structured content
+    # Try calling OpenAI API
+    ai_content = call_openai_api(image_paths, persona)
+    
+    if ai_content:
+        # Format AI response into structured content
         return {
-            "listing": f"<h2>Perfect Home for {persona}!</h2><p>{content[:400]}...</p>",
-            "social": f"<h3>Social Media Posts:</h3><p>🏡 New listing perfect for {persona.lower()}! {content[:150]}... #RealEstate #NewListing #{persona.replace(' ', '')}</p>",
-            "video": f"<h3>Video Script:</h3><p>30-second tour highlighting features for {persona.lower()}. {content[:200]}...</p>",
-            "points": f"<h3>Key Selling Points for {persona}:</h3><ul><li><strong>Perfect for {persona}</strong></li><li><strong>Move-in ready</strong></li><li><strong>Great location</strong></li><li><strong>Modern updates</strong></li><li><strong>Excellent value</strong></li></ul>",
-            "analysis": f"AI analysis completed for {persona} based on property images and targeting their priorities: {persona_context['priorities']}"
+            "listing": f"<h2>Perfect Home for {persona}!</h2><p>{ai_content}</p>",
+            "social": f"<h3>Social Media Posts:</h3><p>🏡 New listing perfect for {persona.lower()}! {ai_content[:150]}... #RealEstate #NewListing #{persona.replace(' ', '')}</p>",
+            "video": f"<h3>Video Script:</h3><p>30-second tour highlighting the best features for {persona.lower()}. {ai_content[:200]}...</p>",
+            "points": f"<h3>Key Selling Points for {persona}:</h3><ul><li><strong>Perfect Location</strong></li><li><strong>Move-in Ready</strong></li><li><strong>Great for {persona}</strong></li><li><strong>Modern Updates</strong></li><li><strong>Excellent Value</strong></li></ul>",
+            "analysis": f"AI analysis completed for {persona} based on property images."
         }
-        
-    except Exception as e:
-        print(f"OpenAI API Error: {str(e)}")
-        # Return fallback content if API fails
+    else:
+        # Fall back to demo content
         return generate_fallback_content(persona)
 
 def generate_fallback_content(persona):
