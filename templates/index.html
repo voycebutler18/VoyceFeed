@@ -3,336 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voyce Stories - Premium Storytelling (Full Stories)</title>
+    <title>AI Social Media Assistant</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .container {
-            max-width: 400px;
-            width: 90%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #fff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .tagline {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-bottom: 40px;
-            line-height: 1.5;
-        }
-
-        .auth-toggle {
-            display: flex;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            margin-bottom: 30px;
-            padding: 4px;
-        }
-
-        .auth-toggle button {
-            flex: 1;
-            padding: 12px;
-            background: transparent;
-            border: none;
-            color: white;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .auth-toggle button.active {
-            background: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            opacity: 0.9;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .admin-link {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .admin-link a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s ease;
-        }
-
-        .admin-link a:hover {
-            color: white;
-        }
-
-        .error-message {
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            color: #ff6b6b;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .form-container {
-            display: none;
-        }
-
-        .form-container.active {
-            display: block;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-            }
-            
-            .logo {
-                font-size: 2rem;
-            }
-        }
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .nav-link-active { background-color: #334155; color: #f8fafc; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">Voyce Stories</div>
-        <div class="tagline">Premium storytelling experience.(FULL STORIES)<br>Mystery, emotion, and captivating narratives.</div>
-        
-        <div class="auth-toggle">
-            <button id="login-tab" class="active" onclick="showLogin()">Login</button>
-            <button id="signup-tab" onclick="showSignup()">Sign Up</button>
-        </div>
+<body class="bg-slate-100 text-slate-800">
 
-        <div class="error-message" id="error-message"></div>
+    <div class="flex h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 flex-shrink-0 bg-slate-800 text-slate-200 flex flex-col p-4 fixed h-full md:relative md:translate-x-0 transform -translate-x-full transition-transform duration-300 ease-in-out z-30" id="sidebar">
+            <!-- Logo -->
+            <div class="flex items-center mb-8">
+                <svg class="w-8 h-8 mr-3 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
+                <h1 class="text-xl font-bold">AI Assistant</h1>
+            </div>
 
-        <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+            <!-- Navigation Links -->
+            <nav id="nav-links" class="flex-grow">
+                <ul>
+                    <li class="mb-2"><a href="#dashboard" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-700 transition-colors nav-link-active"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 8.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>Dashboard</a></li>
+                    <li class="mb-2"><a href="#inbox" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-700 transition-colors"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-2.758.275c-.716.071-1.451-.097-2.096-.534a2.25 2.25 0 01-1.604-2.068v-4.286c0-.97.616-1.813 1.5-2.097l2.758-.275A2.25 2.25 0 0120.25 8.511z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-2.758.275c-.716.071-1.451-.097-2.096-.534a2.25 2.25 0 01-1.604-2.068v-4.286c0-.97.616-1.813 1.5-2.097l2.758-.275A2.25 2.25 0 0115.75 8.511z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-2.758.275c-.716.071-1.451-.097-2.096-.534a2.25 2.25 0 01-1.604-2.068v-4.286c0-.97.616-1.813 1.5-2.097l2.758-.275A2.25 2.25 0 016 8.511z" /></svg>Smart Inbox</a></li>
+                    <li class="mb-2"><a href="#comments" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-700 transition-colors"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.455.09-.934.09-1.425v-2.287a6.75 6.75 0 01-.616-1.055 6.75 6.75 0 01.002-5.717 6.75 6.75 0 011.054-1.229A6.75 6.75 0 0112 3c4.97 0 9 3.694 9 8.25z" /></svg>Comments</a></li>
+                    <li class="mb-2"><a href="#analytics" class="nav-link flex items-center p-3 rounded-lg hover:bg-slate-700 transition-colors"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>Analytics</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-        <div id="login-form" class="form-container active">
-            <form onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" placeholder="Enter your email" required>
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-8 overflow-y-auto">
+            <!-- Header -->
+            <header class="flex justify-between items-center mb-8">
+                <div>
+                    <button id="menu-button" class="md:hidden text-slate-600 hover:text-slate-900"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg></button>
+                    <h2 id="page-title" class="hidden md:block text-3xl font-bold text-slate-900">Dashboard</h2>
                 </div>
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" placeholder="Enter your password" required>
+                <div class="flex items-center space-x-4">
+                    <img src="https://placehold.co/40x40/E2E8F0/475569?text=U" alt="User Avatar" class="w-10 h-10 rounded-full">
                 </div>
-                <button type="submit" class="submit-btn">Login</button>
-            </form>
-        </div>
+            </header>
 
-        <div id="signup-form" class="form-container">
-            <form onsubmit="handleSignup(event)">
-                <div class="form-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" placeholder="Enter your email" required>
+            <!-- == Dashboard Section == -->
+            <div id="dashboard" class="content-section active">
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md"><p class="text-sm font-medium text-slate-500">DMs Replied (24h)</p><p id="dms-replied" class="text-3xl font-bold text-slate-900">---</p></div>
+                    <div class="bg-white p-6 rounded-xl shadow-md"><p class="text-sm font-medium text-slate-500">Comments Handled</p><p id="comments-handled" class="text-3xl font-bold text-slate-900">---</p></div>
+                    <div class="bg-white p-6 rounded-xl shadow-md"><p class="text-sm font-medium text-slate-500">Engagement Rate</p><p id="engagement-rate" class="text-3xl font-bold text-slate-900">---</p></div>
+                    <div class="bg-white p-6 rounded-xl shadow-md"><p class="text-sm font-medium text-slate-500">AI Confidence</p><p id="ai-confidence" class="text-3xl font-bold text-slate-900">---</p></div>
                 </div>
-                <div class="form-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" placeholder="Create a password" required>
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">AI Interactions (Last 7 Days)</h3>
+                    <canvas id="engagementChart"></canvas>
                 </div>
-                <div class="form-group">
-                    <label for="signup-confirm">Confirm Password</label>
-                    <input type="password" id="signup-confirm" placeholder="Confirm your password" required>
-                </div>
-                <button type="submit" class="submit-btn">Sign Up</button>
-            </form>
-        </div>
+            </div>
 
-        <div class="admin-link">
-            <a href="${BASE_URL}/admin">Admin Access</a>
-        </div>
+            <!-- == Smart Inbox Section == -->
+            <div id="inbox" class="content-section">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Live Inbox Activity</h3>
+                    <div id="inbox-feed" class="space-y-4 h-96 overflow-y-auto">
+                        <!-- Live DM data will be inserted here by JavaScript -->
+                        <p class="text-slate-500 text-center pt-16">Waiting for incoming messages...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- == Comments Section == -->
+            <div id="comments" class="content-section">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Live Comment Activity</h3>
+                    <div id="comments-feed" class="space-y-4 h-96 overflow-y-auto">
+                        <!-- Live comment data will be inserted here by JavaScript -->
+                        <p class="text-slate-500 text-center pt-16">Waiting for new comments...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- == Analytics Section == -->
+            <div id="analytics" class="content-section">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Detailed Analytics</h3>
+                    <p>This section will contain detailed charts and data about post performance, best times to post, hashtag analysis, and more, powered by the Meta Insights API.</p>
+                </div>
+            </div>
+
+        </main>
     </div>
 
     <script>
-        // Define BASE_URL globally
-        const BASE_URL = window.location.origin || ''; // Fallback to empty string for relative URLs
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- DOM Elements ---
+            const sidebar = document.getElementById('sidebar');
+            const menuButton = document.getElementById('menu-button');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const pageTitle = document.getElementById('page-title');
 
-        function showLogin() {
-            document.getElementById('login-tab').classList.add('active');
-            document.getElementById('signup-tab').classList.remove('active');
-            document.getElementById('login-form').classList.add('active');
-            document.getElementById('signup-form').classList.remove('active');
-            hideError();
-        }
-
-        function showSignup() {
-            document.getElementById('signup-tab').classList.add('active');
-            document.getElementById('login-tab').classList.remove('active');
-            document.getElementById('signup-form').classList.add('active');
-            document.getElementById('login-form').classList.remove('active');
-            hideError();
-        }
-
-        function showError(message) {
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        function hideError() {
-            document.getElementById('error-message').style.display = 'none';
-        }
-
-        async function handleLogin(event) {
-            event.preventDefault();
+            // --- Stat Card Elements ---
+            const dmsRepliedEl = document.getElementById('dms-replied');
+            const commentsHandledEl = document.getElementById('comments-handled');
+            const engagementRateEl = document.getElementById('engagement-rate');
+            const aiConfidenceEl = document.getElementById('ai-confidence');
             
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const csrfToken = document.getElementById('csrf_token').value;
+            // --- Live Feed Elements ---
+            const inboxFeedEl = document.getElementById('inbox-feed');
+            const commentsFeedEl = document.getElementById('comments-feed');
 
-            try {
-                const response = await fetch(`${BASE_URL}/api/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+            // --- Mobile Sidebar Toggle ---
+            menuButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('-translate-x-full');
+            });
+            document.addEventListener('click', (event) => {
+                if (!sidebar.contains(event.target) && !menuButton.contains(event.target)) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            });
 
-                const data = await response.json();
-
-                if (data.success) {
-                    if (data.isAdmin) {
-                        window.location.href = `${BASE_URL}/admin`;
+            // --- Single-Page Navigation ---
+            function switchView(hash) {
+                hash = hash || '#dashboard'; // Default to dashboard
+                
+                // Update nav link styles
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === hash) {
+                        link.classList.add('nav-link-active');
+                        pageTitle.textContent = link.textContent;
                     } else {
-                        // Always redirect to dashboard, then dashboard will handle subscription check
-                        window.location.href = `${BASE_URL}/dashboard`; 
+                        link.classList.remove('nav-link-active');
                     }
-                } else {
-                    showError(data.message || 'Login failed. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error during login:', error);
-                showError('Connection error. Please try again.');
-            }
-        }
-
-        async function handleSignup(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('signup-confirm').value;
-            const csrfToken = document.getElementById('csrf_token').value;
-
-            if (password !== confirmPassword) {
-                showError('Passwords do not match.');
-                return;
-            }
-
-            if (password.length < 8) {
-                showError('Password must be at least 8 characters long.');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${BASE_URL}/api/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({ email, password })
                 });
 
-                const data = await response.json();
-
-                if (data.success) {
-                    // After successful signup, redirect directly to dashboard
-                    window.location.href = `${BASE_URL}/dashboard`; 
-                } else {
-                    showError(data.message || 'Registration failed. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error during signup:', error);
-                showError('Connection error. Please try again.');
+                // Show the correct content section
+                contentSections.forEach(section => {
+                    if (section.id === hash.substring(1)) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
             }
-        }
 
-        // Auto-focus on email field
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('login-email').focus();
+            // Handle navigation clicks
+            document.getElementById('nav-links').addEventListener('click', function(e) {
+                if (e.target.closest('a')) {
+                    e.preventDefault();
+                    const link = e.target.closest('a');
+                    const hash = link.getAttribute('href');
+                    window.location.hash = hash;
+                }
+            });
+
+            // Handle hash changes (for back/forward buttons and initial load)
+            window.addEventListener('hashchange', () => switchView(window.location.hash));
+            // Initial view based on hash or default
+            switchView(window.location.hash);
+
+
+            // --- Chart.js Initialization ---
+            const ctx = document.getElementById('engagementChart').getContext('2d');
+            const engagementChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+                    datasets: [{
+                        label: 'DMs Replied',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Comments Handled',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+
+            // --- Live Data Simulation ---
+            // This function simulates fetching data from your backend API.
+            // In the real application, you will replace this with a `fetch()` call.
+            function fetchAndUpdateData() {
+                // TODO: Replace this with: fetch('/api/stats').then(res => res.json()).then(data => { ... });
+                const mockData = {
+                    dmsReplied: Math.floor(Math.random() * 200),
+                    commentsHandled: Math.floor(Math.random() * 100),
+                    engagementRate: (Math.random() * 5 + 2).toFixed(1) + '%',
+                    aiConfidence: (Math.random() * 15 + 85).toFixed(1) + '%',
+                    chartData: {
+                        dms: Array.from({length: 7}, () => Math.floor(Math.random() * 30)),
+                        comments: Array.from({length: 7}, () => Math.floor(Math.random() * 20))
+                    },
+                    newEvents: []
+                };
+                
+                // Add a random new event
+                if (Math.random() > 0.5) {
+                    mockData.newEvents.push({
+                        type: 'dm',
+                        user: '@' + Math.random().toString(36).substring(7),
+                        message: 'Hey, I have a question about your last post!',
+                        timestamp: new Date()
+                    });
+                }
+                 if (Math.random() > 0.3) {
+                    mockData.newEvents.push({
+                        type: 'comment',
+                        user: '@' + Math.random().toString(36).substring(7),
+                        message: 'This is awesome! 🔥',
+                        timestamp: new Date()
+                    });
+                }
+
+                // Update UI with the new data
+                updateUI(mockData);
+            }
+
+            function updateUI(data) {
+                // Update stat cards
+                dmsRepliedEl.textContent = data.dmsReplied;
+                commentsHandledEl.textContent = data.commentsHandled;
+                engagementRateEl.textContent = data.engagementRate;
+                aiConfidenceEl.textContent = data.aiConfidence;
+
+                // Update chart
+                engagementChart.data.datasets[0].data = data.chartData.dms;
+                engagementChart.data.datasets[1].data = data.chartData.comments;
+                engagementChart.update();
+                
+                // Update live feeds
+                data.newEvents.forEach(event => {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'flex items-start p-3 bg-slate-50 rounded-lg';
+                    const iconClass = event.type === 'dm' ? 'bg-blue-100 text-blue-500' : 'bg-green-100 text-green-500';
+                    const iconSvg = event.type === 'dm' 
+                        ? `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.158 2.148.279 3.238.364.493.038.99.057 1.49.057 1.683 0 3.32-.169 4.893-.493a1.05 1.05 0 00.925-1.011v-1.845a.97.97 0 00-.472-.826c-.413-.247-.85-.414-1.305-.513l-1.423-.235A2.25 2.25 0 019.75 9.577V8.169c0-.865.594-1.606 1.442-1.839.433-.12.882-.208 1.34-.275.493-.065.994-.12 1.496-.168.97-.107 1.954-.234 2.87-.423a1.05 1.05 0 00.824-1.011V3.75a1.05 1.05 0 00-1.05-1.05H4.5A1.05 1.05 0 003.45 3.75v5.019c0 .486.323.914.793 1.034.47.12.957.217 1.45.285a2.25 2.25 0 011.82.401z" /></svg>`
+                        : `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.455.09-.934.09-1.425v-2.287a6.75 6.75 0 01-.616-1.055 6.75 6.75 0 01.002-5.717 6.75 6.75 0 011.054-1.229A6.75 6.75 0 0112 3c4.97 0 9 3.694 9 8.25z" /></svg>`;
+                    
+                    eventEl.innerHTML = `
+                        <div class="p-2 rounded-full mr-4 mt-1 ${iconClass}">${iconSvg}</div>
+                        <div>
+                            <p class="font-medium">New ${event.type.toUpperCase()} from <span class="text-blue-600">${event.user}</span></p>
+                            <p class="text-sm text-slate-600">"${event.message}"</p>
+                            <p class="text-xs text-slate-400">${event.timestamp.toLocaleTimeString()}</p>
+                        </div>
+                    `;
+                    
+                    if (event.type === 'dm') {
+                        if (inboxFeedEl.querySelector('p')) inboxFeedEl.innerHTML = ''; // Clear "waiting" message
+                        inboxFeedEl.prepend(eventEl);
+                    } else {
+                        if (commentsFeedEl.querySelector('p')) commentsFeedEl.innerHTML = ''; // Clear "waiting" message
+                        commentsFeedEl.prepend(eventEl);
+                    }
+                });
+            }
+
+            // Fetch data every 3 seconds to simulate a live feed
+            setInterval(fetchAndUpdateData, 3000);
+            // Initial data load
+            fetchAndUpdateData();
         });
     </script>
 </body>
