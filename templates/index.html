@@ -1,100 +1,75 @@
-# bot.py
-# This script performs the browser automation using Playwright.
-# Updated to log its status to a file for the web UI to display.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white flex items-center justify-center h-screen">
 
-import os
-import asyncio
-from playwright.async_api import async_playwright
-from datetime import datetime
+    <div class="text-center bg-slate-800 p-8 md:p-12 rounded-2xl shadow-2xl border border-slate-700 max-w-lg mx-4">
+        <div class="mb-6">
+            <svg class="w-16 h-16 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" />
+            </svg>
+            <h1 class="text-3xl font-bold mt-4">Profile AI Assistant</h1>
+            <p class="text-slate-400 mt-2">Automate your personal Facebook profile.</p>
+        </div>
 
-# --- CONFIGURATION ---
-SESSION_FILE = 'session.json'
-FACEBOOK_PROFILE_URL = 'https://www.facebook.com/your.facebook.profile.name' # <-- IMPORTANT: CHANGE THIS
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-STATUS_LOG_FILE = 'status.log'
+        <button id="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all duration-300 transform hover:scale-105">
+            Start AI Assistant
+        </button>
 
-# --- HELPER FUNCTION FOR LOGGING ---
-def log_status(message):
-    """Writes a status message to the log file with a timestamp."""
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    full_message = f"[{timestamp}] {message}\n"
-    print(full_message, end='') # Print to console as well
-    with open(STATUS_LOG_FILE, 'a') as f:
-        f.write(full_message)
+        <div id="status" class="mt-6 text-left bg-slate-900 p-4 rounded-lg h-48 overflow-y-auto border border-slate-700">
+            <p class="text-slate-500">Status will appear here...</p>
+        </div>
+    </div>
 
-async def run_bot():
-    """Main function to run the automation bot."""
-    log_status("AI Assistant process started.")
-    
-    async with async_playwright() as p:
-        log_status("Launching browser...")
-        browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
-        
-        context = None
-        if os.path.exists(SESSION_FILE):
-            log_status("Session file found. Loading session...")
-            try:
-                context = await browser.new_context(storage_state=SESSION_FILE)
-            except Exception as e:
-                log_status(f"Could not load session, it might be invalid. Error: {e}")
-                os.remove(SESSION_FILE)
-        
-        if not context:
-            log_status("No valid session. A new login will be required.")
-            context = await browser.new_context()
+    <script>
+        const startButton = document.getElementById('startButton');
+        const statusDiv = document.getElementById('status');
 
-        page = await context.new_page()
-        log_status("Navigating to Facebook...")
-        await page.goto('https://www.facebook.com')
+        // Function to add a new status message
+        function addStatus(message, isError = false) {
+            if (statusDiv.querySelector('p.text-slate-500')) {
+                statusDiv.innerHTML = ''; // Clear initial message
+            }
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            p.className = isError ? 'text-red-400' : 'text-green-400';
+            statusDiv.prepend(p); // Add new message to the top
+        }
 
-        # --- LOGIN CHECK ---
-        email_input = page.locator('input[name="email"]')
-        try:
-            if await email_input.is_visible(timeout=5000):
-                log_status("CRITICAL: Not logged in. Cannot proceed on server.")
-                log_status("Please run locally with 'headless=False' to create a 'session.json' file, then upload it.")
-                await browser.close()
-                return
-            else:
-                log_status("Login successful using saved session.")
-        except Exception:
-            log_status("Login form not found. Assuming successful login.")
+        startButton.addEventListener('click', async () => {
+            addStatus('Sending start command to server...');
+            startButton.disabled = true;
+            startButton.textContent = 'Assistant is Running...';
 
-        # --- AUTOMATION TASKS ---
-        log_status(f"Navigating to profile: {FACEBOOK_PROFILE_URL}")
-        await page.goto(FACEBOOK_PROFILE_URL)
-        
-        log_status("Taking a screenshot of the profile...")
-        await page.screenshot(path='profile_screenshot.png')
-        log_status("Screenshot saved as 'profile_screenshot.png'.")
+            try {
+                // This sends a request to your Python backend to start the bot.
+                const response = await fetch('/start-bot', { method: 'POST' });
+                const data = await response.json();
 
-        # --- Scrape recent posts (Placeholder) ---
-        log_status("Analyzing recent posts...")
-        # In a real scenario, you would loop through posts here
-        # For demonstration, we'll simulate finding a post and asking the AI
-        await asyncio.sleep(2) # Simulate work
-        found_post_text = "Just had a great day exploring the city! #adventure"
-        log_status(f"Found post: '{found_post_text}'")
-        
-        await asyncio.sleep(1)
-        log_status("Asking AI for a comment suggestion...")
-        # TODO: Add actual OpenAI call here
-        await asyncio.sleep(3) # Simulate AI thinking
-        ai_suggestion = "Sounds like an amazing day! What was your favorite part?"
-        log_status(f"AI suggests commenting: '{ai_suggestion}'")
-        
-        # TODO: Add Playwright logic to actually post the comment
-        log_status("Action complete. Simulating next task...")
-        await asyncio.sleep(2)
+                if (response.ok) {
+                    addStatus(data.message);
+                } else {
+                    addStatus(data.error, true);
+                }
 
-        log_status("Bot tasks finished. Closing browser.")
-        await browser.close()
+            } catch (error) {
+                addStatus('Failed to connect to the server.', true);
+                console.error('Error:', error);
+            } finally {
+                // Note: We keep the button disabled to prevent multiple starts.
+                // You might add a "Stop" button in a more advanced version.
+            }
+        });
+    </script>
 
-if __name__ == '__main__':
-    # Clear the log file at the start of a new run
-    if os.path.exists(STATUS_LOG_FILE):
-        os.remove(STATUS_LOG_FILE)
-        
-    if os.name == 'nt':
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(run_bot())
+</body>
+</html>
