@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import os
 import base64
@@ -110,65 +110,12 @@ def generate_fallback_content(persona):
 @app.route('/')
 def homepage():
     """Serve the homepage/landing page"""
-    try:
-        with open('homepage.html', 'r') as f:
-            html_content = f.read()
-        return html_content
-    except FileNotFoundError:
-        # Fallback homepage
-        return render_template_string("""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>AuraMarkt - AI Property Marketing</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #0a0a0a; color: white; }
-                .container { max-width: 800px; margin: 0 auto; text-align: center; }
-                h1 { color: #a78bfa; font-size: 3rem; }
-                .cta { background: #a78bfa; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>AuraMarkt</h1>
-                <h2>Stop Selling Houses. Start Selling Lifestyles.</h2>
-                <p>AI-Powered Real Estate Marketing Platform</p>
-                <a href="/app" class="cta">Get Started for Free</a>
-            </div>
-        </body>
-        </html>
-        """)
+    return render_template('homepage.html')
 
 @app.route('/app')
 def app_interface():
     """Serve the main application interface"""
-    try:
-        with open('index.html', 'r') as f:
-            html_content = f.read()
-        return html_content
-    except FileNotFoundError:
-        # Fallback to a simple HTML template
-        return render_template_string("""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>AuraMarkt - AI Property Marketing App</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #0a0a0a; color: white; }
-                .container { max-width: 800px; margin: 0 auto; }
-                h1 { color: #a78bfa; text-align: center; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>AuraMarkt App</h1>
-                <p>AI-Powered Real Estate Marketing Platform</p>
-                <p>Please upload your index.html file to use the full interface.</p>
-                <a href="/" style="color: #a78bfa;">← Back to Homepage</a>
-            </div>
-        </body>
-        </html>
-        """)
+    return render_template('index.html')
 
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
