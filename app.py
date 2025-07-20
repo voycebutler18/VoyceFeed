@@ -99,7 +99,84 @@ def generate_fallback_content(persona):
     }
 
 def analyze_property_with_ai(image_paths, persona):
-    return generate_fallback_content(persona)
+    try:
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            print("OpenAI API key not found, using fallback")
+            return generate_fallback_content(persona)
+        
+        # Prepare images for API
+        image_messages = []
+        for path in image_paths[:2]:  # Limit to 2 images
+            base64_image = encode_image_to_base64(path)
+            if base64_image:
+                image_messages.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}",
+                        "detail": "low"
+                    }
+                })
+        
+        if not image_messages:
+            print("No valid images for AI analysis")
+            return generate_fallback_content(persona)
+        
+        persona_context = get_persona_context(persona)
+        
+        prompt = f"""Analyze these property images and create marketing content for {persona}.
+
+Target buyer: {persona_context['description']}
+Key priorities: {persona_context['priorities']}
+Writing tone: {persona_context['tone']}
+
+Create a compelling 250-word property description that highlights features visible in the images that would appeal to {persona}. Focus on emotional appeal and specific details you can see."""
+        
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        payload = {
+            "model": "gpt-4-vision-preview",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        *image_messages
+                    ]
+                }
+            ],
+            "max_tokens": 800
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            ai_content = result['choices'][0]['message']['content']
+            
+            # Format AI response into structured content
+            return {
+                "listing": f"<h2>Perfect Home for {persona}!</h2><p>{ai_content}</p>",
+                "social": f"<h3>Social Media Posts:</h3><p>🏡 New listing perfect for {persona.lower()}! {ai_content[:150]}... #RealEstate #NewListing #{persona.replace(' ', '')}</p>",
+                "video": f"<h3>Video Script:</h3><p>30-second tour highlighting features for {persona.lower()}. {ai_content[:200]}...</p>",
+                "points": f"<h3>Key Selling Points:</h3><ul><li><strong>Perfect for {persona}</strong></li><li><strong>Move-in Ready</strong></li><li><strong>Great Location</strong></li><li><strong>Unique Features</strong></li></ul>",
+                "analysis": f"AI analysis completed for {persona} based on actual property images."
+            }
+        else:
+            print(f"OpenAI API Error: {response.status_code}")
+            return generate_fallback_content(persona)
+            
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
+        return generate_fallback_content(persona)
 
 @app.route('/')
 def homepage():
