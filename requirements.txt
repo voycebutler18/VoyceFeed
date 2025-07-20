@@ -1,5 +1,4 @@
-flask==2.3.3
-openai==1.7.2
-requests==2.31.0
-gunicorn
-playwright
+flask==3.0.0
+playwright==1.40.0
+openai==1.6.1
+gunicorn==21.2.0
