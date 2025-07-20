@@ -1,3 +1,4 @@
+from flask import Flask, request, jsonify, render_template, render_template_string, send_from_directory
 from flask_cors import CORS
 import os
 import base64
@@ -260,7 +261,7 @@ def login_page():
             
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-400">
-                    New users: Your 3-day free trial starts after sign up.
+                    New users: Your 3-day trial starts after sign up.
                 </p>
             </div>
         </div>
@@ -337,7 +338,7 @@ def payment_success():
                 <div class="text-6xl mb-4">🎉</div>
                 <h1 class="text-3xl font-bold text-white mb-4">Payment Successful!</h1>
                 <p class="text-gray-400 mb-6">
-                    Thank you for choosing AuraMarkt. Your 3-day free trial has started!
+                    Thank you for choosing AuraMarkt. Your 3-day trial has started!
                 </p>
                 <a href="/login" class="inline-block bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
                     Create Your Account
@@ -347,33 +348,6 @@ def payment_success():
     </body>
     </html>
     """)
-
-@app.route('/cancel-subscription', methods=['POST'])
-def cancel_subscription():
-    """Handle subscription cancellation"""
-    try:
-        data = request.get_json()
-        user_email = data.get('user_email')
-        
-        # In a real implementation, you would:
-        # 1. Find the customer in Stripe by email
-        # 2. Get their subscription ID
-        # 3. Cancel the subscription
-        # 4. Update your database
-        
-        # For now, return success
-        return jsonify({
-            'success': True,
-            'message': 'Subscription cancelled successfully. You will retain access until the end of your trial period.'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Cancellation failed: {str(e)}'}), 500
-
-@app.route('/app')
-def app_interface():
-    """Serve the main application interface"""
-    return render_template('index.html')from flask import Flask, request, jsonify, render_template, send_from_directory
 
 @app.route('/api/upload', methods=['POST'])
 def upload_files():
@@ -498,6 +472,33 @@ def get_personas():
     ]
     
     return jsonify({'personas': personas})
+
+@app.route('/cancel-subscription', methods=['POST'])
+def cancel_subscription():
+    """Handle subscription cancellation"""
+    try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        
+        # In a real implementation, you would:
+        # 1. Find the customer in Stripe by email
+        # 2. Get their subscription ID
+        # 3. Cancel the subscription
+        # 4. Update your database
+        
+        # For now, return success
+        return jsonify({
+            'success': True,
+            'message': 'Subscription cancelled successfully. You will retain access until the end of your trial period.'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Cancellation failed: {str(e)}'}), 500
+
+@app.route('/app')
+def app_interface():
+    """Serve the main application interface"""
+    return render_template('index.html')
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
