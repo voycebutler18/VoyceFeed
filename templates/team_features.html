@@ -11,44 +11,57 @@
         .glass-pane { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="glass-pane p-8 max-w-2xl w-full text-center">
+<body class="min-h-screen flex flex-col items-center p-4">
+    <div class="glass-pane p-8 max-w-4xl w-full text-center">
         <h1 class="text-4xl font-bold text-white mb-4">10. Team Mode (Optional Upgrade)</h1>
         <p class="text-slate-300 mb-6">Manage multiple agents, share brand templates, and track marketing kit generation across your team.</p>
 
-        <form id="addTeamMemberForm" class="space-y-6 text-left">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+            <!-- Add Team Member Form -->
             <div>
-                <label for="memberName" class="block text-sm font-medium text-slate-300 mb-2">Team Member Name</label>
-                <input
-                    type="text"
-                    id="memberName"
-                    name="memberName"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="e.g., John Doe"
-                    required
-                >
+                <h2 class="text-2xl font-bold text-white mb-4">Add New Team Member</h2>
+                <form id="addTeamMemberForm" class="space-y-6">
+                    <div>
+                        <label for="memberName" class="block text-sm font-medium text-slate-300 mb-2">Team Member Name</label>
+                        <input
+                            type="text"
+                            id="memberName"
+                            name="memberName"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            placeholder="e.g., John Doe"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label for="memberEmail" class="block text-sm font-medium text-slate-300 mb-2">Team Member Email</label>
+                        <input
+                            type="email"
+                            id="memberEmail"
+                            name="memberEmail"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            placeholder="e.g., john.doe@example.com"
+                            required
+                        >
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    >
+                        Add Team Member
+                    </button>
+                </form>
+                <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
             </div>
-            <div>
-                <label for="memberEmail" class="block text-sm font-medium text-slate-300 mb-2">Team Member Email</label>
-                <input
-                    type="email"
-                    id="memberEmail"
-                    name="memberEmail"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="e.g., john.doe@example.com"
-                    required
-                >
-            </div>
-            
-            <button
-                type="submit"
-                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-                Add Team Member
-            </button>
-        </form>
 
-        <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
+            <!-- Current Team Members Display -->
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-4">Your Team Members</h2>
+                <div id="team-members-list" class="space-y-4">
+                    <p class="text-slate-500">Loading team members...</p>
+                </div>
+            </div>
+        </div>
 
         <button onclick="window.history.back()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
             Go Back to Dashboard
@@ -56,12 +69,62 @@
     </div>
 
     <script>
-        document.getElementById('addTeamMemberForm').addEventListener('submit', async function(event) {
+        const addTeamMemberForm = document.getElementById('addTeamMemberForm');
+        const memberNameInput = document.getElementById('memberName');
+        const memberEmailInput = document.getElementById('memberEmail');
+        const teamMembersList = document.getElementById('team-members-list');
+        const responseMessageDiv = document.getElementById('response-message');
+
+        // Function to display messages (reused from previous files)
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                    <p class="text-white text-lg mb-4">${message}</p>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+
+        // Function to fetch and display team members
+        async function fetchAndDisplayTeamMembers() {
+            teamMembersList.innerHTML = '<p class="text-slate-500">Loading team members...</p>';
+            try {
+                const response = await fetch('/api/get_team_members');
+                const result = await response.json();
+
+                if (result.success) {
+                    teamMembersList.innerHTML = ''; // Clear loading message
+                    if (result.data.length === 0) {
+                        teamMembersList.innerHTML = '<p class="text-slate-500">No team members added yet.</p>';
+                    } else {
+                        result.data.forEach(member => {
+                            const memberDiv = document.createElement('div');
+                            memberDiv.className = 'glass-pane p-4 text-sm';
+                            memberDiv.innerHTML = `
+                                <p class="font-semibold text-white">${member.name}</p>
+                                <p class="text-slate-400">${member.email}</p>
+                            `;
+                            teamMembersList.appendChild(memberDiv);
+                        });
+                    }
+                } else {
+                    teamMembersList.innerHTML = `<p class="text-red-400">Error loading team members: ${result.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                teamMembersList.innerHTML = `<p class="text-red-400">Network error: ${error.message}</p>`;
+            }
+        }
+
+        // Handle form submission
+        addTeamMemberForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const memberName = document.getElementById('memberName').value;
-            const memberEmail = document.getElementById('memberEmail').value;
-            const responseMessageDiv = document.getElementById('response-message');
+            const memberName = memberNameInput.value;
+            const memberEmail = memberEmailInput.value;
+            responseMessageDiv.classList.add('hidden');
 
             if (!memberName || !memberEmail) {
                 showMessageBox("Please enter both name and email for the team member.");
@@ -80,8 +143,9 @@
                 if (result.success) {
                     responseMessageDiv.textContent = result.message;
                     responseMessageDiv.classList.remove('hidden');
-                    // In a real app, this would save the team member to a database
-                    // and potentially send an invitation email.
+                    memberNameInput.value = ''; // Clear form
+                    memberEmailInput.value = ''; // Clear form
+                    fetchAndDisplayTeamMembers(); // Refresh the list
                 } else {
                     showMessageBox("Failed to add team member: " + (result.error || "Unknown error"));
                 }
@@ -90,17 +154,8 @@
             }
         });
 
-        function showMessageBox(message) {
-            const messageBox = document.createElement('div');
-            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-            messageBox.innerHTML = `
-                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
-                    <p class="text-white text-lg mb-4">${message}</p>
-                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
-                </div>
-            `;
-            document.body.appendChild(messageBox);
-        }
+        // Fetch team members when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayTeamMembers);
     </script>
 </body>
 </html>
