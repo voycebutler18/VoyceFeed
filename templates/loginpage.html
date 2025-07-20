@@ -1,112 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMarkt - Login</title>
-    <!-- Tailwind CSS CDN for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter for a clean, modern look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        /* Custom styles for the body and gradient text */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a; /* Dark background */
-            color: #e2e8f0; /* Light text for contrast */
-        }
-        .gradient-text {
-            background: linear-gradient(to right, #c084fc, #a78bfa, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-    </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-gray-900 rounded-lg p-8 shadow-lg">
-        <h1 class="text-4xl font-black text-center mb-8 gradient-text">AuraMarkt</h1>
-        <p class="text-center text-slate-400 mb-6">Sign in to your account</p>
-
-        <form id="loginForm" class="space-y-6">
-            <div>
-                <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    required
-                    autocomplete="email"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="your.email@example.com"
-                >
-            </div>
-            <div>
-                <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                    autocomplete="current-password"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="••••••••"
-                >
-            </div>
-            <button
-                type="submit"
-                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-                Sign In
-            </button>
-        </form>
-
-        <p class="mt-8 text-center text-slate-400">
-            Don't have an account?
-            <a href="/sign-up" class="text-violet-400 hover:text-violet-300 font-medium transition-colors">Sign Up</a>
-        </p>
-        <p class="mt-2 text-center text-slate-400">
-            <a href="/forgot-password" class="text-violet-400 hover:text-violet-300 font-medium transition-colors">Forgot Password?</a>
-        </p>
-    </div>
-
-    <script>
-        // Basic client-side login simulation (for demonstration)
-        // In a real application, this would send credentials to a backend API.
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent default form submission
-
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            // For demonstration purposes:
-            // You would replace this with an actual API call to your backend for authentication.
-            // Example: fetch('/api/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } })
-            // .then(response => response.json())
-            // .then(data => { /* handle success/failure */ });
-
-            if (email && password) {
-                // Simulate successful login
-                // In a real app, you'd get a token or session info from the server
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('userEmail', email);
-                
-                // Redirect to the main app interface or a dashboard
-                window.location.href = '/app'; 
-            } else {
-                // Use a custom message box instead of alert() for better UI/UX
-                const messageBox = document.createElement('div');
-                messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-                messageBox.innerHTML = `
-                    <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
-                        <p class="text-white text-lg mb-4">Please enter both email and password.</p>
-                        <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
-                    </div>
-                `;
-                document.body.appendChild(messageBox);
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AuraMarkt - Login</title>
+        <!-- Tailwind CSS CDN for styling -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Google Fonts - Inter for a clean, modern look -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+        <style>
+            /* Custom styles for the body and gradient text */
+            body {
+                font-family: 'Inter', sans-serif;
+                background-color: #0a0a0a; /* Dark background */
+                color: #e2e8f0; /* Light text for contrast */
             }
-        });
-    </script>
-</body>
-</html>
+            .gradient-text {
+                background: linear-gradient(to right, #c084fc, #a78bfa, #818cf8);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+        </style>
+    </head>
+    <body class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-gray-900 rounded-lg p-8 shadow-lg">
+            <h1 class="text-4xl font-black text-center mb-8 gradient-text">AuraMarkt</h1>
+            <p class="text-center text-slate-400 mb-6">Sign in to your account</p>
+
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        required
+                        autocomplete="email"
+                        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        placeholder="your.email@example.com"
+                    >
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        autocomplete="current-password"
+                        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        placeholder="••••••••"
+                    >
+                </div>
+                <button
+                    type="submit"
+                    class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                >
+                    Sign In
+                </button>
+            </form>
+
+            <p class="mt-8 text-center text-slate-400">
+                Don't have an account?
+                <a href="/sign-up" class="text-violet-400 hover:text-violet-300 font-medium transition-colors">Sign Up</a>
+            </p>
+            <p class="mt-2 text-center text-slate-400">
+                <a href="/forgot-password" class="text-violet-400 hover:text-violet-300 font-medium transition-colors">Forgot Password?</a>
+            </p>
+        </div>
+
+        <script>
+            // Basic client-side login simulation (for demonstration)
+            // In a real application, this would send credentials to a backend API.
+            document.getElementById('loginForm').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                // For demonstration purposes:
+                // You would replace this with an actual API call to your backend for authentication.
+                // Example: fetch('/api/login', { method: 'POST', body: JSON.stringify({ email, password }), headers: { 'Content-Type': 'application/json' } })
+                // .then(response => response.json())
+                // .then(data => { /* handle success/failure */ });
+
+                if (email && password) {
+                    // Simulate successful login
+                    // In a real app, you'd get a token or session info from the server
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userEmail', email);
+                    
+                    // Redirect to the main app interface or a dashboard
+                    window.location.href = '/app'; // THIS IS THE LINE THAT REDIRECTS TO /app (index.html)
+                } else {
+                    // Use a custom message box instead of alert() for better UI/UX
+                    const messageBox = document.createElement('div');
+                    messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                    messageBox.innerHTML = `
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                            <p class="text-white text-lg mb-4">Please enter both email and password.</p>
+                            <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                        </div>
+                    `;
+                    document.body.appendChild(messageBox);
+                }
+            });
+        </script>
+    </body>
+    </html>
+    
