@@ -112,6 +112,120 @@ def homepage():
     """Serve the homepage/landing page"""
     return render_template('homepage.html')
 
+@app.route('/login')
+def login_page():
+    """Serve the login page after successful payment"""
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AuraMarkt - Login</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e2e8f0; }
+        </style>
+    </head>
+    <body class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full bg-gray-900 rounded-lg p-8 border border-gray-700">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-white mb-2">Welcome to AuraMarkt!</h1>
+                <p class="text-gray-400">Create your account to start your 3-day free trial</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                    <input type="email" id="email" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-violet-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input type="password" id="password" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-violet-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-violet-500">
+                </div>
+                
+                <button type="submit" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-4 rounded-md transition-colors">
+                    Create Account & Start Free Trial
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-400">
+                    Your 3-day free trial starts now. You'll be charged after the trial ends.
+                </p>
+            </div>
+        </div>
+        
+        <script>
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+                
+                // Simulate account creation (in real app, you'd send to your backend)
+                const selectedPlan = localStorage.getItem('selectedPlan') || 'solo';
+                
+                // Store user session
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userPlan', selectedPlan);
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('trialStartDate', new Date().toISOString());
+                
+                // Redirect to app
+                window.location.href = '/app';
+            });
+        </script>
+    </body>
+    </html>
+    """)
+
+@app.route('/success')
+def payment_success():
+    """Handle successful payment redirect from Stripe"""
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Successful - AuraMarkt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e2e8f0; }
+        </style>
+    </head>
+    <body class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full text-center">
+            <div class="bg-gray-900 rounded-lg p-8 border border-gray-700">
+                <div class="text-6xl mb-4">🎉</div>
+                <h1 class="text-3xl font-bold text-white mb-4">Payment Successful!</h1>
+                <p class="text-gray-400 mb-6">
+                    Thank you for choosing AuraMarkt. Your 3-day free trial has started!
+                </p>
+                <a href="/login" class="inline-block bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
+                    Create Your Account
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+
 @app.route('/app')
 def app_interface():
     """Serve the main application interface"""
