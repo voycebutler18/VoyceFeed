@@ -53,6 +53,14 @@
         <header class="text-center mb-12">
             <h1 class="text-5xl sm:text-6xl font-black text-white">AuraMarkt</h1>
             <p class="text-slate-400 mt-2 text-lg">The World's First AI Property Persona Marketer</p>
+            
+            <!-- Trial Info Banner -->
+            <div id="trialBanner" class="hidden mt-4 bg-violet-600/20 border border-violet-500/30 rounded-lg p-3 max-w-lg mx-auto">
+                <p class="text-violet-300 text-sm">
+                    <span class="font-semibold">Free Trial Active:</span> 
+                    <span id="trialDaysLeft"></span> days remaining
+                </p>
+            </div>
         </header>
 
         <!-- Main Application -->
@@ -64,7 +72,7 @@
                 <div class="glass-pane p-6 rounded-2xl">
                     <h2 class="text-xl font-bold text-white mb-4 flex items-center"><span class="bg-violet-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span> Upload Property Photos</h2>
                     <div id="image-uploader" class="mt-4 border-2 border-dashed border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-violet-400 transition-colors">
-                        <input type="file" id="file-input" multiple class="hidden">
+                        <input type="file" id="file-input" multiple accept="image/*" class="hidden">
                         <svg class="mx-auto h-12 w-12 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
                         <p class="mt-2 text-slate-400">Drag & drop or click to upload</p>
                         <p class="text-xs text-slate-500">Up to 10 images (JPG, PNG)</p>
@@ -86,7 +94,7 @@
                             <p class="text-3xl">🏡</p><p class="font-semibold mt-1">Growing Family</p>
                         </div>
                         <div class="persona-card p-4 rounded-lg cursor-pointer text-center" data-persona="Downsizing Retirees">
-                            <p class="text-3xl"> leisurely couple</p><p class="font-semibold mt-1">Downsizing Retirees</p>
+                            <p class="text-3xl">🌅</p><p class="font-semibold mt-1">Downsizing Retirees</p>
                         </div>
                     </div>
                 </div>
@@ -140,19 +148,32 @@
         const tabContent = document.getElementById('tab-content');
 
         let uploadedFiles = [];
+        let uploadedFilenames = [];
         let selectedPersona = '';
+        let generatedContent = {};
 
         // --- File Uploader Logic ---
         uploader.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-        uploader.addEventListener('dragover', (e) => { e.preventDefault(); uploader.classList.add('border-violet-400'); });
+        uploader.addEventListener('dragover', (e) => { 
+            e.preventDefault(); 
+            uploader.classList.add('border-violet-400'); 
+        });
         uploader.addEventListener('dragleave', () => uploader.classList.remove('border-violet-400'));
-        uploader.addEventListener('drop', (e) => { e.preventDefault(); uploader.classList.remove('border-violet-400'); handleFiles(e.dataTransfer.files); });
+        uploader.addEventListener('drop', (e) => { 
+            e.preventDefault(); 
+            uploader.classList.remove('border-violet-400'); 
+            handleFiles(e.dataTransfer.files); 
+        });
 
-        function handleFiles(files) {
-            uploadedFiles = Array.from(files).slice(0, 10); // Limit to 10 files
+        async function handleFiles(files) {
+            const fileArray = Array.from(files).slice(0, 10); // Limit to 10 files
+            
+            if (fileArray.length === 0) return;
+
+            // Show preview immediately
             previewGrid.innerHTML = '';
-            uploadedFiles.forEach(file => {
+            fileArray.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = document.createElement('img');
@@ -162,12 +183,39 @@
                 };
                 reader.readAsDataURL(file);
             });
+
+            // Upload files to server
+            try {
+                const formData = new FormData();
+                fileArray.forEach(file => {
+                    formData.append('files', file);
+                });
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    uploadedFiles = result.files;
+                    uploadedFilenames = result.files.map(f => f.filename);
+                    console.log('Files uploaded successfully:', result.message);
+                } else {
+                    alert('Upload failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed. Please try again.');
+            }
         }
 
         // --- Persona Selector Logic ---
         personaSelector.addEventListener('click', (e) => {
             const card = e.target.closest('.persona-card');
             if (!card) return;
+            
             document.querySelectorAll('.persona-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             selectedPersona = card.dataset.persona;
@@ -176,17 +224,19 @@
         // --- Tab Logic ---
         tabs.addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
+            
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             e.target.classList.add('active');
-            // In a real app, you would show the relevant content here
-            // For now, we'll just show a placeholder
+            
             const tabName = e.target.dataset.tab;
-            tabContent.innerHTML = `<h2>Content for ${tabName}</h2><p>The AI-generated content for this section will appear here.</p>`;
+            if (generatedContent[tabName]) {
+                tabContent.innerHTML = generatedContent[tabName];
+            }
         });
 
         // --- Generate Button Logic ---
         generateButton.addEventListener('click', async () => {
-            if (uploadedFiles.length === 0) {
+            if (uploadedFilenames.length === 0) {
                 alert('Please upload at least one property photo.');
                 return;
             }
@@ -201,37 +251,87 @@
             loadingSpinner.classList.remove('hidden');
             generateButton.disabled = true;
 
-            // --- FAKE AI CALL (for demonstration) ---
-            // In a real application, you would convert images to base64,
-            // send them along with the persona to your backend,
-            // which then calls the multimodal AI (like GPT-4 Vision).
-            await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate AI thinking
+            try {
+                // Call Flask API to generate marketing kit
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        persona: selectedPersona,
+                        file_paths: uploadedFilenames
+                    })
+                });
 
-            // --- FAKE AI RESPONSE ---
-            const fakeResponse = {
-                listing: `<h2>Welcome to Your Dream Home for a Growing Family!</h2><p>Nestled in a serene, family-friendly neighborhood, this stunning property offers the perfect blend of comfort and style. The spacious, open-concept kitchen is the heart of the home, perfect for morning breakfasts and family gatherings. The large backyard with a custom-built deck provides a safe and beautiful space for children to play and for you to entertain guests...</p>`,
-                social: `<h3>Facebook Post Idea:</h3><p>"Looking for the perfect place to raise your family? 👨‍👩‍👧‍👦 This beautiful home just hit the market! With a huge backyard and a kitchen built for memories, it's everything you've been dreaming of. DM for a private tour! #FamilyHome #NewListing #[YourCity]RealEstate"</p>`,
-                video: `<h3>30-Second Video Script:</h3><p>(Scene: Quick shots of the kitchen, backyard, and a cozy living room)<br><strong>VOICEOVER:</strong> "Imagine your family's story starting here. From weekend barbecues in your spacious backyard... to movie nights in your cozy living room. This isn't just a house; it's the next chapter of your life. Your forever home is waiting."</p>`,
-                points: `<h3>Top 5 Selling Points for a Growing Family:</h3><ul><li><strong>Safe & Quiet Neighborhood:</strong> Located in a top-rated school district.</li><li><strong>Spacious Backyard:</strong> Fully fenced with a large deck, perfect for kids and pets.</li><li><strong>Open-Concept Kitchen:</strong> Watch the kids while you cook.</li><li><strong>Multiple Living Areas:</strong> Plenty of space for a playroom or home office.</li><li><strong>Move-In Ready:</strong> Freshly painted with modern updates.</li></ul>`
-            };
-            
-            // --- Display Results ---
-            loadingSpinner.classList.add('hidden');
-            resultsContainer.classList.remove('hidden');
-            document.querySelector('.tab[data-tab="listing"]').click(); // Select the first tab
-            tabContent.innerHTML = fakeResponse.listing; // Show the first piece of content
+                const result = await response.json();
 
-            // In a real app, you would store the full response and update the tab content when a tab is clicked.
-            tabs.onclick = (e) => {
-                if (e.target.tagName !== 'BUTTON') return;
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                const tabName = e.target.dataset.tab;
-                tabContent.innerHTML = fakeResponse[tabName];
-            };
-
-            generateButton.disabled = false;
+                if (result.success) {
+                    generatedContent = result.content;
+                    
+                    // Hide loading and show results
+                    loadingSpinner.classList.add('hidden');
+                    resultsContainer.classList.remove('hidden');
+                    
+                    // Select first tab and show content
+                    document.querySelector('.tab[data-tab="listing"]').click();
+                    tabContent.innerHTML = generatedContent.listing;
+                    
+                    console.log('Marketing kit generated successfully!');
+                } else {
+                    throw new Error(result.error || 'Generation failed');
+                }
+            } catch (error) {
+                console.error('Generation error:', error);
+                alert('Failed to generate marketing kit: ' + error.message);
+                
+                // Hide loading and show placeholder
+                loadingSpinner.classList.add('hidden');
+                placeholderText.classList.remove('hidden');
+            } finally {
+                generateButton.disabled = false;
+            }
         });
+
+        // --- Initialize ---
+        function initializeApp() {
+            // Check if user is logged in and show trial info
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const trialStartDate = localStorage.getItem('trialStartDate');
+            const userPlan = localStorage.getItem('userPlan');
+            
+            if (isLoggedIn && trialStartDate) {
+                showTrialInfo(trialStartDate, userPlan);
+            }
+        }
+        
+        function showTrialInfo(startDate, plan) {
+            const start = new Date(startDate);
+            const now = new Date();
+            const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+            const daysLeft = Math.max(0, 3 - daysElapsed);
+            
+            const trialBanner = document.getElementById('trialBanner');
+            const trialDaysLeft = document.getElementById('trialDaysLeft');
+            
+            if (daysLeft > 0) {
+                trialDaysLeft.textContent = daysLeft;
+                trialBanner.classList.remove('hidden');
+            } else {
+                trialDaysLeft.textContent = '0';
+                trialBanner.innerHTML = `
+                    <p class="text-yellow-300 text-sm">
+                        <span class="font-semibold">Trial Expired:</span> 
+                        Your ${plan} plan is now active
+                    </p>
+                `;
+                trialBanner.classList.remove('hidden');
+            }
+        }
+        
+        // Initialize app on load
+        initializeApp();
+        console.log('AuraMarkt app loaded successfully!');
     </script>
 </body>
 </html>
