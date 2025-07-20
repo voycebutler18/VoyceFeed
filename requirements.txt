@@ -1,4 +1,4 @@
 flask
-requests
+playwright
 openai
-gunicorn
+python-dotenv
