@@ -1,94 +1,100 @@
 # bot.py
 # This script performs the browser automation using Playwright.
-# It logs into Facebook and performs tasks on your personal profile.
+# Updated to log its status to a file for the web UI to display.
 
 import os
 import asyncio
 from playwright.async_api import async_playwright
+from datetime import datetime
 
 # --- CONFIGURATION ---
-# The file to save your session cookies to. This avoids logging in every time.
 SESSION_FILE = 'session.json'
-# Your personal Facebook profile URL.
-# IMPORTANT: Replace 'your.facebook.profile.name' with your actual profile name or ID.
-FACEBOOK_PROFILE_URL = 'https://www.facebook.com/voyce.butler' 
-# Set your OpenAI API key in an environment variable
+FACEBOOK_PROFILE_URL = 'https://www.facebook.com/your.facebook.profile.name' # <-- IMPORTANT: CHANGE THIS
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+STATUS_LOG_FILE = 'status.log'
 
+# --- HELPER FUNCTION FOR LOGGING ---
+def log_status(message):
+    """Writes a status message to the log file with a timestamp."""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    full_message = f"[{timestamp}] {message}\n"
+    print(full_message, end='') # Print to console as well
+    with open(STATUS_LOG_FILE, 'a') as f:
+        f.write(full_message)
 
 async def run_bot():
     """Main function to run the automation bot."""
+    log_status("AI Assistant process started.")
+    
     async with async_playwright() as p:
-        print("Launching browser...")
-        # For server deployment (like Render), you must run in headless mode.
-        # For local testing, you can set headless=False to see the browser window.
+        log_status("Launching browser...")
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
         
-        context = None # Initialize context to None
-
-        # Check if a session file exists to log in automatically
+        context = None
         if os.path.exists(SESSION_FILE):
-            print("Session file found. Loading session...")
+            log_status("Session file found. Loading session...")
             try:
                 context = await browser.new_context(storage_state=SESSION_FILE)
             except Exception as e:
-                print(f"Could not load session, it might be invalid. A new login is required. Error: {e}")
-                os.remove(SESSION_FILE) # Remove corrupted session file
+                log_status(f"Could not load session, it might be invalid. Error: {e}")
+                os.remove(SESSION_FILE)
         
         if not context:
-            print("No valid session. A new login will be required.")
+            log_status("No valid session. A new login will be required.")
             context = await browser.new_context()
 
         page = await context.new_page()
-
-        print("Navigating to Facebook...")
+        log_status("Navigating to Facebook...")
         await page.goto('https://www.facebook.com')
 
         # --- LOGIN CHECK ---
-        # A simple way to check if we are logged in is to look for the login form.
-        # If the email/phone input is visible, we are not logged in.
         email_input = page.locator('input[name="email"]')
-        
         try:
-            # Check if the login form is visible within a short timeout
             if await email_input.is_visible(timeout=5000):
-                print("Not logged in. A new login is required.")
-                print("ERROR: This script cannot handle manual login on a headless server.")
-                print("Please run this script locally with 'headless=False' first to create a 'session.json' file.")
-                print("Then, upload the 'session.json' file to your server alongside the bot.")
+                log_status("CRITICAL: Not logged in. Cannot proceed on server.")
+                log_status("Please run locally with 'headless=False' to create a 'session.json' file, then upload it.")
                 await browser.close()
-                return # Stop the script
+                return
             else:
-                print("Successfully logged in using saved session.")
+                log_status("Login successful using saved session.")
         except Exception:
-            # If the locator times out, it's not visible, which means we are likely logged in.
-            print("Login form not found. Assuming we are logged in.")
-
+            log_status("Login form not found. Assuming successful login.")
 
         # --- AUTOMATION TASKS ---
-        print(f"Navigating to profile: {FACEBOOK_PROFILE_URL}")
+        log_status(f"Navigating to profile: {FACEBOOK_PROFILE_URL}")
         await page.goto(FACEBOOK_PROFILE_URL)
         
-        print("Taking a screenshot of the profile...")
+        log_status("Taking a screenshot of the profile...")
         await page.screenshot(path='profile_screenshot.png')
-        print("Screenshot saved as 'profile_screenshot.png'.")
+        log_status("Screenshot saved as 'profile_screenshot.png'.")
 
-        # TODO: Scrape recent posts
-        # This is where you would add the logic to find post elements,
-        # extract their text, likes, and comments.
-        print("Scraping recent posts (placeholder)...")
-        # Example:
-        # posts = await page.locator('[aria-label="Timeline"] .x1yztbdb').all()
-        # for post in posts[:5]:
-        #     post_text = await post.inner_text()
-        #     print(f"Found post: {post_text[:100]}...")
-        #     # TODO: Send post_text to OpenAI API
+        # --- Scrape recent posts (Placeholder) ---
+        log_status("Analyzing recent posts...")
+        # In a real scenario, you would loop through posts here
+        # For demonstration, we'll simulate finding a post and asking the AI
+        await asyncio.sleep(2) # Simulate work
+        found_post_text = "Just had a great day exploring the city! #adventure"
+        log_status(f"Found post: '{found_post_text}'")
         
-        print("Bot tasks complete. Closing browser.")
+        await asyncio.sleep(1)
+        log_status("Asking AI for a comment suggestion...")
+        # TODO: Add actual OpenAI call here
+        await asyncio.sleep(3) # Simulate AI thinking
+        ai_suggestion = "Sounds like an amazing day! What was your favorite part?"
+        log_status(f"AI suggests commenting: '{ai_suggestion}'")
+        
+        # TODO: Add Playwright logic to actually post the comment
+        log_status("Action complete. Simulating next task...")
+        await asyncio.sleep(2)
+
+        log_status("Bot tasks finished. Closing browser.")
         await browser.close()
 
 if __name__ == '__main__':
-    # On Windows, this might be needed for Playwright's async nature.
+    # Clear the log file at the start of a new run
+    if os.path.exists(STATUS_LOG_FILE):
+        os.remove(STATUS_LOG_FILE)
+        
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(run_bot())
