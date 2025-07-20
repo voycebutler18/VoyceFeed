@@ -9,42 +9,6 @@ from werkzeug.utils import secure_filename
 import requests
 import hashlib
 
-# Get client IP address
-def get_client_ip():
-    """Get the client's IP address"""
-    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-        return request.environ['REMOTE_ADDR']
-    else:
-        return request.environ['HTTP_X_FORWARDED_FOR']
-
-def get_ip_hash():
-    """Get a hash of the client's IP for tracking"""
-    ip = get_client_ip()
-    return hashlib.md5(ip.encode()).hexdigest()
-
-def has_used_free_trial(ip_hash):
-    """Check if this IP has already used the free trial"""
-    try:
-        # In a real app, you'd store this in a database
-        # For now, we'll use a simple file-based approach
-        trial_file = 'free_trials_used.txt'
-        if os.path.exists(trial_file):
-            with open(trial_file, 'r') as f:
-                used_ips = f.read().splitlines()
-                return ip_hash in used_ips
-        return False
-    except:
-        return False
-
-def mark_free_trial_used(ip_hash):
-    """Mark this IP as having used the free trial"""
-    try:
-        trial_file = 'free_trials_used.txt'
-        with open(trial_file, 'a') as f:
-            f.write(f"{ip_hash}\n")
-    except:
-        pass
-
 app = Flask(__name__)
 CORS(app)
 
@@ -144,6 +108,42 @@ def call_openai_api(image_paths, persona):
         print(f"OpenAI API Error: {e}")
         return None
 
+# Get client IP address
+def get_client_ip():
+    """Get the client's IP address"""
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        return request.environ['REMOTE_ADDR']
+    else:
+        return request.environ['HTTP_X_FORWARDED_FOR']
+
+def get_ip_hash():
+    """Get a hash of the client's IP for tracking"""
+    ip = get_client_ip()
+    return hashlib.md5(ip.encode()).hexdigest()
+
+def has_used_free_trial(ip_hash):
+    """Check if this IP has already used the free trial"""
+    try:
+        # In a real app, you'd store this in a database
+        # For now, we'll use a simple file-based approach
+        trial_file = 'free_trials_used.txt'
+        if os.path.exists(trial_file):
+            with open(trial_file, 'r') as f:
+                used_ips = f.read().splitlines()
+                return ip_hash in used_ips
+        return False
+    except:
+        return False
+
+def mark_free_trial_used(ip_hash):
+    """Mark this IP as having used the free trial"""
+    try:
+        trial_file = 'free_trials_used.txt'
+        with open(trial_file, 'a') as f:
+            f.write(f"{ip_hash}\n")
+    except:
+        pass
+
 def get_persona_context(persona):
     """Get detailed context for different buyer personas"""
     personas = {
@@ -242,6 +242,7 @@ def generate_fallback_content(persona):
         "analysis": f"Property analyzed for {persona} targeting their key priorities: {persona_context['priorities']}"
     }
 
+# Routes
 @app.route('/')
 def homepage():
     """Serve the homepage/landing page"""
@@ -470,6 +471,41 @@ def try_free():
     </body>
     </html>
     """, already_used=already_used)
+
+@app.route('/success')
+def payment_success():
+    """Handle successful payment redirect from Stripe"""
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Successful - AuraMarkt</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+        <style>
+            body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e2e8f0; }
+        </style>
+    </head>
+    <body class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full text-center">
+            <div class="bg-gray-900 rounded-lg p-8 border border-gray-700">
+                <div class="text-6xl mb-4">🎉</div>
+                <h1 class="text-3xl font-bold text-white mb-4">Payment Successful!</h1>
+                <p class="text-gray-400 mb-6">
+                    Thank you for choosing AuraMarkt. Your 3-day trial has started!
+                </p>
+                <a href="/login" class="inline-block bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
+                    Create Your Account
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+
+@app.route('/login')
 def login_page():
     """Serve the login page after successful payment"""
     return render_template_string("""
@@ -546,12 +582,6 @@ def login_page():
                         localStorage.setItem('userEmail', email);
                         localStorage.setItem('userPlan', selectedPlan);
                         localStorage.setItem('isLoggedIn', 'true');
-                        localStorage.setItem('trialStartDate', new Date().toISOString());
-                        localStorage.removeItem('selectedPlan'); // Clear after use
-                    } else {
-                        // Existing user login
-                        localStorage.setItem('userEmail', email);
-                        localStorage.setItem('isLoggedIn', 'true');
                     }
                     
                     // Redirect to app
@@ -565,38 +595,44 @@ def login_page():
     </html>
     """)
 
-@app.route('/success')
-def payment_success():
-    """Handle successful payment redirect from Stripe"""
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Successful - AuraMarkt</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-        <style>
-            body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: #e2e8f0; }
-        </style>
-    </head>
-    <body class="min-h-screen flex items-center justify-center">
-        <div class="max-w-md w-full text-center">
-            <div class="bg-gray-900 rounded-lg p-8 border border-gray-700">
-                <div class="text-6xl mb-4">🎉</div>
-                <h1 class="text-3xl font-bold text-white mb-4">Payment Successful!</h1>
-                <p class="text-gray-400 mb-6">
-                    Thank you for choosing AuraMarkt. Your 3-day trial has started!
-                </p>
-                <a href="/login" class="inline-block bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
-                    Create Your Account
-                </a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """)
+@app.route('/api/upload', methods=['POST'])
+def upload_files():
+    """Handle file uploads"""
+    try:
+        if 'files' not in request.files:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        files = request.files.getlist('files')
+        if not files or files[0].filename == '':
+            return jsonify({'error': 'No files selected'}), 400
+        
+        uploaded_files = []
+        
+        for file in files[:10]:  # Limit to 10 files
+            if file and allowed_file(file.filename):
+                # Generate unique filename
+                filename = secure_filename(file.filename)
+                unique_filename = f"{uuid.uuid4()}_{filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                
+                file.save(filepath)
+                uploaded_files.append({
+                    'filename': unique_filename,
+                    'original_name': filename,
+                    'path': filepath
+                })
+        
+        if not uploaded_files:
+            return jsonify({'error': 'No valid image files uploaded'}), 400
+        
+        return jsonify({
+            'success': True,
+            'files': uploaded_files,
+            'message': f'{len(uploaded_files)} files uploaded successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @app.route('/api/generate-free', methods=['POST'])
 def generate_free_marketing_kit():
@@ -643,45 +679,6 @@ def generate_free_marketing_kit():
         
     except Exception as e:
         return jsonify({'error': f'Generation failed: {str(e)}'}), 500
-
-@app.route('/api/upload', methods=['POST'])
-def upload_files():
-    """Handle file uploads"""
-    try:
-        if 'files' not in request.files:
-            return jsonify({'error': 'No files provided'}), 400
-        
-        files = request.files.getlist('files')
-        if not files or files[0].filename == '':
-            return jsonify({'error': 'No files selected'}), 400
-        
-        uploaded_files = []
-        
-        for file in files[:10]:  # Limit to 10 files
-            if file and allowed_file(file.filename):
-                # Generate unique filename
-                filename = secure_filename(file.filename)
-                unique_filename = f"{uuid.uuid4()}_{filename}"
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                
-                file.save(filepath)
-                uploaded_files.append({
-                    'filename': unique_filename,
-                    'original_name': filename,
-                    'path': filepath
-                })
-        
-        if not uploaded_files:
-            return jsonify({'error': 'No valid image files uploaded'}), 400
-        
-        return jsonify({
-            'success': True,
-            'files': uploaded_files,
-            'message': f'{len(uploaded_files)} files uploaded successfully'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @app.route('/api/generate', methods=['POST'])
 def generate_marketing_kit():
@@ -790,183 +787,6 @@ def cancel_subscription():
     except Exception as e:
         return jsonify({'error': f'Cancellation failed: {str(e)}'}), 500
 
-@app.route('/login')
-def upload_files():
-    """Handle file uploads"""
-    try:
-        if 'files' not in request.files:
-            return jsonify({'error': 'No files provided'}), 400
-        
-        files = request.files.getlist('files')
-        if not files or files[0].filename == '':
-            return jsonify({'error': 'No files selected'}), 400
-        
-        uploaded_files = []
-        
-        for file in files[:10]:  # Limit to 10 files
-            if file and allowed_file(file.filename):
-                # Generate unique filename
-                filename = secure_filename(file.filename)
-                unique_filename = f"{uuid.uuid4()}_{filename}"
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                
-                file.save(filepath)
-                uploaded_files.append({
-                    'filename': unique_filename,
-                    'original_name': filename,
-                    'path': filepath
-                })
-        
-        if not uploaded_files:
-            return jsonify({'error': 'No valid image files uploaded'}), 400
-        
-        return jsonify({
-            'success': True,
-            'files': uploaded_files,
-            'message': f'{len(uploaded_files)} files uploaded successfully'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
-
-@app.route('/api/generate', methods=['POST'])
-def generate_marketing_kit():
-    """Generate AI-powered marketing content"""
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-        
-        persona = data.get('persona')
-        file_paths = data.get('file_paths', [])
-        
-        if not persona:
-            return jsonify({'error': 'Buyer persona not specified'}), 400
-        
-        if not file_paths:
-            return jsonify({'error': 'No images provided'}), 400
-        
-        # Verify files exist
-        valid_paths = []
-        for path in file_paths:
-            full_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
-            if os.path.exists(full_path):
-                valid_paths.append(full_path)
-        
-        if not valid_paths:
-            return jsonify({'error': 'No valid image files found'}), 400
-        
-        # Generate content using OpenAI API
-        try:
-            content = analyze_property_with_ai(valid_paths, persona)
-        except Exception as ai_error:
-            print(f"AI Generation Error: {str(ai_error)}")
-            content = generate_fallback_content(persona)
-        
-        # Store generation record
-        generation_record = {
-            'id': str(uuid.uuid4()),
-            'timestamp': datetime.now().isoformat(),
-            'persona': persona,
-            'file_count': len(valid_paths),
-            'content': content
-        }
-        
-        return jsonify({
-            'success': True,
-            'content': content,
-            'generation_id': generation_record['id']
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
-
-@app.route('/api/personas', methods=['GET'])
-def get_personas():
-    """Get available buyer personas"""
-    personas = [
-        {
-            'id': 'First-Time Homebuyers',
-            'name': 'First-Time Buyers',
-            'emoji': '👨‍👩‍👧',
-            'description': 'Young professionals and couples entering the housing market'
-        },
-        {
-            'id': 'Luxury Seeker',
-            'name': 'Luxury Seeker',
-            'emoji': '💎',
-            'description': 'High-income buyers seeking premium properties'
-        },
-        {
-            'id': 'Growing Family',
-            'name': 'Growing Family',
-            'emoji': '🏡',
-            'description': 'Families needing more space and family-friendly features'
-        },
-        {
-            'id': 'Downsizing Retirees',
-            'name': 'Downsizing Retirees',
-            'emoji': '🌅',
-            'description': 'Empty nesters seeking low-maintenance, accessible homes'
-        }
-    ]
-    
-    return jsonify({'personas': personas})
-
-@app.route('/cancel-subscription', methods=['POST'])
-def cancel_subscription():
-    """Handle subscription cancellation"""
-    try:
-        data = request.get_json()
-        user_email = data.get('user_email')
-        
-        # In a real implementation, you would:
-        # 1. Find the customer in Stripe by email
-        # 2. Get their subscription ID
-        # 3. Cancel the subscription
-        # 4. Update your database
-        
-        # For now, return success
-        return jsonify({
-            'success': True,
-            'message': 'Subscription cancelled successfully. You will retain access until the end of your trial period.'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'Cancellation failed: {str(e)}'}), 500
-
-@app.route('/app')
-def app_interface():
-    """Serve the main application interface"""
-    return render_template('index.html')
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    """Serve uploaded files"""
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'service': 'AuraMarkt API'
-    })
-
-@app.errorhandler(413)
-def too_large(e):
-    return jsonify({'error': 'File too large. Maximum size is 16MB.'}), 413
-
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-@app.errorhandler(500)
-def internal_error(e):
-    return jsonify({'error': 'Internal server error'}), 500
-
 @app.route('/app')
 def app_interface():
     """Serve the main application interface"""
@@ -1004,3 +824,8 @@ if __name__ == '__main__':
     
     # Run the application
     app.run(debug=True, host='0.0.0.0', port=5000)
+                        localStorage.setItem('trialStartDate', new Date().toISOString());
+                        localStorage.removeItem('selectedPlan'); // Clear after use
+                    } else {
+                        // Existing user login
+                        localStorage.setItem('userEmail', email);
