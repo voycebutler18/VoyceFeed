@@ -3,44 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMarkt - AI-Powered Real Estate Marketing</title>
+    <title>AuraMarkt - The First AI Property Persona Marketer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { 
+        body {
             font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a;
-            color: #e2e8f0; /* slate-200 */
+            background-color: #0a0a0a; /* Dark background */
+            color: #e2e8f0; /* Light text for contrast */
         }
         .gradient-text {
             background: linear-gradient(to right, #c084fc, #a78bfa, #818cf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .feature-card {
+        .glass-pane {
             background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
         }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .pricing-card.popular {
-            border-color: #a78bfa;
-            transform: scale(1.05);
+        .feature-icon {
+            color: #a78bfa; /* Violet-400 */
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <!-- Header & Navigation -->
+    <!-- Header -->
     <header class="sticky top-0 z-50 bg-black/50 backdrop-blur-lg">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-3xl font-bold text-white">AuraMarkt</h1>
             <nav class="hidden md:flex space-x-8 items-center">
+                <a href="#how-it-works" class="text-slate-300 hover:text-white transition-colors">How It Works</a>
                 <a href="#features" class="text-slate-300 hover:text-white transition-colors">Features</a>
                 <a href="#pricing" class="text-slate-300 hover:text-white transition-colors">Pricing</a>
                 <a href="#contact" class="text-slate-300 hover:text-white transition-colors">Contact</a>
@@ -56,14 +52,16 @@
         </div>
     </header>
 
-    <main>
-        <!-- Hero Section -->
-        <section class="text-center py-24 md:py-32 px-6">
-            <h2 class="text-5xl md:text-7xl font-black text-white leading-tight">
-                Stop Selling Houses. <br> Start Selling <span class="gradient-text">Lifestyles.</span>
+    <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+        <section class="text-center py-8 md:py-12 px-6">
+            <h2 class="text-5xl md:text-6xl font-black text-white leading-tight">
+                <span class="gradient-text">AuraMarkt</span> — The First AI Property Persona Marketer
             </h2>
-            <p class="mt-6 max-w-3xl mx-auto text-lg text-slate-400">
-                AuraMarkt is the world's first AI Property Persona Marketer. We analyze your property photos and instantly generate a complete marketing kit tailored to the perfect buyer, helping you sell faster and for a higher price.
+            <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-400">
+                “Stop Selling Houses. Start Selling Lifestyles.”
+            </p>
+            <p class="mt-6 max-w-4xl mx-auto text-lg text-slate-300">
+                AuraMarkt is a groundbreaking AI-powered SaaS platform that helps real estate professionals market properties better, faster, and more emotionally intelligently than ever before. Instead of manually writing descriptions or guessing what works, agents upload photos — and AuraMarkt instantly creates a complete, persona-targeted marketing kit designed to attract the perfect buyer.
             </p>
             <div class="mt-10">
                 <!-- Updated "Start Your 3-Day Trial" button to go to login_page.html -->
@@ -73,97 +71,193 @@
             </div>
         </section>
 
-        <!-- "How It Works" Section -->
-        <section id="features" class="py-20 px-6">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-white">From Photos to Profit in 3 Simple Steps</h3>
-                <p class="text-slate-400 mt-2">Our revolutionary AI does the heavy lifting, so you can focus on closing.</p>
-            </div>
-            <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                <div>
-                    <h4 class="text-6xl font-black gradient-text mb-4">1</h4>
-                    <h5 class="text-2xl font-bold text-white mb-2">Upload Your Photos</h5>
-                    <p class="text-slate-400">Simply upload your property photos. Our AI sees what makes your listing unique, from the granite countertops to the backyard deck.</p>
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="py-12 px-6">
+            <h3 class="text-4xl font-bold text-white text-center mb-10">🔧 How It Works (3-Step System)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+                <div class="glass-pane p-6 rounded-xl text-center">
+                    <p class="text-5xl mb-4">📸</p>
+                    <h4 class="text-2xl font-bold text-white mb-2">Step 1: AI Vision Analysis</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Upload property photos</li>
+                        <li>• GPT-4 Vision reads the layout, style, furniture, lighting, features</li>
+                        <li>• AI pulls key visual highlights like “sun-drenched kitchen,” “modern spa-style bath,” or “private tree-lined backyard”</li>
+                    </ul>
                 </div>
-                <div>
-                    <h4 class="text-6xl font-black gradient-text mb-4">2</h4>
-                    <h5 class="text-2xl font-bold text-white mb-2">Select the Buyer Persona</h5>
-                    <p class="text-slate-400">Choose your target audience. Are you selling to a growing family, a luxury seeker, or a first-time buyer? Tell our AI who to talk to.</p>
+                <div class="glass-pane p-6 rounded-xl text-center">
+                    <p class="text-5xl mb-4">🎯</p>
+                    <h4 class="text-2xl font-bold text-white mb-2">Step 2: Buyer Persona Targeting</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• Choose a target lifestyle persona:</li>
+                        <li class="ml-4">👨‍👩‍👧 First-Time Homebuyers</li>
+                        <li class="ml-4">💎 Luxury Buyers</li>
+                        <li class="ml-4">🏡 Growing Families</li>
+                        <li class="ml-4">🌅 Downsizing Retirees</li>
+                        <li>• The AI rewrites the entire package — tone, highlights, benefits — to emotionally connect with that exact type of buyer.</li>
+                    </ul>
                 </div>
-                <div>
-                    <h4 class="text-6xl font-black gradient-text mb-4">3</h4>
-                    <h5 class="text-2xl font-bold text-white mb-2">Generate Your Kit</h5>
-                    <p class="text-slate-400">In seconds, receive a complete marketing kit with listing descriptions, social media posts, and video scripts written in the perfect tone to attract your ideal buyer.</p>
+                <div class="glass-pane p-6 rounded-xl text-center">
+                    <p class="text-5xl mb-4">✍️</p>
+                    <h4 class="text-2xl font-bold text-white mb-2">Step 3: Complete Marketing Kit Generation</h4>
+                    <ul class="text-slate-300 text-left space-y-2">
+                        <li>• AuraMarkt instantly generates:</li>
+                        <li class="ml-4">✅ MLS Listing Description (professionally worded)</li>
+                        <li class="ml-4">✅ Facebook/Instagram Post Captions (persona-optimized)</li>
+                        <li class="ml-4">✅ Short-Form Video Script (for reels or walkthroughs)</li>
+                        <li class="ml-4">✅ Key Selling Points (bullet-style, flyer-ready)</li>
+                        <li class="ml-4">✅ CTA Messages (“Schedule a showing today”)</li>
+                        <li class="ml-4">✅ Print + Digital download buttons (PDF, JPG, MP4)</li>
+                    </ul>
                 </div>
             </div>
         </section>
 
-        <!-- Pricing Section -->
-        <section id="pricing" class="py-20 px-6 bg-black/20">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-white">Find the Perfect Plan</h3>
-                <p class="text-slate-400 mt-2">Simple, transparent pricing to supercharge your real estate business.</p>
-            </div>
-            <div class="container mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
-                <!-- Solo Agent Plan -->
-                <div class="feature-card p-8 rounded-2xl flex flex-col">
-                    <h4 class="text-2xl font-bold text-white">Solo Agent</h4>
-                    <p class="text-slate-400 mt-2">For the individual agent ready to dominate their market.</p>
-                    <p class="text-5xl font-black text-white my-6">$49<span class="text-lg font-medium text-slate-400">/month</span></p>
-                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Up to 10 Marketing Kits / Month</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Access to All Buyer Personas</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Standard Email Support</li>
-                    </ul>
-                    <a href="#" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('solo')">Choose Plan</a>
+        <!-- New Agent-Needed Features Section -->
+        <section id="features" class="py-12 px-6">
+            <h3 class="text-4xl font-bold text-white text-center mb-10">🔥 NEW AGENT-NEEDED FEATURES (Industry Firsts)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="glass-pane p-6 rounded-xl">
+                    <h4 class="text-2xl font-bold text-white mb-3 feature-icon">🧠 AI Branding Engine</h4>
+                    <p class="text-slate-300">Auto-generates a consistent brand kit: color palette, slogan, tone, logo concepts. All content — social, email, print — is styled with your branding. No templates, no Canva. Just upload, and AuraMarkt applies your unique brand instantly.</p>
                 </div>
-                <!-- Pro Agent Plan -->
-                <div class="feature-card pricing-card popular p-8 rounded-2xl flex flex-col relative">
-                    <p class="absolute top-0 -translate-y-1/2 bg-violet-500 text-white font-semibold py-1 px-4 rounded-full text-sm">Most Popular</p>
-                    <h4 class="text-2xl font-bold text-white">Pro Agent</h4>
-                    <p class="text-slate-400 mt-2">For top performers and small teams who demand the best.</p>
-                    <p class="text-5xl font-black text-white my-6">$99<span class="text-lg font-medium text-slate-400">/month</span></p>
-                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg><strong>Unlimited</strong> Marketing Kits</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Access to All Buyer Personas</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>AI Market Trend Insights</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
-                    </ul>
-                    <a href="#" class="w-full text-center bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('pro')">Choose Plan</a>
+                <div class="glass-pane p-6 rounded-xl">
+                    <h4 class="text-2xl font-bold text-white mb-3 feature-icon">🤖 Hands-Free Listing Automation</h4>
+                    <p class="text-slate-300">Input an MLS number or property link. System crawls it, pulls the photos + data. Generates entire content pack in under 30 seconds. Includes: flyer, 3D-style virtual tour script, social video, captions, email blast.</p>
                 </div>
-                <!-- Brokerage Plan -->
-                <div class="feature-card p-8 rounded-2xl flex flex-col">
-                    <h4 class="text-2xl font-bold text-white">Brokerage</h4>
-                    <p class="text-slate-400 mt-2">Equip your entire office with the ultimate marketing advantage.</p>
-                    <p class="text-5xl font-black text-white my-6">$299<span class="text-lg font-medium text-slate-400">/month</span></p>
-                    <ul class="space-y-4 text-slate-300 mb-8 flex-grow">
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Everything in Pro</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Up to 5 User Accounts</li>
-                        <li class="flex items-center"><svg class="w-5 h-5 text-violet-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>Centralized Billing & Analytics</li>
-                    </ul>
-                    <a href="#" class="w-full text-center bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors" onclick="redirectToStripe('brokerage')">Choose Plan</a>
+                <div class="glass-pane p-6 rounded-xl">
+                    <h4 class="text-2xl font-bold text-white mb-3 feature-icon">📅 Built-in Social Posting AI</h4>
+                    <p class="text-slate-300">Learns from your previous audience engagement. Writes high-engagement future posts and auto-schedules them. Can ghostwrite replies to comments in your tone/voice while you're busy.</p>
+                </div>
+                <div class="glass-pane p-6 rounded-xl">
+                    <h4 class="text-2xl font-bold text-white mb-3 feature-icon">❤️ Lead Nurturing with Emotional Targeting</h4>
+                    <p class="text-slate-300">Sends psychology-based follow-ups for buyers and sellers. Examples: “What this kitchen says about your future,” or “This one might be worth moving fast on.” Works with Facebook DMs, emails, SMS. Integrates with Zapier, CRMs, or direct APIs.</p>
+                </div>
+                <div class="glass-pane p-6 rounded-xl">
+                    <h4 class="text-2xl font-bold text-white mb-3 feature-icon">🖨️ One-Click Print + Digital Kit</h4>
+                    <p class="text-slate-300">Everything you need for open houses, postcards, signage. Auto-branded and ready-to-print in 1 click. Includes download and print buttons right in the UI (PDF, DOCX, PNG).</p>
                 </div>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer id="contact" class="text-center py-16 px-6">
-            <p class="text-slate-500">&copy; 2025 AuraMarkt. All rights reserved.</p>
-        </footer>
+        <!-- Why It's the First in the World -->
+        <section class="py-12 px-6">
+            <h3 class="text-4xl font-bold text-white text-center mb-10">🌍 Why It’s the First in the World</h3>
+            <div class="max-w-4xl mx-auto glass-pane p-6 rounded-xl">
+                <table class="w-full text-left table-auto">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-700">
+                            <th class="py-3 px-4">Feature</th>
+                            <th class="py-3 px-4">AuraMarkt Offers</th>
+                            <th class="py-3 px-4">Other Tools</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">🧠 GPT-4 Vision + Persona Targeting</td>
+                            <td class="py-3 px-4 text-green-400">✅ Yes</td>
+                            <td class="py-3 px-4 text-red-400">❌ No</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">🎯 Buyer-Psychology Engine</td>
+                            <td class="py-3 px-4 text-green-400">✅ Yes</td>
+                            <td class="py-3 px-4 text-red-400">❌ No</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">🎨 Personal Brand Auto-Styling</td>
+                            <td class="py-3 px-4 text-green-400">✅ Yes</td>
+                            <td class="py-3 px-4 text-red-400">❌ No</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">🛠️ Full Marketing Kit (All in One)</td>
+                            <td class="py-3 px-4 text-green-400">✅ Yes</td>
+                            <td class="py-3 px-4 text-red-400">❌ Usually split tools</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4">📩 Emotion-Based Nurturing AI</td>
+                            <td class="py-3 px-4 text-green-400">✅ Yes</td>
+                            <td class="py-3 px-4 text-red-400">❌ No</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Real Market Opportunity -->
+        <section id="pricing" class="py-12 px-6">
+            <h3 class="text-4xl font-bold text-white text-center mb-10">💼 Real Market Opportunity</h3>
+            <div class="max-w-4xl mx-auto text-lg text-slate-300 space-y-4">
+                <p>• 6+ million U.S. real estate agents</p>
+                <p>• Most agents list 5–10 properties per year</p>
+                <p>• $50–$100/month is a high-value, low-friction price</p>
+                <p>• This creates a multi-billion-dollar recurring revenue model</p>
+            </div>
+        </section>
+
+        <!-- Why Agents Will Use It -->
+        <section class="py-12 px-6">
+            <h3 class="text-4xl font-bold text-white text-center mb-10">🔥 Why Agents Will Use It (Even If They Don’t “Want” Tools)</h3>
+            <div class="max-w-4xl mx-auto glass-pane p-6 rounded-xl">
+                <table class="w-full text-left table-auto">
+                    <thead>
+                        <tr class="text-slate-400 border-b border-slate-700">
+                            <th class="py-3 px-4">Agent Problem</th>
+                            <th class="py-3 px-4">AuraMarkt Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">“I hate writing descriptions”</td>
+                            <td class="py-3 px-4">AI auto-generates listing text</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">“I don’t know what to post on IG”</td>
+                            <td class="py-3 px-4">AI writes and schedules persona-driven content</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">“I can’t keep my branding consistent”</td>
+                            <td class="py-3 px-4">AI branding engine + brand memory</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-4">“I don’t have time to follow up”</td>
+                            <td class="py-3 px-4">Emotional lead messages sent automatically</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4">“I need marketing that actually converts”</td>
+                            <td class="py-3 px-4">Content designed for buyer psychology</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- The Vision -->
+        <section class="py-12 px-6 text-center">
+            <h3 class="text-4xl font-bold text-white mb-6">💡 The Vision:</h3>
+            <p class="text-3xl font-semibold gradient-text mb-4">The Canva of Real Estate Marketing</p>
+            <p class="max-w-3xl mx-auto text-lg text-slate-300">
+                AuraMarkt makes professional, lifestyle-based property marketing available to every agent, even if they have zero tech skills, no time, and no marketing budget.
+            </p>
+        </section>
+
     </main>
+
+    <!-- Footer -->
+    <footer id="contact" class="text-center py-16 px-6 text-slate-500">
+        <p>&copy; 2025 AuraMarkt. All rights reserved.</p>
+    </footer>
 
     <script>
         function redirectToStripe(plan) {
-            // Stripe payment links with 3-day trial
+            // Stripe payment links with 3-day trial (place your actual Stripe links here if needed)
             const stripeLinks = {
                 'solo': 'https://buy.stripe.com/28E14obSScvF7YZfSP1Nu01',
-                'pro': 'https://buy.stripe.com/eVq6oIcWWgLV1AB9ur1Nu02', 
+                'pro': 'https://buy.stripe.com/eVq6oIcWWgLV1AB9ur1Nu02',
                 'brokerage': 'https://buy.stripe.com/00w6oIbSS67hgvvgWT1Nu03'
             };
-            
+
             // Store the selected plan in localStorage for after payment redirect
             localStorage.setItem('selectedPlan', plan);
-            
+
             // Redirect to Stripe checkout
             window.location.href = stripeLinks[plan];
         }
