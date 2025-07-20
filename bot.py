@@ -63,18 +63,19 @@ async def run_bot():
         log_status("CRITICAL: session.json not found. Please log in through the web dashboard first.", level="CRITICAL")
         return
 
-    async with async_playwright() as p:
+        async with async_playwright() as p:
         log_status("Launching browser...")
         chrome_path = os.environ.get("CHROME_EXECUTABLE_PATH")
-if not chrome_path:
-    log_status("CRITICAL: CHROME_EXECUTABLE_PATH not set.", level="CRITICAL")
-    return
 
-browser = await p.chromium.launch(
-    executable_path=chrome_path,
-    headless=True,
-    args=["--no-sandbox"]
-)
+        if not chrome_path:
+            log_status("CRITICAL: CHROME_EXECUTABLE_PATH not set.", level="CRITICAL")
+            return
+
+        browser = await p.chromium.launch(
+            executable_path=chrome_path,
+            headless=True,
+            args=["--no-sandbox"]
+        )
         
         log_status(f"Loading session from {SESSION_FILE}...")
         with open(SESSION_FILE, 'r') as f:
