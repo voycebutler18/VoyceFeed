@@ -12,14 +12,6 @@ import hashlib
 app = Flask(__name__)
 CORS(app)
 
-# --- In-memory storage for demonstration (resets on server restart) ---
-# In a real application, this data would be stored in a database (e.g., Firestore).
-_brand_profiles = []
-_social_posts = []
-_leads = []
-_team_members = []
-# -------------------------------------------------------------------
-
 # Configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-not-for-production')
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -467,4 +459,250 @@ def upload_files():
             return jsonify({'error': 'No files provided'}), 400
         
         files = request.files.getlist('files')
-        if not files or files[0].filename == 
+        if not files or files[0].filename == '':
+            return jsonify({'error': 'No files selected'}), 400
+        
+        uploaded_files = []
+        
+        for file in files[:10]:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                unique_filename = f"{uuid.uuid4()}_{filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                
+                file.save(filepath)
+                uploaded_files.append({
+                    'filename': unique_filename,
+                    'original_name': filename,
+                    'path': filepath
+                })
+        
+        if not uploaded_files:
+            return jsonify({'error': 'No valid image files uploaded'}), 400
+        
+        return jsonify({
+            'success': True,
+            'files': uploaded_files,
+            'message': f'{len(uploaded_files)} files uploaded successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+@app.route('/api/generate-free', methods=['POST'])
+def generate_free_marketing_kit():
+    try:
+        ip_hash = get_ip_hash()
+        
+        if has_used_free_trial(ip_hash):
+            return jsonify({'error': 'Free trial already used'}), 403
+        
+        data = request.get_json()
+        persona = data.get('persona')
+        file_paths = data.get('file_paths', [])
+        
+        if not persona or not file_paths:
+            return jsonify({'error': 'Missing persona or images'}), 400
+        
+        valid_paths = []
+        for path in file_paths:
+            full_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
+            if os.path.exists(full_path):
+                valid_paths.append(full_path)
+        
+        if not valid_paths:
+            return jsonify({'error': 'No valid image files found'}), 400
+        
+        content = analyze_property_with_ai(valid_paths, persona)
+        mark_free_trial_used(ip_hash)
+        
+        return jsonify({
+            'success': True,
+            'content': content,
+            'message': 'Free marketing kit generated!'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
+
+@app.route('/api/generate', methods=['POST'])
+def generate_marketing_kit():
+    try:
+        data = request.get_json()
+        persona = data.get('persona')
+        file_paths = data.get('file_paths', [])
+        
+        if not persona or not file_paths:
+            return jsonify({'error': 'Missing data'}), 400
+        
+        valid_paths = []
+        for path in file_paths:
+            full_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
+            if os.path.exists(full_path):
+                valid_paths.append(full_path)
+        
+        content = analyze_property_with_ai(valid_paths, persona)
+        
+        return jsonify({
+            'success': True,
+            'content': content,
+            'generation_id': str(uuid.uuid4())
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
+
+@app.route('/app')
+def app_interface():
+    return render_template('index.html')
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# New routes for the feature pages
+@app.route('/brand_lab')
+def brand_lab_page():
+    return render_template('brand_lab.html')
+
+@app.route('/social_calendar')
+def social_calendar_page():
+    return render_template('social_calendar.html')
+
+@app.route('/marketing_vault')
+def marketing_vault_page():
+    return render_template('marketing_vault.html')
+
+@app.route('/lead_management')
+def lead_management_page():
+    return render_template('lead_management.html')
+
+@app.route('/open_house_tools')
+def open_house_tools_page():
+    return render_template('open_house_tools.html')
+
+@app.route('/performance_insights')
+def performance_insights_page():
+    return render_template('performance_insights.html')
+
+@app.route('/team_features')
+def team_features_page():
+    return render_template('team_features.html')
+
+@app.route('/profile_settings')
+def profile_settings_page():
+    return render_template('profile_settings.html')
+
+@app.route('/billing_integrations')
+def billing_integrations_page():
+    return render_template('billing_integrations.html')
+
+# API for saving brand profile
+@app.route('/api/save_brand_profile', methods=['POST'])
+def save_brand_profile():
+    try:
+        data = request.get_json()
+        slogan = data.get('slogan')
+        tone = data.get('tone')
+        
+        print(f"Received Brand Profile: Slogan='{slogan}', Tone='{tone}'")
+        
+        return jsonify({'success': True, 'message': 'Brand profile saved successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API for scheduling social posts
+@app.route('/api/schedule_social_post', methods=['POST'])
+def schedule_social_post():
+    try:
+        data = request.get_json()
+        content = data.get('content')
+        date = data.get('date')
+        
+        print(f"Received Social Post: Content='{content}', Date='{date}'")
+        
+        return jsonify({'success': True, 'message': 'Social post scheduled successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API for adding and nurturing leads
+@app.route('/api/add_nurture_lead', methods=['POST'])
+def add_nurture_lead():
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        contact = data.get('contact')
+        lead_type = data.get('type')
+        
+        print(f"Received Lead: Name='{name}', Contact='{contact}', Type='{lead_type}'")
+        
+        return jsonify({'success': True, 'message': 'Lead added and nurturing initiated!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API for generating open house kit
+@app.route('/api/generate_open_house_kit', methods=['POST'])
+def generate_open_house_kit():
+    try:
+        data = request.get_json()
+        address = data.get('address')
+        date = data.get('date')
+        time = data.get('time')
+
+        print(f"Generating Open House Kit for: {address} on {date} at {time}")
+
+        return jsonify({'success': True, 'message': 'Open House Kit generation initiated!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API for getting performance insights
+@app.route('/api/get_performance_insights', methods=['GET'])
+def get_performance_insights():
+    try:
+        # In a real application, this would fetch data from a database
+        # and potentially use AI to generate insights.
+        # For now, return mock data.
+        mock_data = {
+            "totalListings": 15,
+            "avgEngagement": "7.2%",
+            "topPersona": "Growing Family",
+            "aiSuggestionsCount": 5,
+            "insights": [
+                "Properties with modern kitchens received 3x more comments last month.",
+                "Emotional posts generated 2x more direct messages.",
+                "Listings with virtual tours had a 15% higher click-through rate.",
+                "Consider targeting 'Downsizing Retirees' for properties with single-story layouts."
+            ]
+        }
+        return jsonify({'success': True, 'message': 'Insights loaded successfully!', 'data': mock_data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API for adding team member
+@app.route('/api/add_team_member', methods=['POST'])
+def add_team_member():
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        email = data.get('email')
+
+        # In a real application, you would save this team member data to a database
+        # and handle user creation/invitation.
+        print(f"Received new Team Member: Name='{name}', Email='{email}'")
+
+        return jsonify({'success': True, 'message': 'Team member added successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Not found'}), 404
+
+if __name__ == '__main__':
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
