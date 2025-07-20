@@ -3,158 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Assistant Control Panel</title>
+    <title>EchoMe AI - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* slate-950 */
+        }
+        .glass-pane {
+            background: rgba(15, 23, 42, 0.5); /* slate-900 with 60% opacity */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-offline { background-color: #f87171; }
+        .status-running { background-color: #4ade80; animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 50% { opacity: .5; } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-900 text-white flex items-center justify-center h-screen">
+<body class="text-slate-300">
 
-    <div class="text-center bg-slate-800 p-8 md:p-12 rounded-2xl shadow-2xl border border-slate-700 max-w-lg mx-4">
-        <div class="mb-6">
-            <svg class="w-16 h-16 mx-auto text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" />
-            </svg>
-            <h1 class="text-3xl font-bold mt-4">Profile AI Assistant</h1>
-            <p class="text-slate-400 mt-2">Automate your personal Facebook profile.</p>
-        </div>
-
-        <!-- Facebook Login (only shown when not logged in) -->
-        <div id="loginForm" class="mb-6">
-            <div class="text-left mb-3">
-                <input 
-                    type="email" 
-                    id="fbEmail" 
-                    placeholder="Facebook Email"
-                    class="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none text-sm"
-                >
+    <div class="flex h-screen bg-slate-950">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 flex-shrink-0 bg-slate-900 p-4 flex flex-col">
+            <div class="flex items-center mb-10">
+                <svg class="w-10 h-10 text-blue-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
+                <h1 class="text-2xl font-bold text-white">EchoMe AI</h1>
             </div>
-            <div class="text-left mb-4">
-                <input 
-                    type="password" 
-                    id="fbPassword" 
-                    placeholder="Facebook Password"
-                    class="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none text-sm"
-                >
+            <nav class="flex-grow">
+                <a href="#" class="flex items-center p-3 rounded-lg bg-slate-800 text-white font-semibold">
+                    <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 8.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                    Dashboard
+                </a>
+            </nav>
+            <div class="mt-auto glass-pane p-4 rounded-lg">
+                <div id="login-section">
+                    <h2 class="text-lg font-semibold text-white">Login to Facebook</h2>
+                    <form id="fb-login-form" class="space-y-4 mt-4">
+                        <input type="text" id="fb-email" placeholder="Email or Phone" class="w-full px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-blue-500 focus:outline-none">
+                        <input type="password" id="fb-password" placeholder="Password" class="w-full px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-blue-500 focus:outline-none">
+                        <button type="submit" id="loginButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg disabled:bg-slate-600 disabled:cursor-not-allowed">
+                          Log In
+                        </button>
+                    </form>
+                    <p id="login-status" class="text-sm text-slate-400 mt-2 h-4"></p>
+                </div>
+                <div id="control-section" class="hidden">
+                    <h2 class="text-lg font-semibold text-white">System Control</h2>
+                    <p class="text-sm text-slate-400 mt-2 mb-4">Start the assistant to begin the automation process.</p>
+                    <button id="startButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:bg-slate-600 disabled:cursor-not-allowed">
+                        Start AI Assistant
+                    </button>
+                </div>
             </div>
-            <button id="loginButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all duration-300 transform hover:scale-105 mb-4">
-                Login to Facebook
-            </button>
-        </div>
+        </aside>
 
-        <!-- Login Success Message (hidden by default) -->
-        <div id="loginSuccess" class="hidden mb-4 p-3 bg-green-900/30 border border-green-500 rounded-lg">
-            <p class="text-green-400 text-sm">✅ Connected to Facebook</p>
-        </div>
+        <!-- Main Content -->
+        <main class="flex-1 p-6 overflow-y-auto">
+            <header class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-white">Dashboard</h1>
+                <div id="status-indicator" class="flex items-center glass-pane py-2 px-4 rounded-full">
+                    <span class="status-dot status-offline"></span>
+                    <span id="status-text" class="text-slate-300 font-medium">Offline</span>
+                </div>
+            </header>
 
-        <button id="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-            Start AI Assistant
-        </button>
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">Posts Analyzed</h3><p id="posts-analyzed" class="text-4xl font-bold text-white mt-2">0</p></div>
+                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">AI Actions</h3><p id="ai-actions" class="text-4xl font-bold text-white mt-2">0</p></div>
+                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">Comments Made</h3><p id="comments-made" class="text-4xl font-bold text-white mt-2">0</p></div>
+                <div class="glass-pane p-6 rounded-2xl"><h3 class="text-slate-400">Uptime</h3><p id="uptime" class="text-4xl font-bold text-white mt-2">0m</p></div>
+            </div>
 
-        <div id="status" class="mt-6 text-left bg-slate-900 p-4 rounded-lg h-48 overflow-y-auto border border-slate-700">
-            <p class="text-slate-500">Status will appear here...</p>
-        </div>
+            <!-- Main Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Live Activity Log -->
+                <div class="lg:col-span-2 glass-pane p-6 rounded-2xl">
+                    <h2 class="text-xl font-semibold text-white mb-4">Live Activity Log</h2>
+                    <div id="status-log" class="font-mono text-sm bg-slate-900/50 p-4 rounded-lg h-96 overflow-y-auto">
+                        <p class="text-slate-500">Please log in to start the assistant.</p>
+                    </div>
+                </div>
+
+                <!-- AI Suggestions & Chart -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="glass-pane p-6 rounded-2xl">
+                        <h2 class="text-xl font-semibold text-white mb-4">Latest AI Suggestion</h2>
+                        <div id="ai-suggestions-log" class="space-y-4">
+                            <p class="text-slate-500 text-center pt-8">AI-generated content will appear here.</p>
+                        </div>
+                    </div>
+                    <div class="glass-pane p-6 rounded-2xl">
+                        <h2 class="text-xl font-semibold text-white mb-4">Activity Chart</h2>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
         const startButton = document.getElementById('startButton');
-        const statusDiv = document.getElementById('status');
         const loginButton = document.getElementById('loginButton');
-        const fbEmail = document.getElementById('fbEmail');
-        const fbPassword = document.getElementById('fbPassword');
-        const loginForm = document.getElementById('loginForm');
-        const loginSuccess = document.getElementById('loginSuccess');
+        const loginStatus = document.getElementById('login-status');
+        const loginSection = document.getElementById('login-section');
+        const controlSection = document.getElementById('control-section');
 
-        let isLoggedIn = false;
+        const statusLogDiv = document.getElementById('status-log');
+        const aiSuggestionsDiv = document.getElementById('ai-suggestions-log');
+        const statusIndicator = document.getElementById('status-indicator').querySelector('.status-dot');
+        const statusText = document.getElementById('status-text');
+        
+        const postsAnalyzedEl = document.getElementById('posts-analyzed');
+        const aiActionsEl = document.getElementById('ai-actions');
+        const commentsMadeEl = document.getElementById('comments-made');
+        const uptimeEl = document.getElementById('uptime');
 
-        // Function to add a new status message
-        function addStatus(message, isError = false) {
-            if (statusDiv.querySelector('p.text-slate-500')) {
-                statusDiv.innerHTML = ''; // Clear initial message
+        let statusInterval, uptimeInterval;
+        let startTime;
+        let metrics = { posts: 0, actions: 0, comments: 0 };
+        let activityChart;
+
+        function initializeChart() {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            if (activityChart) {
+                activityChart.destroy();
             }
-            const p = document.createElement('p');
-            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            p.className = isError ? 'text-red-400' : 'text-green-400';
-            statusDiv.prepend(p); // Add new message to the top
+            activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'AI Actions',
+                        data: [],
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(71, 85, 105, 0.5)' } },
+                        y: { beginAtZero: true, ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(71, 85, 105, 0.5)' } }
+                    }
+                }
+            });
         }
 
-        // Facebook login handler
-        loginButton.addEventListener('click', async () => {
-            const email = fbEmail.value.trim();
-            const password = fbPassword.value.trim();
+        function updateUptime() {
+            if (!startTime) return;
+            const diffSeconds = Math.floor((new Date() - startTime) / 1000);
+            const minutes = Math.floor(diffSeconds / 60);
+            uptimeEl.textContent = `${minutes}m`;
+        }
 
-            if (!email || !password) {
-                addStatus('Please enter email and password', true);
-                return;
-            }
+        function renderLogs(logs) {
+            if (logs.length === 0) return;
+            statusLogDiv.innerHTML = '';
+            logs.forEach(log => {
+                const p = document.createElement('p');
+                let levelColor = 'text-slate-400';
+                if (log.includes('[SUCCESS]')) levelColor = 'text-green-400';
+                if (log.includes('[ERROR]') || log.includes('[CRITICAL]')) levelColor = 'text-red-400';
+                if (log.includes('[AI_ACTION]')) levelColor = 'text-sky-400';
+                
+                p.className = levelColor;
+                p.textContent = log;
+                statusLogDiv.appendChild(p);
 
-            loginButton.disabled = true;
-            loginButton.textContent = 'Logging in...';
-            addStatus('Connecting to Facebook...');
+                if (log.includes("Analyzed post")) metrics.posts++;
+                if (log.includes("[AI_ACTION]")) {
+                    metrics.actions++;
+                    if (aiSuggestionsDiv.querySelector('p')) aiSuggestionsDiv.innerHTML = '';
+                    const suggestionCard = document.createElement('div');
+                    suggestionCard.className = 'bg-slate-900/50 p-4 rounded-lg animate-pulse';
+                    suggestionCard.innerHTML = `<p class="text-sky-300">${log.split('[AI_ACTION]')[1].trim()}</p>`;
+                    aiSuggestionsDiv.innerHTML = '';
+                    aiSuggestionsDiv.appendChild(suggestionCard);
 
-            try {
-                const response = await fetch('/facebook-login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    isLoggedIn = true;
-                    loginForm.classList.add('hidden');
-                    loginSuccess.classList.remove('hidden');
-                    startButton.disabled = false;
-                    addStatus('Successfully logged into Facebook!');
-                    fbPassword.value = ''; // Clear password
-                } else {
-                    addStatus(data.error || 'Login failed', true);
+                    const now = new Date();
+                    activityChart.data.labels.push(now.toLocaleTimeString());
+                    activityChart.data.datasets[0].data.push(metrics.actions);
+                    if(activityChart.data.labels.length > 10) {
+                        activityChart.data.labels.shift();
+                        activityChart.data.datasets[0].data.shift();
+                    }
+                    activityChart.update();
                 }
-            } catch (error) {
-                addStatus('Failed to connect to server', true);
-            }
+                if (log.includes("Comment successfully posted")) metrics.comments++;
+            });
+            postsAnalyzedEl.textContent = metrics.posts;
+            aiActionsEl.textContent = metrics.actions;
+            commentsMadeEl.textContent = metrics.comments;
+            statusLogDiv.scrollTop = statusLogDiv.scrollHeight;
+        }
 
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/get-status');
+                const data = await response.json();
+                if (data.log.length > 0 && statusText.textContent === 'Offline') {
+                    statusIndicator.className = 'status-dot status-running';
+                    statusText.textContent = 'Running';
+                }
+                renderLogs(data.log);
+            } catch (error) {
+                console.error("Failed to fetch status:", error);
+                statusIndicator.className = 'status-dot status-offline';
+                statusText.textContent = 'Error';
+                clearInterval(statusInterval);
+                clearInterval(uptimeInterval);
+            }
+        }
+
+        document.getElementById('fb-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('fb-email').value;
+            const password = document.getElementById('fb-password').value;
+            loginStatus.textContent = 'Logging in...';
+            loginButton.disabled = true;
+
+            const response = await fetch('/fb-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+            loginStatus.textContent = data.message || data.error;
+            
+            if (response.ok) {
+                loginStatus.classList.remove('text-red-400');
+                loginStatus.classList.add('text-green-400');
+                loginSection.classList.add('hidden');
+                controlSection.classList.remove('hidden');
+            } else {
+                loginStatus.classList.remove('text-green-400');
+                loginStatus.classList.add('text-red-400');
+            }
             loginButton.disabled = false;
-            loginButton.textContent = 'Login to Facebook';
         });
 
         startButton.addEventListener('click', async () => {
-            if (!isLoggedIn) {
-                addStatus('Please login to Facebook first', true);
-                return;
-            }
-
-            addStatus('Sending start command to server...');
+            statusLogDiv.innerHTML = '<p class="text-slate-500">Sending start command to server...</p>';
             startButton.disabled = true;
-            startButton.textContent = 'Assistant is Running...';
+            
+            if (statusInterval) clearInterval(statusInterval);
+if (uptimeInterval) clearInterval(uptimeInterval);
+
+            metrics = { posts: 0, actions: 0, comments: 0 };
+            postsAnalyzedEl.textContent = '0';
+            aiActionsEl.textContent = '0';
+            commentsMadeEl.textContent = '0';
+            uptimeEl.textContent = '0m';
+            aiSuggestionsDiv.innerHTML = '<p class="text-slate-500 text-center pt-16">AI-generated content will appear here.</p>';
+            initializeChart();
 
             try {
-                // This sends a request to your Python backend to start the bot.
                 const response = await fetch('/start-bot', { method: 'POST' });
-                const data = await response.json();
-
                 if (response.ok) {
-                    addStatus(data.message);
+                    startTime = new Date();
+                    statusInterval = setInterval(fetchStatus, 2000);
+                    uptimeInterval = setInterval(updateUptime, 1000);
                 } else {
-                    addStatus(data.error, true);
+                    const data = await response.json();
+                    statusLogDiv.innerHTML = `<p class="text-red-400">${data.error || 'An unknown error occurred.'}</p>`;
+                    startButton.disabled = false;
                 }
-
             } catch (error) {
-                addStatus('Failed to connect to the server.', true);
-                console.error('Error:', error);
-            } finally {
-                // Note: We keep the button disabled to prevent multiple starts.
-                // You might add a "Stop" button in a more advanced version.
+                statusLogDiv.innerHTML = '<p class="text-red-400">Failed to connect to the server. Is it running?</p>';
+                startButton.disabled = false;
             }
         });
-
-        // Enter key support
-        fbPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loginButton.click();
-        });
+        
+        initializeChart();
     </script>
 
 </body>
