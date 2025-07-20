@@ -61,6 +61,14 @@
                     <span id="trialDaysLeft"></span> days remaining
                 </p>
             </div>
+            
+            <!-- Owner Badge -->
+            <div id="ownerBadge" class="hidden mt-4 bg-gold-600/20 border border-yellow-500/30 rounded-lg p-3 max-w-lg mx-auto">
+                <p class="text-yellow-300 text-sm">
+                    <span class="font-semibold">👑 Owner Account:</span> 
+                    Unlimited access forever
+                </p>
+            </div>
         </header>
 
         <!-- Main Application -->
@@ -295,14 +303,29 @@
 
         // --- Initialize ---
         function initializeApp() {
-            // Check if user is logged in and show trial info
+            // Check if user is logged in
             const isLoggedIn = localStorage.getItem('isLoggedIn');
-            const trialStartDate = localStorage.getItem('trialStartDate');
-            const userPlan = localStorage.getItem('userPlan');
+            const isOwner = localStorage.getItem('isOwner');
+            const userEmail = localStorage.getItem('userEmail');
             
-            if (isLoggedIn && trialStartDate) {
-                showTrialInfo(trialStartDate, userPlan);
+            if (isLoggedIn) {
+                if (isOwner && userEmail === 'peterbutler41@gmail.com') {
+                    // Show owner badge
+                    showOwnerBadge();
+                } else {
+                    // Show trial info for regular users
+                    const trialStartDate = localStorage.getItem('trialStartDate');
+                    const userPlan = localStorage.getItem('userPlan');
+                    if (trialStartDate) {
+                        showTrialInfo(trialStartDate, userPlan);
+                    }
+                }
             }
+        }
+        
+        function showOwnerBadge() {
+            const ownerBadge = document.getElementById('ownerBadge');
+            ownerBadge.classList.remove('hidden');
         }
         
         function showTrialInfo(startDate, plan) {
