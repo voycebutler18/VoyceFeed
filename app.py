@@ -138,7 +138,7 @@ Create a compelling 250-word property description that highlights features visib
         }
         
         payload = {
-            "model": "gpt-4-vision-preview",
+            "model": "gpt-4o", # Changed from "gpt-4-vision-preview" to "gpt-4o"
             "messages": [
                 {
                     "role": "user",
@@ -166,12 +166,14 @@ Create a compelling 250-word property description that highlights features visib
             return {
                 "listing": f"<h2>Perfect Home for {persona}!</h2><p>{ai_content}</p>",
                 "social": f"<h3>Social Media Posts:</h3><p>🏡 New listing perfect for {persona.lower()}! {ai_content[:150]}... #RealEstate #NewListing #{persona.replace(' ', '')}</p>",
-                "video": f"<h3>Video Script:</h3><p>30-second tour highlighting features for {persona.lower()}. {ai_content[:200]}...</p>",
+                "video": f"<h3>30-Second Video Script:</h3><p>Perfect property tour for {persona.lower()}. {ai_content[:200]}...</p>",
                 "points": f"<h3>Key Selling Points:</h3><ul><li><strong>Perfect for {persona}</strong></li><li><strong>Move-in Ready</strong></li><li><strong>Great Location</strong></li><li><strong>Unique Features</strong></li></ul>",
                 "analysis": f"AI analysis completed for {persona} based on actual property images."
             }
         else:
             print(f"OpenAI API Error: {response.status_code}")
+            # Added more error details for debugging
+            print(f"OpenAI API Error details: {response.text}") 
             return generate_fallback_content(persona)
             
     except Exception as e:
