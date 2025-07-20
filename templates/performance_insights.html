@@ -11,13 +11,101 @@
         .glass-pane { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="glass-pane p-8 max-w-2xl w-full text-center">
+<body class="min-h-screen flex flex-col items-center p-4">
+    <div class="glass-pane p-8 max-w-4xl w-full text-center">
         <h1 class="text-4xl font-bold text-white mb-4">9. Performance Insights</h1>
         <p class="text-slate-300 mb-6">Dive into your marketing performance: see which listings got the most engagement, what buyer personas clicked most, and smart AI suggestions.</p>
-        <button onclick="window.history.back()" class="bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+
+        <div class="mt-8 space-y-6">
+            <div class="glass-pane p-6 text-left">
+                <h3 class="text-2xl font-bold text-white mb-4">Your Key Metrics</h3>
+                <div id="metrics-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300">
+                    <p><strong>Total Listings Analyzed:</strong> <span id="total-listings">0</span></p>
+                    <p><strong>Average Engagement Rate:</strong> <span id="avg-engagement">0%</span></p>
+                    <p><strong>Top Performing Persona:</strong> <span id="top-persona">N/A</span></p>
+                    <p><strong>AI Suggestion Count:</strong> <span id="ai-suggestions-count">0</span></p>
+                </div>
+            </div>
+
+            <div class="glass-pane p-6 text-left">
+                <h3 class="text-2xl font-bold text-white mb-4">Smart AI Insights</h3>
+                <div id="insights-display" class="text-slate-300 space-y-2">
+                    <p>Click "Refresh Insights" to load your latest performance data and AI-driven recommendations.</p>
+                    <!-- Insights will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <button id="refresh-insights-button" class="mt-8 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+            Refresh Insights
+        </button>
+
+        <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
+
+        <button onclick="window.history.back()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
             Go Back to Dashboard
         </button>
     </div>
+
+    <script>
+        document.getElementById('refresh-insights-button').addEventListener('click', async function() {
+            const responseMessageDiv = document.getElementById('response-message');
+            responseMessageDiv.classList.add('hidden'); // Hide previous messages
+
+            try {
+                const response = await fetch('/api/get_performance_insights', {
+                    method: 'GET', // Using GET for fetching data
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Update metrics
+                    document.getElementById('total-listings').textContent = result.data.totalListings;
+                    document.getElementById('avg-engagement').textContent = result.data.avgEngagement;
+                    document.getElementById('top-persona').textContent = result.data.topPersona;
+                    document.getElementById('ai-suggestions-count').textContent = result.data.aiSuggestionsCount;
+
+                    // Update insights
+                    const insightsDisplay = document.getElementById('insights-display');
+                    insightsDisplay.innerHTML = ''; // Clear previous insights
+                    if (result.data.insights.length > 0) {
+                        result.data.insights.forEach(insight => {
+                            const p = document.createElement('p');
+                            p.textContent = `• ${insight}`;
+                            insightsDisplay.appendChild(p);
+                        });
+                    } else {
+                        insightsDisplay.innerHTML = '<p class="text-slate-500">No new insights available.</p>';
+                    }
+
+                    responseMessageDiv.textContent = result.message;
+                    responseMessageDiv.classList.remove('hidden');
+                } else {
+                    showMessageBox("Failed to load insights: " + (result.error || "Unknown error"));
+                }
+            } catch (error) {
+                showMessageBox("An error occurred while fetching insights: " + error.message);
+            }
+        });
+
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                    <p class="text-white text-lg mb-4">${message}</p>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+
+        // Initial load of insights when page loads (optional, can be removed if you only want manual refresh)
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('refresh-insights-button').click();
+        });
+    </script>
 </body>
 </html>
