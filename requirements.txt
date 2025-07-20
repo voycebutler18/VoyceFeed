@@ -2,3 +2,4 @@ flask
 playwright
 openai
 python-dotenv
+gunicorn
