@@ -56,10 +56,13 @@
             
             <!-- Trial Info Banner -->
             <div id="trialBanner" class="hidden mt-4 bg-violet-600/20 border border-violet-500/30 rounded-lg p-3 max-w-lg mx-auto">
-                <p class="text-violet-300 text-sm">
-                    <span class="font-semibold">Free Trial Active:</span> 
-                    <span id="trialDaysLeft"></span> days remaining
-                </p>
+                <div class="flex justify-between items-center">
+                    <p class="text-violet-300 text-sm">
+                        <span class="font-semibold">Trial Active:</span> 
+                        <span id="trialDaysLeft"></span> days left
+                    </p>
+                    <button id="cancelBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel Subscription</button>
+                </div>
             </div>
             
             <!-- Owner Badge -->
@@ -333,27 +336,207 @@
             const now = new Date();
             const daysElapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
             const daysLeft = Math.max(0, 3 - daysElapsed);
+            const hoursLeft = Math.max(0, 72 - Math.floor((now - start) / (1000 * 60 * 60)));
             
             const trialBanner = document.getElementById('trialBanner');
             const trialDaysLeft = document.getElementById('trialDaysLeft');
             
-            if (daysLeft > 0) {
-                trialDaysLeft.textContent = daysLeft;
-                trialBanner.classList.remove('hidden');
-            } else {
-                trialDaysLeft.textContent = '0';
+            if (daysLeft > 1) {
+                // More than 1 day left - show normal trial banner
                 trialBanner.innerHTML = `
-                    <p class="text-yellow-300 text-sm">
-                        <span class="font-semibold">Trial Expired:</span> 
-                        Your ${plan} plan is now active
-                    </p>
+                    <div class="flex justify-between items-center">
+                        <p class="text-violet-300 text-sm">
+                            <span class="font-semibold">Trial Active:</span> 
+                            ${daysLeft} days, ${hoursLeft % 24} hours left
+                        </p>
+                        <button id="cancelBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel</button>
+                    </div>
                 `;
                 trialBanner.classList.remove('hidden');
+                
+                // Add cancel functionality
+                document.getElementById('cancelBtn').addEventListener('click', function() {
+                    if (confirm('Are you sure you want to cancel your subscription? You will lose access after your trial ends.')) {
+                        cancelSubscription();
+                    }
+                });
+                
+            } else if (daysLeft === 1 || (daysLeft === 0 && hoursLeft > 0)) {
+                // Last day of trial - show upgrade or cancel options
+                trialBanner.innerHTML = `
+                    <div class="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-4">
+                        <div class="text-center mb-3">
+                            <p class="text-yellow-300 text-sm font-semibold">
+                                ⚠️ Trial expires in ${hoursLeft} hours!
+                            </p>
+                            <p class="text-yellow-200 text-xs mt-1">
+                                Choose to continue with your ${plan} plan or cancel to avoid charges
+                            </p>
+                        </div>
+                        <div class="flex gap-2 justify-center">
+                            <button id="continueBtn" class="bg-violet-600 hover:bg-violet-700 text-white text-xs px-4 py-2 rounded transition-colors">
+                                Continue Subscription (${getPlanPrice(plan)}/month)
+                            </button>
+                            <button id="cancelLastDayBtn" class="bg-red-600 hover:bg-red-700 text-white text-xs px-4 py-2 rounded transition-colors">
+                                Cancel Now
+                            </button>
+                        </div>
+                    </div>
+                `;
+                trialBanner.classList.remove('hidden');
+                
+                // Add continue functionality
+                document.getElementById('continueBtn').addEventListener('click', function() {
+                    if (confirm('Continue with your subscription? You will be charged starting tomorrow.')) {
+                        confirmSubscription();
+                    }
+                });
+                
+                // Add cancel functionality
+                document.getElementById('cancelLastDayBtn').addEventListener('click', function() {
+                    if (confirm('Cancel your subscription? You will lose access when your trial ends.')) {
+                        cancelSubscription();
+                    }
+                });
+                
+            } else {
+                // Trial has ended - show active subscription
+                trialBanner.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <p class="text-green-300 text-sm">
+                            <span class="font-semibold">Subscription Active:</span> 
+                            ${plan} plan (${getPlanPrice(plan)}/month)
+                        </p>
+                        <button id="cancelActiveBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel Subscription</button>
+                    </div>
+                `;
+                trialBanner.classList.remove('hidden');
+                
+                // Add cancel functionality for active subscription
+                document.getElementById('cancelActiveBtn').addEventListener('click', function() {
+                    if (confirm('Are you sure you want to cancel your subscription? You will lose access at the end of your billing period.')) {
+                        cancelSubscription();
+                    }
+                });
+            }
+        }
+        
+        function getPlanPrice(plan) {
+            const prices = {
+                'solo': '49',
+                'pro': '99', 
+                'brokerage': '299'
+            };
+            return prices[plan] || '49';
+        }
+        
+        function confirmSubscription() {
+            // Mark subscription as confirmed
+            localStorage.setItem('subscriptionConfirmed', 'true');
+            
+            // Update UI to show active subscription
+            const trialBanner = document.getElementById('trialBanner');
+            const userPlan = localStorage.getItem('userPlan');
+            
+            trialBanner.innerHTML = `
+                <div class="bg-green-600/20 border border-green-500/30 rounded-lg p-3">
+                    <p class="text-green-300 text-sm text-center">
+                        <span class="font-semibold">✅ Subscription Confirmed!</span> 
+                        Your ${userPlan} plan is now active
+                    </p>
+                </div>
+            `;
+            
+            // Auto-hide after 3 seconds and show normal active subscription banner
+            setTimeout(() => {
+                trialBanner.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <p class="text-green-300 text-sm">
+                            <span class="font-semibold">Subscription Active:</span> 
+                            ${userPlan} plan (${getPlanPrice(userPlan)}/month)
+                        </p>
+                        <button id="cancelActiveBtn" class="text-red-400 hover:text-red-300 text-xs underline">Cancel Subscription</button>
+                    </div>
+                `;
+                
+                // Re-add cancel functionality
+                document.getElementById('cancelActiveBtn').addEventListener('click', function() {
+                    if (confirm('Are you sure you want to cancel your subscription? You will lose access at the end of your billing period.')) {
+                        cancelSubscription();
+                    }
+                });
+            }, 3000);
+        }
+        
+        function cancelSubscription() {
+            // Call backend to cancel via Stripe API
+            const userEmail = localStorage.getItem('userEmail');
+            
+            fetch('/cancel-subscription', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_email: userEmail
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Subscription cancelled successfully. You will retain access until the end of your trial period.');
+                    
+                    // Update local storage to reflect cancellation
+                    localStorage.setItem('subscriptionCancelled', 'true');
+                    
+                    // Calculate remaining time
+                    const trialStartDate = localStorage.getItem('trialStartDate');
+                    const start = new Date(trialStartDate);
+                    const now = new Date();
+                    const hoursLeft = Math.max(0, 72 - Math.floor((now - start) / (1000 * 60 * 60)));
+                    const daysLeft = Math.floor(hoursLeft / 24);
+                    
+                    // Update UI
+                    const trialBanner = document.getElementById('trialBanner');
+                    trialBanner.innerHTML = `
+                        <div class="bg-red-600/20 border border-red-500/30 rounded-lg p-3">
+                            <p class="text-red-300 text-sm text-center">
+                                <span class="font-semibold">❌ Subscription Cancelled</span><br>
+                                <span class="text-xs">Access ends in ${daysLeft} days, ${hoursLeft % 24} hours</span>
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    alert('Failed to cancel subscription: ' + result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Cancellation error:', error);
+                alert('Failed to cancel subscription. Please try again.');
+            });
+        }
+        
+        // Update trial info every hour
+        function startTrialTimer() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const trialStartDate = localStorage.getItem('trialStartDate');
+            const userPlan = localStorage.getItem('userPlan');
+            const isOwner = localStorage.getItem('isOwner');
+            
+            if (isLoggedIn && trialStartDate && !isOwner) {
+                // Update immediately
+                showTrialInfo(trialStartDate, userPlan);
+                
+                // Update every hour
+                setInterval(() => {
+                    showTrialInfo(trialStartDate, userPlan);
+                }, 60 * 60 * 1000); // 1 hour in milliseconds
             }
         }
         
         // Initialize app on load
         initializeApp();
+        startTrialTimer();
         console.log('AuraMarkt app loaded successfully!');
     </script>
 </body>
