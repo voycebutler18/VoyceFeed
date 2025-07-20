@@ -11,41 +11,56 @@
         .glass-pane { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-    <div class="glass-pane p-8 max-w-2xl w-full text-center">
+<body class="min-h-screen flex flex-col items-center p-4">
+    <div class="glass-pane p-8 max-w-4xl w-full text-center">
         <h1 class="text-4xl font-bold text-white mb-4">📅 Smart Social Scheduler</h1>
         <p class="text-slate-300 mb-6">Schedule your social media posts and get AI-generated suggestions based on your audience's engagement patterns.</p>
 
-        <form id="socialSchedulerForm" class="space-y-6 text-left">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+            <!-- Schedule Post Form -->
             <div>
-                <label for="postContent" class="block text-sm font-medium text-slate-300 mb-2">Post Content</label>
-                <textarea
-                    id="postContent"
-                    name="postContent"
-                    rows="4"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    placeholder="Write your post content here..."
-                ></textarea>
+                <h2 class="text-2xl font-bold text-white mb-4">Schedule New Post</h2>
+                <form id="socialSchedulerForm" class="space-y-6">
+                    <div>
+                        <label for="postContent" class="block text-sm font-medium text-slate-300 mb-2">Post Content</label>
+                        <textarea
+                            id="postContent"
+                            name="postContent"
+                            rows="4"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            placeholder="Write your post content here..."
+                            required
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label for="scheduleDate" class="block text-sm font-medium text-slate-300 mb-2">Schedule Date</label>
+                        <input
+                            type="date"
+                            id="scheduleDate"
+                            name="scheduleDate"
+                            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            required
+                        >
+                    </div>
+                    
+                    <button
+                        type="submit"
+                        class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    >
+                        Schedule Post
+                    </button>
+                </form>
+                <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
             </div>
-            <div>
-                <label for="scheduleDate" class="block text-sm font-medium text-slate-300 mb-2">Schedule Date</label>
-                <input
-                    type="date"
-                    id="scheduleDate"
-                    name="scheduleDate"
-                    class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
-                >
-            </div>
-            
-            <button
-                type="submit"
-                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-                Schedule Post
-            </button>
-        </form>
 
-        <div id="response-message" class="mt-6 text-center text-green-400 hidden"></div>
+            <!-- Scheduled Posts Display -->
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-4">Your Scheduled Posts</h2>
+                <div id="scheduled-posts-list" class="space-y-4">
+                    <p class="text-slate-500">Loading scheduled posts...</p>
+                </div>
+            </div>
+        </div>
 
         <button onclick="window.history.back()" class="mt-8 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
             Go Back to Dashboard
@@ -53,12 +68,62 @@
     </div>
 
     <script>
-        document.getElementById('socialSchedulerForm').addEventListener('submit', async function(event) {
+        const socialSchedulerForm = document.getElementById('socialSchedulerForm');
+        const postContentInput = document.getElementById('postContent');
+        const scheduleDateInput = document.getElementById('scheduleDate');
+        const scheduledPostsList = document.getElementById('scheduled-posts-list');
+        const responseMessageDiv = document.getElementById('response-message');
+
+        // Function to display messages (reused from previous files)
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                    <p class="text-white text-lg mb-4">${message}</p>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+
+        // Function to fetch and display scheduled posts
+        async function fetchAndDisplayScheduledPosts() {
+            scheduledPostsList.innerHTML = '<p class="text-slate-500">Loading scheduled posts...</p>';
+            try {
+                const response = await fetch('/api/get_social_posts');
+                const result = await response.json();
+
+                if (result.success) {
+                    scheduledPostsList.innerHTML = ''; // Clear loading message
+                    if (result.data.length === 0) {
+                        scheduledPostsList.innerHTML = '<p class="text-slate-500">No posts scheduled yet.</p>';
+                    } else {
+                        result.data.forEach(post => {
+                            const postDiv = document.createElement('div');
+                            postDiv.className = 'glass-pane p-4 text-sm';
+                            postDiv.innerHTML = `
+                                <p class="font-semibold text-white">${post.content}</p>
+                                <p class="text-slate-400">Scheduled for: ${post.date}</p>
+                            `;
+                            scheduledPostsList.appendChild(postDiv);
+                        });
+                    }
+                } else {
+                    scheduledPostsList.innerHTML = `<p class="text-red-400">Error loading posts: ${result.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                scheduledPostsList.innerHTML = `<p class="text-red-400">Network error: ${error.message}</p>`;
+            }
+        }
+
+        // Handle form submission
+        socialSchedulerForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const postContent = document.getElementById('postContent').value;
-            const scheduleDate = document.getElementById('scheduleDate').value;
-            const responseMessageDiv = document.getElementById('response-message');
+            const postContent = postContentInput.value;
+            const scheduleDate = scheduleDateInput.value;
+            responseMessageDiv.classList.add('hidden');
 
             if (!postContent || !scheduleDate) {
                 showMessageBox("Please enter post content and select a date.");
@@ -77,7 +142,9 @@
                 if (result.success) {
                     responseMessageDiv.textContent = result.message;
                     responseMessageDiv.classList.remove('hidden');
-                    // In a real app, this would save to a database and potentially interact with social media APIs
+                    postContentInput.value = ''; // Clear form
+                    scheduleDateInput.value = ''; // Clear form
+                    fetchAndDisplayScheduledPosts(); // Refresh the list
                 } else {
                     showMessageBox("Failed to schedule post: " + (result.error || "Unknown error"));
                 }
@@ -86,17 +153,8 @@
             }
         });
 
-        function showMessageBox(message) {
-            const messageBox = document.createElement('div');
-            messageBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-            messageBox.innerHTML = `
-                <div class="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
-                    <p class="text-white text-lg mb-4">${message}</p>
-                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-4 rounded-lg" onclick="this.closest('.fixed').remove()">OK</button>
-                </div>
-            `;
-            document.body.appendChild(messageBox);
-        }
+        // Fetch posts when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayScheduledPosts);
     </script>
 </body>
 </html>
