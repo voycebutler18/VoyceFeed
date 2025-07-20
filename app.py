@@ -112,7 +112,7 @@ def index():
     """Serve the main application page"""
     # Read the HTML content from the uploaded file
     try:
-        with open('index (3).html', 'r') as f:
+        with open('index.html', 'r') as f:
             html_content = f.read()
         return html_content
     except FileNotFoundError:
