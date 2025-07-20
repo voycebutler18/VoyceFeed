@@ -1,31 +1,21 @@
 # app.py
 # A simple Flask server to serve the control panel and launch the automation bot.
-# Updated with a check to help debug the 'TemplateNotFound' error.
+# Final version using the standard 'templates' folder.
 
 import os
 import subprocess
 from flask import Flask, render_template, jsonify, request
 
-# This tells Flask to look for templates in the same directory as this script.
-# This is the correct setting for your project structure.
-app = Flask(__name__, template_folder='.')
+# By default, Flask looks for a folder named 'templates' in the same directory.
+# This is the standard and correct configuration.
+app = Flask(__name__)
 
 # --- Web Interface Routes ---
 
 @app.route('/')
 def index():
-    """Serves the main control panel page."""
-    # --- DEBUGGING CHECK ---
-    # This code checks if 'index.html' actually exists where the server expects it.
-    # The absolute path will be printed to your Render logs.
-    template_path = os.path.join(app.root_path, 'index.html')
-    if not os.path.exists(template_path):
-        error_message = f"CRITICAL ERROR: 'index.html' not found at the expected path: {template_path}"
-        print(error_message)
-        # Return a visible error to the browser
-        return f"<h1>500 Internal Server Error</h1><p>{error_message}</p>", 500
-    
-    # If the file is found, it will be rendered.
+    """Serves the main control panel page from the 'templates' folder."""
+    # This will now correctly look for 'templates/index.html'
     return render_template('index.html')
 
 @app.route('/start-bot', methods=['POST'])
