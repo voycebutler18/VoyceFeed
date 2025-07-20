@@ -644,6 +644,152 @@ def generate_free_marketing_kit():
     except Exception as e:
         return jsonify({'error': f'Generation failed: {str(e)}'}), 500
 
+@app.route('/api/upload', methods=['POST'])
+def upload_files():
+    """Handle file uploads"""
+    try:
+        if 'files' not in request.files:
+            return jsonify({'error': 'No files provided'}), 400
+        
+        files = request.files.getlist('files')
+        if not files or files[0].filename == '':
+            return jsonify({'error': 'No files selected'}), 400
+        
+        uploaded_files = []
+        
+        for file in files[:10]:  # Limit to 10 files
+            if file and allowed_file(file.filename):
+                # Generate unique filename
+                filename = secure_filename(file.filename)
+                unique_filename = f"{uuid.uuid4()}_{filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                
+                file.save(filepath)
+                uploaded_files.append({
+                    'filename': unique_filename,
+                    'original_name': filename,
+                    'path': filepath
+                })
+        
+        if not uploaded_files:
+            return jsonify({'error': 'No valid image files uploaded'}), 400
+        
+        return jsonify({
+            'success': True,
+            'files': uploaded_files,
+            'message': f'{len(uploaded_files)} files uploaded successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+@app.route('/api/generate', methods=['POST'])
+def generate_marketing_kit():
+    """Generate AI-powered marketing content"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        persona = data.get('persona')
+        file_paths = data.get('file_paths', [])
+        
+        if not persona:
+            return jsonify({'error': 'Buyer persona not specified'}), 400
+        
+        if not file_paths:
+            return jsonify({'error': 'No images provided'}), 400
+        
+        # Verify files exist
+        valid_paths = []
+        for path in file_paths:
+            full_path = os.path.join(app.config['UPLOAD_FOLDER'], path)
+            if os.path.exists(full_path):
+                valid_paths.append(full_path)
+        
+        if not valid_paths:
+            return jsonify({'error': 'No valid image files found'}), 400
+        
+        # Generate content using AI
+        try:
+            content = analyze_property_with_ai(valid_paths, persona)
+        except Exception as ai_error:
+            print(f"AI Generation Error: {str(ai_error)}")
+            content = generate_fallback_content(persona)
+        
+        # Store generation record
+        generation_record = {
+            'id': str(uuid.uuid4()),
+            'timestamp': datetime.now().isoformat(),
+            'persona': persona,
+            'file_count': len(valid_paths),
+            'content': content
+        }
+        
+        return jsonify({
+            'success': True,
+            'content': content,
+            'generation_id': generation_record['id']
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Generation failed: {str(e)}'}), 500
+
+@app.route('/api/personas', methods=['GET'])
+def get_personas():
+    """Get available buyer personas"""
+    personas = [
+        {
+            'id': 'First-Time Homebuyers',
+            'name': 'First-Time Buyers',
+            'emoji': '👨‍👩‍👧',
+            'description': 'Young professionals and couples entering the housing market'
+        },
+        {
+            'id': 'Luxury Seeker',
+            'name': 'Luxury Seeker',
+            'emoji': '💎',
+            'description': 'High-income buyers seeking premium properties'
+        },
+        {
+            'id': 'Growing Family',
+            'name': 'Growing Family',
+            'emoji': '🏡',
+            'description': 'Families needing more space and family-friendly features'
+        },
+        {
+            'id': 'Downsizing Retirees',
+            'name': 'Downsizing Retirees',
+            'emoji': '🌅',
+            'description': 'Empty nesters seeking low-maintenance, accessible homes'
+        }
+    ]
+    
+    return jsonify({'personas': personas})
+
+@app.route('/cancel-subscription', methods=['POST'])
+def cancel_subscription():
+    """Handle subscription cancellation"""
+    try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        
+        # In a real implementation, you would:
+        # 1. Find the customer in Stripe by email
+        # 2. Get their subscription ID
+        # 3. Cancel the subscription
+        # 4. Update your database
+        
+        # For now, return success
+        return jsonify({
+            'success': True,
+            'message': 'Subscription cancelled successfully. You will retain access until the end of your trial period.'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Cancellation failed: {str(e)}'}), 500
+
 @app.route('/login')
 def upload_files():
     """Handle file uploads"""
@@ -789,6 +935,37 @@ def cancel_subscription():
         
     except Exception as e:
         return jsonify({'error': f'Cancellation failed: {str(e)}'}), 500
+
+@app.route('/app')
+def app_interface():
+    """Serve the main application interface"""
+    return render_template('index.html')
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded files"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'AuraMarkt API'
+    })
+
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': 'File too large. Maximum size is 16MB.'}), 413
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/app')
 def app_interface():
