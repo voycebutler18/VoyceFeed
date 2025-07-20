@@ -21,7 +21,35 @@
             <p class="text-slate-400 mt-2">Automate your personal Facebook profile.</p>
         </div>
 
-        <button id="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all duration-300 transform hover:scale-105">
+        <!-- Facebook Login (only shown when not logged in) -->
+        <div id="loginForm" class="mb-6">
+            <div class="text-left mb-3">
+                <input 
+                    type="email" 
+                    id="fbEmail" 
+                    placeholder="Facebook Email"
+                    class="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none text-sm"
+                >
+            </div>
+            <div class="text-left mb-4">
+                <input 
+                    type="password" 
+                    id="fbPassword" 
+                    placeholder="Facebook Password"
+                    class="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none text-sm"
+                >
+            </div>
+            <button id="loginButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all duration-300 transform hover:scale-105 mb-4">
+                Login to Facebook
+            </button>
+        </div>
+
+        <!-- Login Success Message (hidden by default) -->
+        <div id="loginSuccess" class="hidden mb-4 p-3 bg-green-900/30 border border-green-500 rounded-lg">
+            <p class="text-green-400 text-sm">✅ Connected to Facebook</p>
+        </div>
+
+        <button id="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
             Start AI Assistant
         </button>
 
@@ -33,6 +61,13 @@
     <script>
         const startButton = document.getElementById('startButton');
         const statusDiv = document.getElementById('status');
+        const loginButton = document.getElementById('loginButton');
+        const fbEmail = document.getElementById('fbEmail');
+        const fbPassword = document.getElementById('fbPassword');
+        const loginForm = document.getElementById('loginForm');
+        const loginSuccess = document.getElementById('loginSuccess');
+
+        let isLoggedIn = false;
 
         // Function to add a new status message
         function addStatus(message, isError = false) {
@@ -45,7 +80,53 @@
             statusDiv.prepend(p); // Add new message to the top
         }
 
+        // Facebook login handler
+        loginButton.addEventListener('click', async () => {
+            const email = fbEmail.value.trim();
+            const password = fbPassword.value.trim();
+
+            if (!email || !password) {
+                addStatus('Please enter email and password', true);
+                return;
+            }
+
+            loginButton.disabled = true;
+            loginButton.textContent = 'Logging in...';
+            addStatus('Connecting to Facebook...');
+
+            try {
+                const response = await fetch('/facebook-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    isLoggedIn = true;
+                    loginForm.classList.add('hidden');
+                    loginSuccess.classList.remove('hidden');
+                    startButton.disabled = false;
+                    addStatus('Successfully logged into Facebook!');
+                    fbPassword.value = ''; // Clear password
+                } else {
+                    addStatus(data.error || 'Login failed', true);
+                }
+            } catch (error) {
+                addStatus('Failed to connect to server', true);
+            }
+
+            loginButton.disabled = false;
+            loginButton.textContent = 'Login to Facebook';
+        });
+
         startButton.addEventListener('click', async () => {
+            if (!isLoggedIn) {
+                addStatus('Please login to Facebook first', true);
+                return;
+            }
+
             addStatus('Sending start command to server...');
             startButton.disabled = true;
             startButton.textContent = 'Assistant is Running...';
@@ -68,6 +149,11 @@
                 // Note: We keep the button disabled to prevent multiple starts.
                 // You might add a "Stop" button in a more advanced version.
             }
+        });
+
+        // Enter key support
+        fbPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loginButton.click();
         });
     </script>
 
