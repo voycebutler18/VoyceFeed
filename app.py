@@ -132,7 +132,7 @@ def login_page():
         <div class="max-w-md w-full bg-gray-900 rounded-lg p-8 border border-gray-700">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-white mb-2">Welcome to AuraMarkt!</h1>
-                <p class="text-gray-400">Create your account to start your 3-day free trial</p>
+                <p class="text-gray-400">Sign in to your account</p>
             </div>
             
             <form id="loginForm" class="space-y-6">
@@ -146,19 +146,14 @@ def login_page():
                     <input type="password" id="password" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-violet-500">
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
-                    <input type="password" id="confirmPassword" required class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:border-violet-500">
-                </div>
-                
                 <button type="submit" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-4 rounded-md transition-colors">
-                    Create Account & Start Free Trial
+                    Sign In
                 </button>
             </form>
             
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-400">
-                    Your 3-day free trial starts now. You'll be charged after the trial ends.
+                    New users: Your 3-day free trial starts after sign up.
                 </p>
             </div>
         </div>
@@ -167,26 +162,46 @@ def login_page():
             document.getElementById('loginForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const email = document.getElementById('email').value;
+                const email = document.getElementById('email').value.toLowerCase();
                 const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
                 
-                if (password !== confirmPassword) {
-                    alert('Passwords do not match!');
+                // Owner account - free forever access
+                if (email === 'peterbutler41@gmail.com' && password === 'Bruton20!') {
+                    // Set owner privileges
+                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userPlan', 'owner');
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('isOwner', 'true');
+                    localStorage.setItem('unlimitedAccess', 'true');
+                    
+                    // Redirect to app
+                    window.location.href = '/app';
                     return;
                 }
                 
-                // Simulate account creation (in real app, you'd send to your backend)
-                const selectedPlan = localStorage.getItem('selectedPlan') || 'solo';
-                
-                // Store user session
-                localStorage.setItem('userEmail', email);
-                localStorage.setItem('userPlan', selectedPlan);
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('trialStartDate', new Date().toISOString());
-                
-                // Redirect to app
-                window.location.href = '/app';
+                // Regular user login validation
+                if (email && password.length >= 6) {
+                    // Check if they came from payment (have selectedPlan)
+                    const selectedPlan = localStorage.getItem('selectedPlan');
+                    
+                    if (selectedPlan) {
+                        // New paid user
+                        localStorage.setItem('userEmail', email);
+                        localStorage.setItem('userPlan', selectedPlan);
+                        localStorage.setItem('isLoggedIn', 'true');
+                        localStorage.setItem('trialStartDate', new Date().toISOString());
+                        localStorage.removeItem('selectedPlan'); // Clear after use
+                    } else {
+                        // Existing user login
+                        localStorage.setItem('userEmail', email);
+                        localStorage.setItem('isLoggedIn', 'true');
+                    }
+                    
+                    // Redirect to app
+                    window.location.href = '/app';
+                } else {
+                    alert('Please enter valid credentials. Password must be at least 6 characters.');
+                }
             });
         </script>
     </body>
